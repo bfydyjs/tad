@@ -1,0 +1,308 @@
+dataset:
+  common: &dataset_common
+    type: ThumosPaddingDataset  
+    # 短视频用 PaddingDataset / ResizeDataset,一个视频一个样本；长视频用 SlidingDataset，一个视频多个窗口样本
+    # 如果用 SlidingDataset,需要在 val 和 test 的pipline中加入 SlidingWindowTrunc
+    ann_file: data/thumos-14/annotations/thumos_14_anno.json
+    class_map: data/thumos-14/annotations/category_idx.txt
+    data_path: data/thumos-14/features/videomaev2-giant_k710_16x4x1_img224_stride4_len16_interval1_thumos/
+    block_list: data/thumos-14/features/i3d_actionformer_stride4_thumos/missing_files.txt
+    feature_stride: 4
+    sample_stride: 1
+    offset_frames: 2   # =0.5*num_frames,可以调，有用
+  train:
+    <<: *dataset_common
+    subset_name: training
+    filter_gt: false  # 作用有限，可以通过对比日志中的INFO: training subset:间接观察
+    # train.filter_gt可以true/false
+    # 如果dataset.val使用，那么val.filter_gt一般要与test.filter_gt一致
+    # test.filter_gt一般要false
+    # 经过过滤后，最终进入训练列表的有效视频数量。如果 filter_gt=True 导致部分视频的所有 GT 都被过滤光了，那么这个视频也会被移除，导致 self.logger(f"{self.subset_name} subset: {len(self.data_list)} videos")打印的数量变少。
+    pipeline:
+      - type: LoadFeats
+        feat_format: npy
+      - type: ConvertToTensor
+        keys: [feats, gt_segments, gt_labels]
+      - type: RandomTrunc
+        trunc_len: 2304
+        trunc_thresh: 0.5
+        crop_ratio: [0.9, 1.0]  # [0.9, 1.0]＞[0.8,1.0]＞null＞[0.7,1.0]✅
+      - type: Rearrange
+        keys: [feats]
+        ops: t c -> c t
+      - type: Collect
+        inputs: feats
+        keys: [masks, gt_segments, gt_labels]
+  val: 
+    # 被val_one_epoch调用，val_one_epoch不更新参数，不直接影响训练，不调用 val_one_epoch 函数，配置文件中的 dataset.val 和 dataloader.val 部分没有被使用到
+    # 验证/测试 = 正向传播/推理 → [损失计算,可有可无] → 评估指标计算，val_one_epoch是正向传播/推理 → 损失计算；eval_one_epoch正向传播/推理 → 评估指标计算
+    # 原先实现不合理，所以，仅仅使用eval_one_epoch，不调用 val_one_epoch 函数就是验证/测试阶段不计算损失，只进行评估指标计算
+    # dataset.val与dataloader.test即是验证/测试阶段使用的，不要被名字迷惑
+    <<: *dataset_common
+    subset_name: validation
+    filter_gt: false # 可以通过对比日志中的INFO: training subset:
+    pipeline:
+      - type: LoadFeats
+        feat_format: npy
+      - type: ConvertToTensor
+        keys: [feats, gt_segments, gt_labels]
+      - type: Rearrange
+        keys: [feats]
+        ops: t c -> c t
+      - type: Collect
+        inputs: feats
+        keys: [masks, gt_segments, gt_labels]
+  test: # 被eval_one_epoch调用
+    <<: *dataset_common
+    subset_name: validation
+    filter_gt: false # 可以通过对比日志中的INFO: validation subset:
+    test_mode: true  # true=false
+    # 只要 test_mode: true，代码根本就不会调用 get_gt()，因此 filter_gt 这个参数在测试阶段是被彻底忽略的。
+    # 这也是为什么注释里写 true=false（效果一样）的原因。
+    # 1. 公平评估：使用所有标注 2. 真实反映模型能力：包括处理困难样本的能力 3. 与标准评估协议一致 4. 与其他工作公平比较
+    # DyFADet模型的官方代码中也是只对训练集，有评估，没有验证（即也没有dataset.val与dataloader.val），保存模型是基于评估指标，而不是训练损失。
+    pipeline:
+      - type: LoadFeats
+        feat_format: npy
+      - type: ConvertToTensor
+        keys: [feats]
+      - type: Padding  # Padding与SlidingWindowTrunc相差不多
+        length: 1024
+      - type: Rearrange
+        keys: [feats]
+        ops: t c -> c t
+      - type: Collect
+        inputs: feats
+        keys: [masks]
+
+evaluation:
+  type: mAP
+  subset: validation
+  tiou_thresholds: [0.3, 0.4, 0.5, 0.6, 0.7]
+  ground_truth_filename: data/thumos-14/annotations/thumos_14_anno.json
+
+model:
+  type: DyFADet
+  projection:
+    type: DynEProj
+    in_channels: 1408
+    out_channels: 512
+    arch: [2, 2, 5]  # layers in embed / stem / branch
+    use_abs_pe: false
+    max_seq_len: 2304
+    mlp_dim: 768
+    encoder_win_size: 1
+    kernel_sizes: [3,5,7,9,11] # 当只有两个卷积核时，与带参数k的功能相同，如[3,11]等价于k=5，[3,2]=k=1.2=1;[3,3]=k=1.5，[3,5]=k=2.5,[3,6]=k=3,[3,7]=k=3.75,[3,9]=k=4.5
+    init_conv_vars: 0
+    path_pdrop: 0.005 #0.01~0.1
+    input_noise: 1.0e-5
+  neck:
+    type: FPNIdentity
+    in_channels: 512
+    out_channels: 512
+    num_levels: 6
+  rpn_head:
+    type: DecoupledIoUHead
+    num_classes: 20
+    in_channels: 512
+    feat_channels: 512
+    num_convs: 3
+    iou_loss_weight: 1.0
+    cls_prior_prob: 0.01 #假设每个位置有 1% 的概率是某个动作类,一般不用修改
+    prior_generator:
+      type: PointGenerator
+      strides: [1, 2, 4, 8, 16, 32]
+      regression_range: [[0, 4], [4, 8], [8, 16], [16, 32], [32, 64], [64, 10000]]
+    loss_normalizer: 100   # only for training，与训练batch_size同比例变化
+    loss_normalizer_momentum: 0.9  # only for training，default:0.9
+    center_sample: radius
+    center_sample_radius: 1.5   # [1.0, 1.5, 2.0]小目标较多 / 高密度场景	1.0 ~ 1.5;大目标为主 / 稀疏标注	1.5 ~ 2.0
+    label_smoothing: 0.0
+    loss:
+      cls_loss:
+        type: FocalLoss
+      reg_loss:
+        type: DIOULoss
+
+dataloader:
+  train:
+    batch_size: 2
+    num_workers: 1
+  val:
+    batch_size: 1
+    num_workers: 1
+# 如果pipline中没有使用Padding等操作把视频长度统一，batch_size只能设为1
+  test:
+    batch_size: 1
+    num_workers: 1
+  clip_grad_norm: 1 # 普遍设为1
+
+optimizer:
+  lr: 1.0e-4
+  weight_decay: 0.025
+
+scheduler: # 在MMAction2代码中，有128个模型用MutiStepLR,有142个模型用CosineAnnealingLR
+  warmup_epoch: 20
+  max_epoch: 45
+  start_factor: 0.1 # 0.01~0.1,torch官方实现默认是1/3,在MMAction2代码中，有一个模型使用0.001，有8个模型使用0.01，有102个模型使用0.1,之前实现是start_factor=1e-9
+  eta_min: 1.0e-8 # default: 1.0e-8，torch官方实现默认就是0，尽量不调,在MMAction2代码中，有93个eta_min=0,有10个模型用base_lr/100
+
+inference:
+  load_from_raw_predictions: false
+  save_raw_prediction: false
+
+post_processing: 
+# only for inference，不影响训练，包括loss,grad等,看图只有map有区别
+# 以下指标可以通过eval.py快速调参，所以post_processing最后调
+  pre_nms_topk: 5000 # default: 2000，作用不大，越大越慢，但是准确度不会降低
+  nms:
+    use_soft_nms: true # default:true,soft nms远远高于nms，
+    sigma: 0.5  # default:0.5,有用
+    max_seg_num: 2000 # 一个样本
+    min_score: 0.001
+    multiclass: true # 大概率有用
+    # 一个视频片段中如果有多个类别的动作，true分开进行nms,false一起进行nms
+    voting_thresh: 0.7 
+    # 仅在 multiclass=false 时有效，nms的每一个保留框与原始框的iou大于该阈值时，
+    # 进行投票平均，决定动作的起始点，而不是类别
+  save_dict: false
+
+workflow:
+  logging_interval: 20
+  checkpoint_interval: 1
+  val_eval_interval: 1
+  val_start_epoch: 30
+  end_epoch: 60
+
+work_dir: exps/thumos/videomaev2_g
+# 训练 = 正向传播 → 损失计算 → 反向传播 → 参数更新
+# 验证/测试 = 正向传播/推理 → [损失计算,可有可无] → 评估指标计算
+# 推理 = 正向传播=输入 → 模型（前向计算） → 输出
+# 反向传播 = 基于损失，反向计算所有参数的梯度
+# 参数更新 = 优化器根据梯度更新参数
+
+# 调参优先级顺序：
+# 1. 先确定 batch_size，再确定lr,lr选损失最低的那个的数值与同数量级最小的中间试，比如loss 在 lr=3e-4 时最低，之后开始上升 → 选 lr=1e-4 ~ 3e-4
+# 2. 再设定 warmup 和 max_epoch
+# 3. 模型结构
+# 4. post_processing
+
+
+# 对于head的point_generator的strides和regression_range的选择
+# strides: [1, 2, 4, 8, 16, 32]
+# regression_range: [[0, 4], [2, 8], [4, 16], [8, 32], [16, 64], [32, 10000]] # 限制和分配作用，不在范围内的设为无效，lens.masked_fill_(inside_regress_range == 0, float("inf"))
+# use_offset: False 
+
+# 对于第i层特征图：
+# 生成的 points[:, 0] = [0*stride, 1*stride, 2*stride, ..., (T-1)*stride]
+# 生成的 points[:, 1] = regression_range[i][0] (最小回归距离)
+# 生成的 points[:, 2] = regression_range[i][1] (最大回归距离)
+# 生成的 points[:, 3] = strides[i] (步长)
+
+# if self.use_offset:
+#     points += 0.5 * stride  # 对齐到网格中心，假如stride=8
+# 例子（stride=8, use_offset=True）:
+# 不加偏移: [0, 8, 16, 24, 32]  # 对应特征图左边界
+# 加偏移:   [4, 12, 20, 28, 36] # 对应特征图中心
+
+# # 1. 什么是变化的？
+# 变化的（网络学习的）：
+# python
+# 网络的回归头输出
+# reg_head = nn.Conv1d(self.feat_channels, 2, kernel_size=3, padding=1)
+# reg_pred = F.relu(self.scale[l](self.reg_head(reg_feat)))  # [B,2,T]
+
+# reg_pred 包含：
+# - reg_pred[:, 0, :]: pred_left (归一化的左偏移预测)
+# - reg_pred[:, 1, :]: pred_right (归一化的右偏移预测)
+# 这些是网络通过训练学习的参数，会随着梯度下降不断更新。
+
+# 固定的（预定义的）：
+# python
+# prior_generator 生成的点信息
+# points = self.prior_generator(feat_list)  # [T,4]
+# points[:, 0]: 点的位置（固定）
+# points[:, 3]: 步长（固定）
+# # 2. 训练过程的变化
+# python
+# 第1轮训练：
+# pred_left = 0.5, pred_right = 0.8  # 随机初始化
+
+# 经过若干轮训练后：
+# pred_left = 1.25, pred_right = 2.5  # 接近真实目标
+
+# 目标值（真实值）：
+# gt_left = (point_pos - gt_start) / stride
+# gt_right = (gt_end - point_pos) / stride
+# # 3. 完整的训练流程示例
+# python
+# 假设：
+# point = [position=10.0, min=2.0, max=32.0, stride=4.0]
+# gt_segment = [5.0, 20.0]
+
+# 步骤1：计算真实目标（归一化）
+# gt_left_target = (10.0 - 5.0) / 4.0 = 1.25
+# gt_right_target = (20.0 - 10.0) / 4.0 = 2.5
+
+# 步骤2：网络初始预测（随机）
+# pred_left = 0.3  # 随机初始化
+# pred_right = 0.7 # 随机初始化
+
+# 步骤3：损失计算
+# 将预测转换为实际边界框
+# pred_start = 10.0 - 0.3 * 4.0 = 8.8
+# pred_end = 10.0 + 0.7 * 4.0 = 12.8
+
+# 计算损失（如GIoU损失）
+# loss = giou_loss([8.8, 12.8], [5.0, 20.0])
+
+# 步骤4：反向传播
+# 梯度会更新网络参数，使得：
+# pred_left 向 1.25 靠近
+# pred_right 向 2.5 靠近
+# 步骤N：训练收敛后
+# pred_left ≈ 1.25
+# pred_right ≈ 2.5
+# pred_start ≈ 5.0
+# pred_end ≈ 20.0
+# # 4. 为什么这样设计？
+# 网络学习归一化偏移的好处：
+# 数值稳定性：不同尺度的动作都有相似的数值范围
+
+# 多尺度统一：不同特征层（不同stride）可以共享相似的回归头
+
+# 收敛更快：网络学习相对偏移比学习绝对时间更容易
+
+# 固定几何信息的好处：
+# 明确位置对应：每个点对应特征图上的特定位置
+
+# 尺度分离：不同特征层处理不同尺度的动作
+
+# 无需学习几何：减少网络参数，避免过拟合
+
+# # 5. 关键理解
+# python
+# 误解：网络预测的是绝对时间
+# ❌ pred_left = 预测的左边界时间
+# 正确：网络预测的是归一化相对偏移
+# ✅ pred_left = (point_position - gt_left) / stride 的近似值
+# 实际边界框 = 点位置 ± (预测偏移 × 步长)
+# # 6. 训练中的变化可视化
+# text
+# 初始状态：
+# 点位置: 10.0 (固定)
+# 步长: 4.0 (固定)
+# 预测: left=0.3, right=0.7
+# 边界框: [8.8, 12.8] (与真实[5.0, 20.0]相差甚远)
+
+# 训练中：
+# 点位置: 10.0 (固定)
+# 步长: 4.0 (固定)
+# 预测: left=0.8, right=1.5
+# 边界框: [6.8, 16.0] (逐渐接近)
+
+# 训练收敛：
+# 点位置: 10.0 (固定)
+# 步长: 4.0 (固定)
+# 预测: left=1.25, right=2.5
+# 边界框: [5.0, 20.0] (完美匹配)
