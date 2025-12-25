@@ -3,15 +3,15 @@ dataset:
     type: Ego4DSlidingDataset
     ann_file: data/ego4d/annotations/ego4d_v2_220429.json
     class_map: data/ego4d/annotations/category_idx.txt
-    data_path: data/ego4d/features/mq_egovlp/
+    data_path: data/ego4d/features/mq_slowfast/
     block_list: null
     feature_stride: 16
     sample_stride: 1
-    offset_frames: 8
+    offset_frames: 16
   train:
     <<: *dataset_common
     type: Ego4DPaddingDataset
-    subset_name: training
+    subset_name: train
     filter_gt: false
     pipeline:
       - type: LoadFeats
@@ -30,7 +30,7 @@ dataset:
         keys: [masks, gt_segments, gt_labels]
   val:
     <<: *dataset_common
-    subset_name: validation
+    subset_name: val
     filter_gt: false
     # dataloader setting
     window_size: 1024
@@ -50,7 +50,7 @@ dataset:
         keys: [masks, gt_segments, gt_labels]
   test:
     <<: *dataset_common
-    subset_name: validation
+    subset_name: val
     filter_gt: false
     test_mode: true
     # dataloader setting
@@ -72,7 +72,7 @@ dataset:
 
 evaluation:
   type: mAP
-  subset: validation
+  subset: val
   tiou_thresholds: [0.1, 0.2, 0.3, 0.4, 0.5]
   ground_truth_filename: data/ego4d/annotations/ego4d_v2_220429.json
   top_k: [1, 5]

@@ -12,7 +12,7 @@ dataset:
   train:
     <<: *dataset_common
     subset_name: train
-    filter_gt: false
+    filter_gt: true
     pipeline:
       - type: LoadFeats
         feat_format: npy
