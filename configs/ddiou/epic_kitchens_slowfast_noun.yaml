@@ -1,0 +1,155 @@
+dataset:
+  common: &dataset_common
+    type: EpicKitchensPaddingDataset
+    ann_file: data/epic_kitchens-100/annotations/epic_kitchens_noun.json
+    class_map: data/epic_kitchens-100/annotations/category_idx_noun.txt
+    data_path: data/epic_kitchens-100/features/slowfast_fps30_stride16_clip32/
+    block_list: data/epic_kitchens-100/features/slowfast_fps30_stride16_clip32/missing_files.txt
+    feature_stride: 16
+    sample_stride: 1
+    offset_frames: 16
+    fps: 30
+  train:
+    <<: *dataset_common
+    subset_name: train
+    filter_gt: false
+    pipeline:
+      - type: LoadFeats
+        feat_format: npy
+      - type: ConvertToTensor
+        keys: [feats, gt_segments, gt_labels]
+      - type: RandomTrunc
+        trunc_len: 2304
+        trunc_thresh: 0.3
+        crop_ratio: [0.9, 1.0]
+      - type: Rearrange
+        keys: [feats]
+        ops: t c -> c t
+      - type: Collect
+        inputs: feats
+        keys: [masks, gt_segments, gt_labels]
+  val:
+    <<: *dataset_common
+    subset_name: val
+    filter_gt: false
+    pipeline:
+      - type: LoadFeats
+        feat_format: npy
+      - type: ConvertToTensor
+        keys: [feats, gt_segments, gt_labels]
+      - type: Rearrange
+        keys: [feats]
+        ops: t c -> c t
+      - type: Collect
+        inputs: feats
+        keys: [masks, gt_segments, gt_labels]
+  test:
+    <<: *dataset_common
+    subset_name: val
+    filter_gt: false
+    test_mode: true
+    pipeline:
+      - type: LoadFeats
+        feat_format: npy
+      - type: ConvertToTensor
+        keys: [feats]
+      - type: Rearrange
+        keys: [feats]
+        ops: t c -> c t
+      - type: Collect
+        inputs: feats
+        keys: [masks]
+
+evaluation:
+  type: mAP
+  subset: val
+  tiou_thresholds: [0.1, 0.2, 0.3, 0.4, 0.5]
+  ground_truth_filename: data/epic_kitchens-100/annotations/epic_kitchens_noun.json
+
+model:
+  type: DyFADet
+  projection:
+    type: DynEProj
+    in_channels: 2304
+    out_channels: 512
+    arch: [2, 2, 5]  # layers in embed / stem / branch
+    use_abs_pe: false
+    max_seq_len: 2304
+    mlp_dim: 768
+    encoder_win_size: 1
+    k: 4
+    init_conv_vars: 0
+    path_pdrop: 0.005
+    input_noise: 1.0e-5
+  neck:
+    type: FPNIdentity
+    in_channels: 512
+    out_channels: 512
+    num_levels: 6
+  rpn_head:
+    type: DecoupledIoUHead
+    num_classes: 293
+    in_channels: 512
+    feat_channels: 512
+    num_convs: 3
+    iou_loss_weight: 1.0
+    cls_prior_prob: 0.01
+    prior_generator:
+      type: PointGenerator
+      strides: [1, 2, 4, 8, 16, 32]
+      regression_range: [[0, 4], [2, 8], [4, 16], [8, 32], [16, 64], [32, 10000]]
+    loss_normalizer: 250
+    loss_normalizer_momentum: 0.9
+    center_sample: radius
+    center_sample_radius: 1.5
+    label_smoothing: 0.1
+    loss:
+      cls_loss:
+        type: FocalLoss
+      reg_loss:
+        type: DIOULoss
+
+solver:
+  train:
+    batch_size: 2
+    num_workers: 2
+  val:
+    batch_size: 1
+    num_workers: 1
+  test:
+    batch_size: 1
+    num_workers: 1
+  clip_grad_norm: 1
+
+optimizer:
+  lr: 1.0e-4
+  weight_decay: 0.05
+  paramwise: true
+
+scheduler:
+  warmup_epoch: 5
+  max_epoch: 20
+
+inference:
+  load_from_raw_predictions: false
+  save_raw_prediction: false
+
+post_processing:
+  pre_nms_topk: 5000
+  pre_nms_thresh: 0.001
+  nms:
+    use_soft_nms: true
+    sigma: 0.4
+    max_seg_num: 2000
+    min_score: 0.001
+    multiclass: true
+    voting_thresh: 0.75
+  save_dict: false
+
+workflow:
+  logging_interval: 200
+  checkpoint_interval: 1
+  val_eval_interval: 1
+  val_start_epoch: 15
+
+work_dir: exps/epic_kitchens/ddiou_slowfast_noun

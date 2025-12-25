@@ -22,14 +22,14 @@ class ResizeDataset:
         sample_stride=1,  # if you want to extract the feature[::sample_stride]
         logger=None,
     ):
-        super(ResizeDataset, self).__init__()
+        super().__init__()
 
         # basic settings
         self.data_path = data_path
         self.block_list = block_list
         self.ann_file = ann_file
         self.subset_name = subset_name
-        self.logger = logger.info if logger != None else print
+        self.logger = logger.info if logger is not None else print
         self.class_map = self.get_class_map(class_map)
         self.class_agnostic = class_agnostic
         self.filter_gt = filter_gt
@@ -46,7 +46,7 @@ class ResizeDataset:
             anno_database = json.load(f)["database"]
 
         # some videos might be missed in the features or videos, we need to block them
-        if self.block_list != None:
+        if self.block_list is not None:
             if isinstance(self.block_list, list):
                 blocked_videos = self.block_list
             else:

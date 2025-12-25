@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ddiou"
+version = "1.0"
+description = "DDIoU: A Temporal Action Detection Model"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "Apache-2.0"}
+dependencies = [
+    "numpy==1.23.5",
+    "pyyaml",
+    "tqdm",
+    "mmengine",
+    "wandb",
+    "scipy",
+    "einops",
+    "pandas",
+    "ninja",
+    "imgaug",
+]
+
+[tool.setuptools.packages.find]
+include = ["ddiou*"]

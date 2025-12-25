@@ -24,7 +24,7 @@ def get_neigh_idx_semantic(x, n_neigh):
 
 class NeighConv(nn.Module):
     def __init__(self, feat_channels, num_neigh, nfeat_mode, agg_type, edge_weight):
-        super(NeighConv, self).__init__()
+        super().__init__()
         self.num_neigh = num_neigh
         self.nfeat_mode = nfeat_mode
         self.agg_type = agg_type
@@ -77,7 +77,7 @@ class xGN(nn.Module):
         stride,
         gcn_kwargs=dict(num_neigh=10, nfeat_mode="feat_ctr", agg_type="max", edge_weight="false"),
     ):
-        super(xGN, self).__init__()
+        super().__init__()
 
         self.tconv1 = nn.Conv1d(
             in_channels=feat_channels,

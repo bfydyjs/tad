@@ -25,7 +25,7 @@ class LoadFeats:
                 self.check_feat_format(feat_format)
 
     def check_feat_format(self, feat_format):
-        assert feat_format in ["npy", "npz", "pt", "csv", "pkl"], print(f"not support {feat_format}")
+        assert feat_format in ["npy", "npz", "pt"], print(f"not support {feat_format}")
 
     def read_from_tensor(self, file_path):
         feats = torch.load(file_path).float()
@@ -39,16 +39,6 @@ class LoadFeats:
         feats = np.load(file_path)["feats"].astype(np.float32)
         return feats
 
-    def read_from_csv(self, file_path):
-        feats = pd.read_csv(file_path, dtype="float32").to_numpy()
-        feats = feats.astype(np.float32)
-        return feats
-
-    def read_from_pkl(self, file_path):
-        feats = pickle.load(open(file_path, "rb"))
-        feats = feats.astype(np.float32)
-        return feats
-
     def load_single_feat(self, file_path, feat_format):
         try:
             if feat_format == "npy":
@@ -57,10 +47,6 @@ class LoadFeats:
                 feats = self.read_from_npz(file_path)
             elif feat_format == "pt":
                 feats = self.read_from_tensor(file_path)
-            elif feat_format == "csv":
-                feats = self.read_from_csv(file_path)
-            elif feat_format == "pkl":
-                feats = self.read_from_pkl(file_path)
         except:
             print("Missing data:", file_path)
             exit()

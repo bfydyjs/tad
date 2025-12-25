@@ -11,7 +11,7 @@ def setup_logger(name, save_dir, distributed_rank=0, filename="log.json"):
         return logger
     ch = logging.StreamHandler(stream=sys.stdout)
     ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s: %(message)s", "%Y-%m-%d %H:%M:%S")
+    formatter = logging.Formatter("%(asctime)s  %(levelname)s: %(message)s", "%Y-%m-%d %H:%M:%S")
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 

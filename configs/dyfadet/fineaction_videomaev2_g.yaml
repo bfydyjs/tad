@@ -1,0 +1,167 @@
+pad_len: &pad_len 2304
+
+dataset:
+  common: &dataset_common
+    type: "AnetPaddingDataset"
+    ann_file: "data/fineaction/annotations/annotations_gt.json"
+    block_list: "data/fineaction/features/fineaction_mae_g/missing_files.txt"
+    class_map: "data/fineaction/annotations/category_idx.txt"
+    data_path: "data/fineaction/features/fineaction_mae_g/"
+    feature_stride: 16
+    sample_stride: 1
+    offset_frames: 8
+    fps: 30
+    class_agnostic: true
+
+  train:
+    <<: *dataset_common
+    subset_name: "training"
+    filter_gt: true
+    pipeline:
+      - type: "LoadFeats"
+        feat_format: "npy"
+      - type: "ConvertToTensor"
+        keys: ["feats", "gt_segments", "gt_labels"]
+      - type: "RandomTrunc"
+        trunc_len: *pad_len
+        trunc_thresh: 0.5
+        crop_ratio: [0.9, 1.0]
+      - type: "Rearrange"
+        keys: ["feats"]
+        ops: "t c -> c t"
+      - type: "Collect"
+        inputs: "feats"
+        keys: ["masks", "gt_segments", "gt_labels"]
+
+  val:
+    <<: *dataset_common
+    subset_name: "validation"
+    filter_gt: true
+    pipeline:
+      - type: "LoadFeats"
+        feat_format: "npy"
+      - type: "ConvertToTensor"
+        keys: ["feats", "gt_segments", "gt_labels"]
+      - type: "Padding"
+        length: *pad_len
+      - type: "Rearrange"
+        keys: ["feats"]
+        ops: "t c -> c t"
+      - type: "Collect"
+        inputs: "feats"
+        keys: ["masks", "gt_segments", "gt_labels"]
+
+  test:
+    <<: *dataset_common
+    subset_name: "validation"
+    filter_gt: false
+    test_mode: true
+    pipeline:
+      - type: "LoadFeats"
+        feat_format: "npy"
+      - type: "ConvertToTensor"
+        keys: ["feats"]
+      - type: "Padding"
+        length: *pad_len
+      - type: "Rearrange"
+        keys: ["feats"]
+        ops: "t c -> c t"
+      - type: "Collect"
+        inputs: "feats"
+        keys: ["masks"]
+
+evaluation:
+  type: "mAP"
+  subset: "validation"
+  tiou_thresholds: [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+  ground_truth_filename: "data/fineaction/annotations/annotations_gt.json"
+
+model:
+  type: "DyFADet"
+  projection:
+    type: "DynEProj"
+    in_channels: 1408
+    out_channels: 256
+    arch: [2, 2, 6]
+    use_abs_pe: true
+    max_seq_len: 2304
+    mlp_dim: 2048
+    k: 1.3
+    init_conv_vars: 0.2
+    encoder_win_size: 15
+    input_noise: 0.5
+  neck:
+    type: "FPNIdentity"
+    in_channels: 256
+    out_channels: 256
+    num_levels: 7
+  rpn_head:
+    type: "TDynHead"
+    num_classes: 1
+    in_channels: 256
+    feat_channels: 512
+    num_convs: 2
+    head_kernel_size: 3
+    dyn_head_cfg:
+      tau: 1.5
+      init_gate: 1.0
+      type: "GeReTanH"
+      dyn_type: "c"
+    cls_prior_prob: 0.01
+    prior_generator:
+      type: "PointGenerator"
+      strides: [1, 2, 4, 8, 16, 32, 64]
+      regression_range: [[0, 4], [4, 8], [8, 16], [16, 32], [32, 64], [64, 128], [128, 10000]]
+    label_smoothing: 0.1
+    loss_normalizer: 400
+
+solver:
+  train:
+    batch_size: 8
+    num_workers: 4
+  val:
+    batch_size: 8
+    num_workers: 4
+  test:
+    batch_size: 8
+    num_workers: 4
+  clip_grad_norm: 0.4
+
+optimizer:
+  type: "AdamW"
+  lr: 0.0005
+  weight_decay: 0.025
+  paramwise: true
+
+scheduler:
+  type: "LinearWarmupCosineAnnealingLR"
+  warmup_epoch: 10
+  max_epoch: 16
+  eta_min: 5.0e-05
+
+inference:
+  load_from_raw_predictions: false
+  save_raw_prediction: false
+
+post_processing:
+  nms:
+    use_soft_nms: true
+    sigma: 0.7
+    max_seg_num: 200
+    min_score: 0.001
+    multiclass: false
+    voting_thresh: 0.95
+  external_cls:
+    type: "StandardClassifier"
+    path: "./data/fineaction/classifiers/new_swinB_1x1x256_views2x3_max_label_avg_prob.json"
+    topk: 2
+  save_dict: false
+
+workflow:
+  logging_interval: 200
+  checkpoint_interval: 1
+  
+  val_eval_interval: 1
+  val_start_epoch: 10
+
+work_dir: "exps/fineaction/dyfadet_videomaev2_g"

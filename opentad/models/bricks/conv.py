@@ -45,8 +45,7 @@ class ConvModule(nn.Module):
         # build norm layer
         if self.with_norm:
             norm_cfg = copy.copy(norm_cfg)  # make a copy
-            norm_type = norm_cfg["type"]
-            norm_cfg.pop("type")
+            norm_type = norm_cfg.pop("type")
             self.norm_type = norm_type
 
             if norm_type == "BN":
@@ -62,8 +61,7 @@ class ConvModule(nn.Module):
 
         if self.with_act:
             act_cfg = copy.copy(act_cfg)  # make a copy
-            act_type = act_cfg["type"]
-            act_cfg.pop("type")
+            act_type = act_cfg.pop("type")
 
             if act_type == "relu":
                 self.act = nn.ReLU(inplace=True, **act_cfg)

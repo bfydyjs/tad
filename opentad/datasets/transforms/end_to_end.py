@@ -22,7 +22,7 @@ class PrepareVideoInfo:
         results["modality"] = self.modality
         results["filename"] = os.path.join(
             results["data_path"],
-            self.prefix + results["video_name"] + "." + self.format,
+            f"{self.prefix}{results['video_name']}.{self.format}",
         )
         return results
 

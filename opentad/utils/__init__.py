@@ -1,7 +1,8 @@
 from .misc import set_seed, update_workdir, create_folder, save_config, AverageMeter
 from .logger import setup_logger
 from .ema import ModelEma
-from .checkpoint import save_checkpoint, save_best_checkpoint
+from .checkpoint import save_checkpoint
+from .load_config import Config, DictAction
 
 __all__ = [
     "set_seed",
@@ -12,5 +13,6 @@ __all__ = [
     "AverageMeter",
     "ModelEma",
     "save_checkpoint",
-    "save_best_checkpoint",
+    "Config",
+    "DictAction",
 ]

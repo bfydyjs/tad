@@ -1,5 +1,5 @@
 from mmengine.registry import Registry
-from .backbones import BackboneWrapper
+from .backbone_wrapper import BackboneWrapper
 
 MODELS = Registry("models")
 

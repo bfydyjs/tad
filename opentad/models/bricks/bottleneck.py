@@ -18,7 +18,7 @@ class Bottleneck(nn.Module):
         drop_path=0,
         expansion=4,
     ):
-        super(Bottleneck, self).__init__()
+        super().__init__()
 
         planes = out_channels / expansion
         width = int(math.floor(planes * (base_width / 64)) * cardinality)

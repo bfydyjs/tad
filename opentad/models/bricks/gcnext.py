@@ -43,7 +43,7 @@ class GCNeXt(nn.Module):
         sout = sout.max(dim=-1, keepdim=False)[0]  # (bs, ch, 100, k) -> (bs, ch, 100)
 
         out = tout + identity + sout  # fusion
-        if masks != None:
+        if masks is not None:
             return self.relu(out) * masks.unsqueeze(1).float().detach(), masks
         else:
             return self.relu(out)

@@ -2,7 +2,86 @@
 # https://github.com/open-mmlab/mmcv/blob/master/mmcv/ops/nms.py
 import torch
 
-import nms_1d_cpu
+try:
+    import nms_1d_cpu
+except ImportError:
+    nms_1d_cpu = None
+
+
+def nms_python(segs, scores, iou_threshold):
+    t1 = segs[:, 0]
+    t2 = segs[:, 1]
+    area = t2 - t1
+    order = scores.argsort(descending=True)
+
+    keep = []
+    while order.numel() > 0:
+        i = order[0]
+        keep.append(i)
+
+        if order.numel() == 1:
+            break
+
+        xx1 = t1[order[1:]].clamp(min=t1[i])
+        xx2 = t2[order[1:]].clamp(max=t2[i])
+
+        inter = (xx2 - xx1).clamp(min=0)
+
+        union = area[i] + area[order[1:]] - inter
+        iou = inter / (union + 1e-6)
+
+        ids = (iou <= iou_threshold).nonzero().squeeze()
+        if ids.numel() == 0:
+            break
+        order = order[ids + 1]
+    return torch.tensor(keep, dtype=torch.long)
+
+
+def softnms_python(segs, scores, iou_threshold, sigma, min_score, method):
+    # method: 1 linear, 2 gaussian
+    segs = segs.clone()
+    scores = scores.clone()
+
+    t1 = segs[:, 0]
+    t2 = segs[:, 1]
+    area = t2 - t1
+
+    N = segs.shape[0]
+    indexes = torch.arange(N, dtype=torch.long, device=segs.device)
+
+    for i in range(N):
+        # Find max score in remaining
+        max_score, max_pos = scores[i:].max(0)
+        max_pos += i
+
+        # Swap
+        segs[[i, max_pos]] = segs[[max_pos, i]]
+        scores[[i, max_pos]] = scores[[max_pos, i]]
+        area[[i, max_pos]] = area[[max_pos, i]]
+        t1[[i, max_pos]] = t1[[max_pos, i]]
+        t2[[i, max_pos]] = t2[[max_pos, i]]
+        indexes[[i, max_pos]] = indexes[[max_pos, i]]
+
+        # IoU calculation
+        xx1 = t1[i + 1 :].clamp(min=t1[i])
+        xx2 = t2[i + 1 :].clamp(max=t2[i])
+        inter = (xx2 - xx1).clamp(min=0)
+        union = area[i] + area[i + 1 :] - inter
+        iou = inter / (union + 1e-6)
+
+        # Decay scores
+        if method == 1:  # Linear
+            weight = torch.ones_like(iou)
+            weight[iou > iou_threshold] -= iou[iou > iou_threshold]
+        else:  # Gaussian
+            weight = torch.exp(-(iou * iou) / sigma)
+
+        scores[i + 1 :] *= weight
+
+    # Filter by min_score
+    keep = scores > min_score
+
+    return segs[keep], scores[keep], indexes[keep]
 
 
 class NMSop(torch.autograd.Function):
@@ -17,11 +96,19 @@ class NMSop(torch.autograd.Function):
             valid_inds = torch.nonzero(valid_mask, as_tuple=False).squeeze(dim=1)
 
         # nms op; return inds that is sorted by descending order
-        inds = nms_1d_cpu.nms(
-            segs.contiguous().cpu(),
-            scores.contiguous().cpu(),
-            iou_threshold=float(iou_threshold),
-        )
+        if nms_1d_cpu is not None:
+            inds = nms_1d_cpu.nms(
+                segs.contiguous().cpu(),
+                scores.contiguous().cpu(),
+                iou_threshold=float(iou_threshold),
+            )
+        else:
+            inds = nms_python(
+                segs.cpu(),
+                scores.cpu(),
+                iou_threshold=float(iou_threshold),
+            )
+
         # cap by max number
         if max_num > 0:
             inds = inds[: min(max_num, len(inds))]
@@ -35,29 +122,47 @@ class NMSop(torch.autograd.Function):
 class SoftNMSop(torch.autograd.Function):
     @staticmethod
     def forward(ctx, segs, scores, cls_idxs, iou_threshold, sigma, min_score, method, max_num, t1, t2):
-        # pre allocate memory for sorted results
-        dets = segs.new_empty((segs.size(0), 3), device="cpu")
-        # softnms op, return dets that stores the sorted segs / scores
-        inds = nms_1d_cpu.softnms(
-            segs.cpu(),
-            scores.cpu(),
-            dets.cpu(),
-            iou_threshold=float(iou_threshold),
-            sigma=float(sigma),
-            min_score=float(min_score),
-            method=int(method),
-            t1=float(t1),
-            t2=float(t2),
-        )
-        # cap by max number
-        if max_num > 0:
-            n_segs = min(len(inds), max_num)
+        if nms_1d_cpu is not None:
+            # pre allocate memory for sorted results
+            dets = segs.new_empty((segs.size(0), 3), device="cpu")
+            # softnms op, return dets that stores the sorted segs / scores
+            inds = nms_1d_cpu.softnms(
+                segs.cpu(),
+                scores.cpu(),
+                dets.cpu(),
+                iou_threshold=float(iou_threshold),
+                sigma=float(sigma),
+                min_score=float(min_score),
+                method=int(method),
+                t1=float(t1),
+                t2=float(t2),
+            )
+            # cap by max number
+            if max_num > 0:
+                n_segs = min(len(inds), max_num)
+            else:
+                n_segs = len(inds)
+            sorted_segs = dets[:n_segs, :2]
+            sorted_scores = dets[:n_segs, 2]
+            sorted_cls_idxs = cls_idxs[inds]
+            sorted_cls_idxs = sorted_cls_idxs[:n_segs]
         else:
-            n_segs = len(inds)
-        sorted_segs = dets[:n_segs, :2]
-        sorted_scores = dets[:n_segs, 2]
-        sorted_cls_idxs = cls_idxs[inds]
-        sorted_cls_idxs = sorted_cls_idxs[:n_segs]
+            sorted_segs, sorted_scores, inds = softnms_python(
+                segs.cpu(),
+                scores.cpu(),
+                iou_threshold=float(iou_threshold),
+                sigma=float(sigma),
+                min_score=float(min_score),
+                method=int(method),
+            )
+            # cap by max number
+            if max_num > 0:
+                sorted_segs = sorted_segs[:max_num]
+                sorted_scores = sorted_scores[:max_num]
+                inds = inds[:max_num]
+
+            sorted_cls_idxs = cls_idxs[inds]
+
         return sorted_segs.clone(), sorted_scores.clone(), sorted_cls_idxs.clone()
 
 
