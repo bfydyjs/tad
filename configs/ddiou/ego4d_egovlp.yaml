@@ -7,7 +7,7 @@ dataset:
     block_list: null
     feature_stride: 16
     sample_stride: 1
-    offset_frames: 16
+    offset_frames: 8
   train:
     <<: *dataset_common
     type: Ego4DPaddingDataset

@@ -81,8 +81,8 @@ model:
   type: DyFADet
   projection:
     type: DynEProj
-    in_channels: 256
-    out_channels: 384
+    in_channels: 2304
+    out_channels: 512
     arch: [2, 2, 8]  # layers in embed / stem / branch
     use_abs_pe: false
     max_seq_len: 2304
@@ -94,14 +94,14 @@ model:
     input_noise: 1.0e-5
   neck:
     type: FPNIdentity
-    in_channels: 384
-    out_channels: 384
+    in_channels: 512
+    out_channels: 512
     num_levels: 9
   rpn_head:
     type: DecoupledIoUHead
     num_classes: 110
-    in_channels: 384
-    feat_channels: 384
+    in_channels: 512
+    feat_channels: 512
     num_convs: 3
     iou_loss_weight: 1.0
     cls_prior_prob: 0.01
@@ -161,4 +161,4 @@ workflow:
   val_eval_interval: 1
   val_start_epoch: 30
 
-work_dir: exps/ego4d/ddiou_egovlp
+work_dir: exps/ego4d/ddiou_slowfast
