@@ -84,11 +84,13 @@ model:
     in_channels: 2304
     out_channels: 512
     arch: [2, 2, 8]  # layers in embed / stem / branch
-    use_abs_pe: false
+    use_abs_pe: true
     max_seq_len: 2304
-    mlp_dim: 768
-    encoder_win_size: 1
-    k: 5
+    mlp_dim: 1024
+    encoder_win_size: 15
+    # use_abs_pe: false
+    # encoder_win_size: 9
+    k: 1.2
     init_conv_vars: 0
     path_pdrop: 0.005
     input_noise: 1.0e-5

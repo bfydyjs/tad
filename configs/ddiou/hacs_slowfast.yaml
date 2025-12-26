@@ -95,7 +95,7 @@ model:
     num_classes: 200
     in_channels: 1024
     feat_channels: 1024
-    num_convs: 3
+    num_convs: 3          # 5
     iou_loss_weight: 1.0
     cls_prior_prob: 0.01
     prior_generator:

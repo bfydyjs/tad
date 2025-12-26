@@ -75,9 +75,9 @@ model:
     arch: [2, 2, 5]  # layers in embed / stem / branch
     use_abs_pe: false
     max_seq_len: 2304
-    mlp_dim: 768
-    encoder_win_size: 1
-    k: 4
+    mlp_dim: 1024
+    encoder_win_size: 5
+    k: 2
     init_conv_vars: 0
     path_pdrop: 0.005
     input_noise: 1.0e-5
