@@ -152,4 +152,4 @@ workflow:
   val_eval_interval: 1
   val_start_epoch: 15
 
-work_dir: exps/epic_kitchens/ddiou_slowfast_verb
+work_dir: exps/epic_kitchens/slowfast_verb

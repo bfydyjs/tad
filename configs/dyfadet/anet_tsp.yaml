@@ -175,4 +175,4 @@ workflow:
   val_eval_interval: 1
   val_start_epoch: 10
 
-work_dir: exps/anet/dyfadet_tsp
+work_dir: exps/anet/tsp

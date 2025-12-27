@@ -159,4 +159,4 @@ workflow:
   val_eval_interval: 1
   val_start_epoch: 10
 
-work_dir: exps/hacs/ddiou_slowfast
+work_dir: exps/hacs/slowfast

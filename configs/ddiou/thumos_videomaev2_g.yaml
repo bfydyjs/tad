@@ -149,4 +149,4 @@ workflow:
   val_eval_interval: 1
   val_start_epoch: 30
 
-work_dir: exps/thumos/ddiou_videomaev2_g
+work_dir: exps/thumos/videomaev2_g

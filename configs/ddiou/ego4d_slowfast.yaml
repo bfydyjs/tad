@@ -163,4 +163,4 @@ workflow:
   val_eval_interval: 1
   val_start_epoch: 30
 
-work_dir: exps/ego4d/ddiou_slowfast
+work_dir: exps/ego4d/slowfast

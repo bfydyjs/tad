@@ -161,4 +161,4 @@ workflow:
   val_start_epoch: 30
   end_epoch: 45
 
-work_dir: "exps/thumos/dyfadet_videomaev2_g"
+work_dir: "exps/thumos/videomaev2_g"

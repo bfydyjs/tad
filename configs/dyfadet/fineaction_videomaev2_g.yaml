@@ -164,4 +164,4 @@ workflow:
   val_eval_interval: 1
   val_start_epoch: 10
 
-work_dir: "exps/fineaction/dyfadet_videomaev2_g"
+work_dir: "exps/fineaction/videomaev2_g"
