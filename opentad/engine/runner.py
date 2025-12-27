@@ -97,8 +97,8 @@ def train_one_epoch(
             if curr_backbone_lr is not None:
                 block4 = f"lr_backbone={curr_backbone_lr:.1e}" + "  " + block4
             block5 = f"mem={torch.cuda.max_memory_allocated() / 1024.0 / 1024.0:.0f}MB"
-            block7 = f"data_time={interval_data_time:.3f}s"
-            block8 = f"time={time.time() - interval_start_time:.3f}s"
+            block7 = f"data_time={interval_data_time:.2f}s"
+            block8 = f"time={time.time() - interval_start_time:.2f}s"
             logger.info("  ".join([block1, block2, "  ".join(block3), block4, block5, block7, block8]))
             interval_start_time = end = time.time()
             interval_data_time = 0.0
