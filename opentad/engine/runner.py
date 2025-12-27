@@ -29,17 +29,17 @@ def train_one_epoch(
 
     logger.info(f"[Train]: Epoch {curr_epoch} started")
     losses_tracker = {}
+    grad_norm_tracker = AverageMeter()
     num_iters = len(train_loader)
     use_amp = False if scaler is None else True
 
     model.train()
-    start_time = time.time()
-    interval_start_time = time.time()
+    interval_start_time = end = time.time()
     interval_data_time = 0.0
     for iter_idx, data_dict in enumerate(train_loader):
-        data_time = time.time() - start_time
+        data_time = time.time() - end
         interval_data_time += data_time
-
+        end = time.time()
         optimizer.zero_grad()
 
         # current learning rate
@@ -59,7 +59,9 @@ def train_one_epoch(
         if clip_grad_l2norm > 0.0:
             if use_amp:
                 scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad_l2norm)
+            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad_l2norm)
+        else:
+            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), float('inf'))
 
         # update parameters
         if use_amp:
@@ -82,6 +84,9 @@ def train_one_epoch(
                 losses_tracker[key] = AverageMeter()
             losses_tracker[key].update(value.item())
 
+        # track grad_norm separately
+        grad_norm_tracker.update(grad_norm.item())
+
         # printing each logging_interval
         if ((iter_idx != 0) and (iter_idx % logging_interval) == 0) or ((iter_idx + 1) == num_iters):
             # print to terminal
@@ -92,13 +97,14 @@ def train_one_epoch(
             if curr_backbone_lr is not None:
                 block4 = f"lr_backbone={curr_backbone_lr:.1e}" + "  " + block4
             block5 = f"mem={torch.cuda.max_memory_allocated() / 1024.0 / 1024.0:.0f}MB"
-            block7 = f"data_time={interval_data_time:.3f}"
-            block8 = f"time={time.time() - interval_start_time:.3f}"
+            block7 = f"data_time={interval_data_time:.3f}s"
+            block8 = f"time={time.time() - interval_start_time:.3f}s"
             logger.info("  ".join([block1, block2, "  ".join(block3), block4, block5, block7, block8]))
-            interval_start_time = time.time()
+            interval_start_time = end = time.time()
             interval_data_time = 0.0
 
-        start_time = time.time()
+    # return average loss and grad_norm
+    return losses_tracker["cost"].avg, grad_norm_tracker.avg
 
 
 def val_one_epoch(

@@ -2,6 +2,7 @@ import os
 import time
 import datetime
 import argparse
+import wandb
 import torch
 import torch.distributed as dist
 from torch.distributed.algorithms.ddp_comm_hooks import default as comm_hooks
@@ -9,7 +10,7 @@ from torch.nn.parallel import DistributedDataParallel
 from torch.amp import GradScaler
 from opentad.models import build_detector
 from opentad.datasets import build_dataset, build_dataloader
-from opentad.engine import train_one_epoch, val_one_epoch, eval_one_epoch, build_optimizer, build_scheduler
+from opentad.engine import train_one_epoch, eval_one_epoch, build_optimizer, build_scheduler
 from opentad.utils import set_seed,update_workdir,create_folder,save_config,setup_logger,ModelEma,save_checkpoint,Config,DictAction
 
 
@@ -55,6 +56,16 @@ def main():
     if "common" in cfg.dataset:
         del cfg.dataset["common"]
     logger.info(f"Config: \n{cfg.pretty_text}")
+
+    # wandb初始化（只在主进程）
+    if args.rank == 0:
+        wandb.init(
+            project="tad",
+            name=f"exp_{args.id}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            config=cfg,
+            dir=cfg.work_dir,
+            resume="allow"
+        )
 
     # build dataset
     train_dataset = build_dataset(cfg.dataset.train, default_args=dict(logger=logger))
@@ -156,7 +167,7 @@ def main():
         train_loader.sampler.set_epoch(epoch)
 
         # train for one epoch
-        train_one_epoch(
+        train_loss, grad_norm = train_one_epoch(
             train_loader,
             model,
             optimizer,
@@ -168,6 +179,13 @@ def main():
             logging_interval=cfg.workflow.logging_interval,
             scaler=scaler,
         )
+
+        # wandb: log train loss and lr
+        log_dict = {
+            "train_loss": train_loss,
+            "lr": scheduler.get_last_lr()[-1],
+            "grad_norm": grad_norm,
+        }
 
         # save checkpoint
         if (epoch == max_epoch - 1) or ((epoch + 1) % cfg.workflow.checkpoint_interval == 0):
@@ -182,7 +200,7 @@ def main():
                     mode='last.pt',
                     val_map_best=val_map_best
                 )
-                
+
         # val_eval for one epoch
         if epoch >= val_start_epoch:
             if (cfg.workflow.val_eval_interval > 0) and ((epoch + 1) % cfg.workflow.val_eval_interval == 0):
@@ -197,6 +215,9 @@ def main():
                     world_size=args.world_size,
                     not_eval=args.not_eval,
                 )
+
+                # wandb: log val mAP
+                log_dict["val_map"] = val_map
 
                 # save the best checkpoint
                 if val_map > val_map_best:
@@ -213,9 +234,16 @@ def main():
                             mode='best.pt',
                             val_map_best=val_map_best
                         )
+
+        # log to wandb             
+        if args.rank == 0:
+            wandb.log(log_dict, step=epoch)   
+
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     logger.info(f"Training Over, total time: {total_time_str}\n")
+    if args.rank == 0:
+        wandb.finish()
     dist.destroy_process_group()
 
 
