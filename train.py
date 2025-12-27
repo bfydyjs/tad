@@ -11,7 +11,7 @@ from torch.amp import GradScaler
 from opentad.models import build_detector
 from opentad.datasets import build_dataset, build_dataloader
 from opentad.engine import train_one_epoch, eval_one_epoch, build_optimizer, build_scheduler
-from opentad.utils import set_seed,update_workdir,create_folder,save_config,setup_logger,ModelEma,save_checkpoint,Config,DictAction
+from opentad.utils import set_seed,update_workdir,create_folder,save_config,setup_logger,ModelEma,save_checkpoint,Config,DictAction,get_custom_config
 
 
 def parse_args():
@@ -56,13 +56,13 @@ def main():
     if "common" in cfg.dataset:
         del cfg.dataset["common"]
     logger.info(f"Config: \n{cfg.pretty_text}")
-
-    # wandb初始化（只在主进程）
+    # wandb: init project
+    custom_config = get_custom_config(cfg)
     if args.rank == 0:
         wandb.init(
             project="tad",
             name=f"exp_{args.id}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
-            config=cfg,
+            config=custom_config,
             dir=cfg.work_dir,
             resume="allow"
         )
