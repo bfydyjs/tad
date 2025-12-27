@@ -11,11 +11,11 @@ def get_custom_config(cfg):
         #         "in_channels": cfg.model.projection.in_channels,
         #         "out_channels": cfg.model.projection.out_channels,
         #         "arch": cfg.model.projection.arch,
-        #         "use_abs_pe": cfg.model.projection.use_abs_pe,
+                "use_abs_pe": cfg.model.projection.use_abs_pe,
         #         "max_seq_len": cfg.model.projection.max_seq_len,
-        #         "mlp_dim": cfg.model.projection.mlp_dim,
-        #         "encoder_win_size": cfg.model.projection.encoder_win_size,
-        #         "k": cfg.model.projection.k,
+                "mlp_dim": cfg.model.projection.mlp_dim,
+                "encoder_win_size": cfg.model.projection.encoder_win_size,
+                "k": cfg.model.projection.k,
                 "init_conv_vars": cfg.model.projection.init_conv_vars,
                 "path_pdrop": cfg.model.projection.path_pdrop,
                 "input_noise": cfg.model.projection.input_noise,
@@ -43,7 +43,7 @@ def get_custom_config(cfg):
         #         "loss_normalizer_momentum": cfg.model.rpn_head.loss_normalizer_momentum,
         #         "center_sample": cfg.model.rpn_head.center_sample,
         #         "center_sample_radius": cfg.model.rpn_head.center_sample_radius,
-        #         "label_smoothing": cfg.model.rpn_head.label_smoothing,
+                "label_smoothing": cfg.model.rpn_head.label_smoothing,
         #         "loss": {
         #             "cls_loss": {
         #                 "type": cfg.model.rpn_head.loss.cls_loss.type,
@@ -73,7 +73,7 @@ def get_custom_config(cfg):
         # "optimizer": {
             "lr": cfg.optimizer.lr,
             "weight_decay": cfg.optimizer.weight_decay,
-        #     "paramwise": cfg.optimizer.paramwise,
+            "paramwise": cfg.optimizer.paramwise,
         # },
         # "scheduler": {
             "warmup_epoch": cfg.scheduler.warmup_epoch,
