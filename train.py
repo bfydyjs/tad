@@ -61,7 +61,7 @@ def main():
     if args.rank == 0:
         wandb.init(
             project="tad",
-            name=f"exp_{args.id}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            name=f"{datetime.datetime.now().strftime('%Y%m%d_%H%M')}",
             config=custom_config,
             dir=cfg.work_dir,
             resume="allow"
