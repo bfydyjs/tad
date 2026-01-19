@@ -90,14 +90,14 @@ def main():
             **cfg.dataloader.train,
         )
     
-        test_dataset = build_dataset(cfg.dataset.test, default_args=dict(logger=logger))
-        test_loader = build_dataloader(
-            test_dataset,
+        val_dataset = build_dataset(cfg.dataset.val, default_args=dict(logger=logger))
+        val_loader = build_dataloader(
+            val_dataset,
             rank=args.rank,
             world_size=args.world_size,
             shuffle=False,
             drop_last=False,
-            **cfg.dataloader.test,
+            **cfg.dataloader.val,
         )
     
         # build model
@@ -220,7 +220,7 @@ def main():
             if epoch >= val_start_epoch:
                 if (cfg.workflow.val_eval_interval > 0) and ((epoch + 1) % cfg.workflow.val_eval_interval == 0):
                     val_map = eval_one_epoch(
-                        test_loader,
+                        val_loader,
                         model,
                         cfg,
                         logger,

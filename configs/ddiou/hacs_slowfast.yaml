@@ -66,7 +66,7 @@ model:
     max_seq_len: 960
     mlp_dim: 1024
     encoder_win_size: 3
-    kernel_sizes: [3,6] # [3,6]>[3.2]
+    kernel_sizes: [3,6] # [3,6]>[3,2]
     init_conv_vars: 0.05 # 0.1>0.05
     path_pdrop: 0.1
     input_noise: 0.2
@@ -80,7 +80,7 @@ model:
     num_classes: 200
     in_channels: 1024
     feat_channels: 1024
-    kernel_sizes: [3,6]
+    num_convs: 3
     iou_loss_weight: 1.0
     cls_prior_prob: 0.01
     prior_generator:
