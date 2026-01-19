@@ -144,6 +144,7 @@ optimizer:
 scheduler: # 在MMAction2代码中，有128个模型用MutiStepLR,有142个模型用CosineAnnealingLR
   warmup_epoch: 20
   max_epoch: 45
+  paramwise: true # default: true
   start_factor: 0.1 # 0.01~0.1,torch官方实现默认是1/3,在MMAction2代码中，有一个模型使用0.001，有8个模型使用0.01，有102个模型使用0.1,之前实现是start_factor=1e-9
   eta_min: 1.0e-8 # default: 1.0e-8，torch官方实现默认就是0，尽量不调,在MMAction2代码中，有93个eta_min=0,有10个模型用base_lr/100
 
