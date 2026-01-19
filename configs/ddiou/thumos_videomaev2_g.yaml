@@ -27,22 +27,7 @@ dataset:
       - type: Collect
         inputs: feats
         keys: [masks, gt_segments, gt_labels]
-  val:
-    <<: *dataset_common
-    subset_name: validation
-    filter_gt: false
-    pipeline:
-      - type: LoadFeats
-        feat_format: npy
-      - type: ConvertToTensor
-        keys: [feats, gt_segments, gt_labels]
-      - type: Rearrange
-        keys: [feats]
-        ops: t c -> c t
-      - type: Collect
-        inputs: feats
-        keys: [masks, gt_segments, gt_labels]
-  test:
+  val: &dataset_val
     <<: *dataset_common
     subset_name: validation
     filter_gt: false
@@ -58,6 +43,8 @@ dataset:
       - type: Collect
         inputs: feats
         keys: [masks]
+  test:
+    <<: *dataset_val
 
 evaluation:
   type: mAP
@@ -111,12 +98,11 @@ dataloader:
   train:
     batch_size: 2
     num_workers: 1
-  val:
+  val: &dataloader_val
     batch_size: 1
     num_workers: 1
   test:
-    batch_size: 1
-    num_workers: 1
+    <<: *dataloader_val
   clip_grad_norm: 1
 
 optimizer:

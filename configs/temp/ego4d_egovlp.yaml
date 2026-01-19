@@ -1,13 +1,13 @@
 dataset:
   common: &dataset_common
-    type: Ego4DSlidingDataset
+    type: Ego4DPaddingDataset
     ann_file: data/ego4d/annotations/ego4d_v2_220429.json
     class_map: data/ego4d/annotations/category_idx.txt
-    data_path: data/ego4d/features/mq_slowfast/
+    data_path: data/ego4d/features/mq_egovlp/
     block_list: null
     feature_stride: 16
     sample_stride: 1
-    offset_frames: 16
+    offset_frames: 8
   train:
     <<: *dataset_common
     type: Ego4DPaddingDataset
@@ -28,29 +28,41 @@ dataset:
       - type: Collect
         inputs: feats
         keys: [masks, gt_segments, gt_labels]
-  val: &dataset_val
+  val:
+    <<: *dataset_common
+    subset_name: val
+    filter_gt: false
+    pipeline:
+      - type: LoadFeats
+        feat_format: npy
+      - type: ConvertToTensor
+        keys: [feats, gt_segments, gt_labels]
+      - type: Padding
+        trunc_len: 1024
+      - type: Rearrange
+        keys: [feats]
+        ops: t c -> c t
+      - type: Collect
+        inputs: feats
+        keys: [masks, gt_segments, gt_labels]
+  test:
     <<: *dataset_common
     subset_name: val
     filter_gt: false
     test_mode: true
-    # dataloader setting
-    window_size: 1024
-    window_overlap_ratio: 0
     pipeline:
       - type: LoadFeats
         feat_format: npy
       - type: ConvertToTensor
         keys: [feats]
-      - type: SlidingWindowTrunc
-        with_mask: true
+      - type: Padding
+        length: 1024
       - type: Rearrange
         keys: [feats]
         ops: t c -> c t
       - type: Collect
         inputs: feats
         keys: [masks]
-  test:
-    <<: *dataset_val
 
 evaluation:
   type: mAP
@@ -63,29 +75,27 @@ model:
   type: DyFADet
   projection:
     type: GDKProj
-    in_channels: 2304
-    out_channels: 512
+    in_channels: 256
+    out_channels: 384
     arch: [2, 2, 8]  # layers in embed / stem / branch
     use_abs_pe: true
     max_seq_len: 2304
     mlp_dim: 1024
-    encoder_win_size: 15
-    # use_abs_pe: false
-    # encoder_win_size: 9
-    kernel_sizes: [3,2]
-    init_conv_vars: 0
+    encoder_win_size: 9
+    kernel_sizes: [3,11] # [3,11]>[3,6]
+    init_conv_vars: 0.1 # 1会梯度爆炸0.1>0
     path_pdrop: 0.005
     input_noise: 1.0e-5
   neck:
     type: FPNIdentity
-    in_channels: 512
-    out_channels: 512
+    in_channels: 384
+    out_channels: 384
     num_levels: 9
   rpn_head:
     type: DecoupledIoUHead
     num_classes: 110
-    in_channels: 512
-    feat_channels: 512
+    in_channels: 384
+    feat_channels: 384
     num_convs: 3
     iou_loss_weight: 1.0
     cls_prior_prob: 0.01
@@ -96,7 +106,7 @@ model:
     loss_normalizer_momentum: 0.9
     center_sample: radius
     center_sample_radius: 1.5
-    label_smoothing: 0.0
+    label_smoothing: 0.1  # 0.0>》0.1
     loss:
       cls_loss:
         type: FocalLoss
@@ -105,41 +115,42 @@ model:
 
 dataloader:
   train:
-    batch_size: 2
+    batch_size: 16
     num_workers: 1
-  val: &dataloader_val
-    batch_size: 2
+  val:
+    batch_size: 16
     num_workers: 1
   test:
-    <<: *dataloader_val
+    batch_size: 16
+    num_workers: 1
   clip_grad_norm: 1
 
 optimizer:
-  lr: 1.0e-4
+  lr: 4.0e-4
   weight_decay: 0.05
 
 scheduler:
-  warmup_epoch: 20
-  max_epoch: 45
+  warmup_epoch: 7
+  max_epoch: 30
 
 inference:
   load_from_raw_predictions: false
   save_raw_prediction: false
 
 post_processing:
+  pre_nms_topk: 5000 # default: 2000
   nms:
     use_soft_nms: true
-    sigma: 0.5
+    sigma: 0.9     # 0.4>0.9
     max_seg_num: 2000
     min_score: 0.001
     multiclass: true
-    voting_thresh: 0.7
   save_dict: false
 
 workflow:
   logging_interval: 100
   checkpoint_interval: 1
   val_eval_interval: 1
-  val_start_epoch: 30
+  val_start_epoch: 16
 
-work_dir: exps/ego4d/slowfast
+work_dir: exps/ego4d/egovlp

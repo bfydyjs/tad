@@ -28,7 +28,27 @@ dataset:
       - type: Collect
         inputs: feats
         keys: [masks, gt_segments, gt_labels]
-  val: &dataset_val
+  val:
+    <<: *dataset_common
+    subset_name: val
+    filter_gt: false
+    # dataloader setting
+    window_size: 1024
+    window_overlap_ratio: 0
+    pipeline:
+      - type: LoadFeats
+        feat_format: npy
+      - type: ConvertToTensor
+        keys: [feats, gt_segments, gt_labels]
+      - type: SlidingWindowTrunc
+        with_mask: true
+      - type: Rearrange
+        keys: [feats]
+        ops: t c -> c t
+      - type: Collect
+        inputs: feats
+        keys: [masks, gt_segments, gt_labels]
+  test:
     <<: *dataset_common
     subset_name: val
     filter_gt: false
@@ -49,8 +69,6 @@ dataset:
       - type: Collect
         inputs: feats
         keys: [masks]
-  test:
-    <<: *dataset_val
 
 evaluation:
   type: mAP
@@ -107,11 +125,12 @@ dataloader:
   train:
     batch_size: 2
     num_workers: 1
-  val: &dataloader_val
+  val:
     batch_size: 2
     num_workers: 1
   test:
-    <<: *dataloader_val
+    batch_size: 2
+    num_workers: 1
   clip_grad_norm: 1
 
 optimizer:

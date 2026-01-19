@@ -13,7 +13,7 @@ dataset:
   train:
     <<: *dataset_common
     subset_name: training
-    filter_gt: true # 起作用，true>false
+    filter_gt: false # 起作用，true>false
     pipeline:
       - type: LoadFeats
         feat_format: npy
@@ -29,24 +29,7 @@ dataset:
       - type: Collect
         inputs: feats
         keys: [masks, gt_segments, gt_labels]
-  val:
-    <<: *dataset_common
-    subset_name: validation
-    filter_gt: false
-    pipeline:
-      - type: LoadFeats
-        feat_format: npy
-      - type: ConvertToTensor
-        keys: [feats, gt_segments, gt_labels]
-      - type: Padding
-        length: 2304
-      - type: Rearrange
-        keys: [feats]
-        ops: t c -> c t
-      - type: Collect
-        inputs: feats
-        keys: [masks, gt_segments, gt_labels]
-  test:
+  val: &dataset_val
     <<: *dataset_common
     subset_name: validation
     filter_gt: false # 这个true=false
@@ -64,6 +47,8 @@ dataset:
       - type: Collect
         inputs: feats
         keys: [masks]
+  test:
+    <<: *dataset_val
 
 evaluation:
   type: mAP
@@ -97,7 +82,7 @@ model:
     in_channels: 256
     feat_channels: 512
     num_convs: 3
-    iou_loss_weight: 1.0
+    iou_loss_weight: 0.5
     cls_prior_prob: 0.01
     prior_generator:
       strides: [1, 2, 4, 8, 16, 32, 64]
@@ -117,12 +102,11 @@ dataloader:
   train:
     batch_size: 8
     num_workers: 2
-  val:
+  val: &dataloader_val
     batch_size: 8
     num_workers: 2
   test:
-    batch_size: 8
-    num_workers: 2
+    <<: *dataloader_val
   clip_grad_norm: 0.4
 
 optimizer:
@@ -130,7 +114,7 @@ optimizer:
   weight_decay: 0.025  
 
 scheduler:
-  warmup_epoch: 5
+  warmup_epoch: 9
   max_epoch: 20
   start_factor: 0.1
   eta_min: 0
