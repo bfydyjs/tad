@@ -154,13 +154,13 @@ class Detector(torch.nn.Module):
                 scores = pred_prob
                 labels = cls_idxs
 
-            # if not sliding window, do nms
-            if post_cfg.sliding_window is False and post_cfg.nms is not None:
-                segments, scores, labels = batched_nms(segments, scores, labels, **post_cfg.nms)
-
             segments = segments.cpu()
             scores = scores.cpu()
             labels = labels.cpu()
+
+            # if not sliding window, do nms
+            if post_cfg.sliding_window is False and post_cfg.nms is not None:
+                segments, scores, labels = batched_nms(segments, scores, labels, **post_cfg.nms)
 
             video_id = metas[i]["video_name"]
 

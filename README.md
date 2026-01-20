@@ -62,3 +62,16 @@ egovlp:256
 
 
 注释掉print(f"feature length {feat_len} is larger than padding length. Will be resized to {self.length}.")，训练速度会加快
+
+
+data|training subset|Size of a single .npy file (per sample)|num_workers
+-|-|-|-
+anet_tsp|9987|~652.5K|1
+ego4d_egovlp|1486|~900K|1
+ego4d_slowfast|1486|~8.0M|2
+epic_kitchens_slowfast_noun|495|~28M|2
+epic_kitchens_slowfast_verb|495|~28M|2
+fineaction|8436|~344K|1
+hacs_slowfast|37605|~1.2M|1
+thumos_i3d|200|~2.0M|2
+thumos_videomaev2_g|200|~1.4M|1
