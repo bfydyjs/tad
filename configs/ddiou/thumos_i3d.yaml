@@ -63,7 +63,7 @@ model:
     max_seq_len: 2304
     mlp_dim: 768
     encoder_win_size: 1
-    kernel_sizes: [3,6]
+    kernel_sizes: [3,11]
     init_conv_vars: 0.05
     path_pdrop: 0.1
     input_noise: 1.0e-5
@@ -111,7 +111,9 @@ optimizer:
 
 scheduler:
   warmup_epoch: 20
-  max_epoch: 45
+  max_epoch: 40
+  start_factor: 0.1
+  eta_min: 0
 
 inference:
   load_from_raw_predictions: false

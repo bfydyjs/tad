@@ -79,7 +79,7 @@ model:
     in_channels: 512
     feat_channels: 512
     num_convs: 3 # 3>5
-    iou_loss_weight: 1
+    iou_loss_weight: 0.3
     cls_prior_prob: 0.01
     prior_generator:
       strides: [1, 2, 4, 8, 16, 32]
@@ -111,10 +111,10 @@ optimizer:
   weight_decay: 0.05
 
 scheduler:
-  warmup_epoch: 8
+  warmup_epoch: 7
   max_epoch: 35
-  # start_factor: 0.1
-  # eta_min: 0
+  start_factor: 0.1
+  eta_min: 0
 
 inference:
   load_from_raw_predictions: false
