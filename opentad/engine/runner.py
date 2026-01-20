@@ -118,9 +118,9 @@ def train_one_epoch(
             interval_start_time = time.time()
             interval_data_time = 0.0
             # log to wandb at the same logging granularity (use global step)
+            current_step = int(curr_epoch) * int(num_iters) + int(iter_idx)
             try:
                 if rank == 0 and wandb.run is not None:
-                    global_step = int(curr_epoch) * int(num_iters) + int(iter_idx)
                     log_dict ={
                         "lr": curr_det_lr,
                         "grad_norm": grad_norm_tracker.avg,
@@ -129,13 +129,14 @@ def train_one_epoch(
                     if curr_backbone_lr is not None:
                         log_dict["train/lr_backbone"] = curr_backbone_lr
                     
-                    wandb.log(log_dict, step=global_step)
+                    wandb.log(log_dict, step=current_step)
             except Exception:
                 pass
 
         end = time.time()
 
-    return  global_step
+    # Calculate final global step for this epoch to ensure it's defined for all ranks
+    return int(curr_epoch) * int(num_iters) + int(num_iters) - 1
 
 def eval_one_epoch(
     test_loader,

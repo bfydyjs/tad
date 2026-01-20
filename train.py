@@ -183,8 +183,8 @@ def main():
         start_time = time.time()
         val_start_epoch = cfg.workflow.get("val_start_epoch", 0)
         
-        log_dict = {}
         for epoch in range(resume_epoch + 1, max_epoch):
+            log_dict = {}
             train_loader.sampler.set_epoch(epoch)
     
             # train for one epoch (returns last_global_step for exact alignment)
