@@ -137,64 +137,6 @@ def train_one_epoch(
 
     return  global_step
 
-
-def val_one_epoch(
-    val_loader,
-    model,
-    logger,
-    rank,
-    curr_epoch,
-    model_ema=None,
-    use_amp=False,
-):
-    """Validating the model for one epoch: compute the loss"""
-
-    # load the ema dict for evaluation
-    if model_ema is not None:
-        current_dict = copy.deepcopy(model.state_dict())
-        if hasattr(model, 'module'):
-            model.module.load_state_dict(model_ema.module.state_dict())
-        else:
-            model.load_state_dict(model_ema.module.state_dict())
-
-    logger.info(f"[Val]: Epoch {curr_epoch} Loss")
-    losses_tracker = {}
-    
-    # get the device of the model
-    device = next(model.parameters()).device
-
-    model.eval()
-    for data_dict in tqdm.tqdm(val_loader, disable=(rank != 0)):
-        # move data to device
-        for k, v in data_dict.items():
-            if isinstance(v, torch.Tensor):
-                data_dict[k] = v.to(device, non_blocking=True)
-            elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], torch.Tensor):
-                data_dict[k] = [x.to(device, non_blocking=True) for x in v]
-
-        with torch.amp.autocast('cuda', dtype=torch.float16, enabled=use_amp):
-            with torch.no_grad():
-                losses = model(**data_dict, return_loss=True)
-
-        # track all losses
-        losses = reduce_loss(losses)  # only for log
-        for key, value in losses.items():
-            if key not in losses_tracker:
-                losses_tracker[key] = AverageMeter()
-            losses_tracker[key].update(value.item())
-
-    # print to terminal
-    block1 = f"[Val]: [{curr_epoch:03d}]"
-    block2 = f"Loss={losses_tracker['loss'].avg:.4f}"
-    block3 = [f"{key}={value.avg:.4f}" for key, value in losses_tracker.items() if key != "loss"]
-    logger.info("  ".join([block1, block2, "  ".join(block3)]))
-
-    # load back the normal model dict
-    if model_ema is not None:
-        model.load_state_dict(current_dict)
-    return losses_tracker["loss"].avg
-
-
 def eval_one_epoch(
     test_loader,
     model,

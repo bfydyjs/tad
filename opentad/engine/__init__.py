@@ -1,4 +1,4 @@
-from .runner import train_one_epoch, val_one_epoch, eval_one_epoch
+from .runner import train_one_epoch, eval_one_epoch
 from .optimizer import build_optimizer
 from .scheduler import build_scheduler
 

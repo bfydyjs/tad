@@ -1,9 +1,4 @@
-import torch
-from torch.optim.lr_scheduler import (
-    LinearLR,
-    CosineAnnealingLR,
-    SequentialLR,
-)
+from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 
 
 def build_scheduler(cfg, optimizer, dataloader_len):
@@ -14,7 +9,7 @@ def build_scheduler(cfg, optimizer, dataloader_len):
     warmup_iters = int(cfg.get("warmup_epoch", 0) * dataloader_len)
 
     # Calculate start factor for LinearLR
-    start_factor = cfg.get("start_factor", 1e-9)
+    start_factor = cfg.get("start_factor", 0.001)
 
     # Create Warmup Scheduler
     if warmup_iters > 0:
