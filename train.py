@@ -258,7 +258,8 @@ def main():
     finally:
         if args.rank == 0:
             wandb.finish()
-        if args.distributed:
+        # Safe check for distributed attribute
+        if hasattr(args, "distributed") and args.distributed:
             if dist.is_initialized():
                 dist.destroy_process_group()
     
