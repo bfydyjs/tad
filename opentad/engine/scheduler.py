@@ -14,7 +14,7 @@ def build_scheduler(cfg, optimizer, dataloader_len):
     warmup_iters = int(cfg.get("warmup_epoch", 0) * dataloader_len)
 
     # Calculate start factor for LinearLR
-    start_factor = cfg.get("warmup_start_lr", 1e-9)
+    start_factor = cfg.get("start_factor", 1e-9)
 
     # Create Warmup Scheduler
     if warmup_iters > 0:
@@ -31,7 +31,7 @@ def build_scheduler(cfg, optimizer, dataloader_len):
     main_scheduler = CosineAnnealingLR(
         optimizer,
         T_max=total_iters - warmup_iters,
-        eta_min=cfg.get("eta_min", 1e-8),
+        eta_min=cfg.get("eta_min", 0),
     )
 
     # Combine Schedulers
