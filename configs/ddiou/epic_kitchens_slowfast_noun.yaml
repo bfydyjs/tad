@@ -64,7 +64,7 @@ model:
     max_seq_len: 2304
     mlp_dim: 768           
     encoder_win_size: 1
-    kernel_sizes: [3,7]  # [3,6]>[3,11]
+    kernel_sizes: [3,7]  # [3,7]>[3,11]
     init_conv_vars: 0.05
     path_pdrop: 0.1
     input_noise: 5.0e-4
@@ -112,8 +112,8 @@ optimizer:
 
 scheduler:
   warmup_epoch: 8
-  max_epoch: 50
-  # eta_min: 1.0e-5
+  max_epoch: 30
+  # start_factor: 1.0e-9
 
 inference:
   load_from_raw_predictions: false
@@ -134,6 +134,6 @@ workflow:
   logging_interval: 200
   checkpoint_interval: 1
   val_eval_interval: 1
-  val_start_epoch: 15
+  val_start_epoch: 20
 
 work_dir: exps/epic_kitchens/slowfast_noun

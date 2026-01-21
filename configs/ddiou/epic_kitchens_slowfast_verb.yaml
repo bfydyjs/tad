@@ -83,7 +83,7 @@ model:
     cls_prior_prob: 0.01
     prior_generator:
       strides: [1, 2, 4, 8, 16, 32]
-      regression_range: [[0, 4], [4, 8], [8, 16], [16, 32], [32, 64], [64, 512]] # 关键提升，重叠反而不好
+      regression_range: [[0, 4], [4, 8], [8, 16], [16, 32], [32, 64], [64, 1000]] # 关键提升，重叠反而不好
     loss_normalizer: 100 # 100>200
     loss_normalizer_momentum: 0.9
     center_sample: radius
@@ -114,7 +114,6 @@ scheduler:
   warmup_epoch: 7
   max_epoch: 35
   start_factor: 0.1
-  eta_min: 0
 
 inference:
   load_from_raw_predictions: false

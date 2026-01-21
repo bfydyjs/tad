@@ -71,7 +71,7 @@ model:
     mlp_dim: 2048
     encoder_win_size: 15
     kernel_sizes: [3,2]
-    init_conv_vars: 0.05
+    init_conv_vars: 0.15
     path_pdrop: 0.1
     input_noise: 0.7
   neck:
@@ -103,10 +103,10 @@ model:
 
 dataloader:
   train:
-    batch_size: 16
+    batch_size: 8
     num_workers: 1
   val: &dataloader_val
-    batch_size: 16
+    batch_size: 8
     num_workers: 1
   test:
     <<: *dataloader_val
@@ -117,8 +117,9 @@ optimizer:
   weight_decay: 0.025
 
 scheduler:
-  warmup_epoch: 5
+  warmup_epoch: 10
   max_epoch: 16
+  eta_min: 0.00005
 
 inference:
   load_from_raw_predictions: false

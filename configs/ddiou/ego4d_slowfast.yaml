@@ -133,7 +133,6 @@ post_processing:
     max_seg_num: 2000
     min_score: 0.001
     multiclass: true
-    voting_thresh: 0.7
   save_dict: false
 
 workflow:

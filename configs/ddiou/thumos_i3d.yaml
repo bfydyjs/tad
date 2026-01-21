@@ -63,7 +63,7 @@ model:
     max_seq_len: 2304
     mlp_dim: 768
     encoder_win_size: 1
-    kernel_sizes: [3,11]
+    kernel_sizes: [3,2] # [3,7]>[3,5][3,11][3,9]
     init_conv_vars: 0.05
     path_pdrop: 0.1
     input_noise: 1.0e-5
@@ -78,7 +78,7 @@ model:
     in_channels: 512
     feat_channels: 512
     num_convs: 3
-    iou_loss_weight: 1.0
+    iou_loss_weight: 1
     cls_prior_prob: 0.01
     prior_generator: 
       strides: [1, 2, 4, 8, 16, 32]
@@ -96,7 +96,7 @@ model:
 
 dataloader:
   train:
-    batch_size: 2
+    batch_size: 2 # 2>4
     num_workers: 2
   val: &dataloader_val
     batch_size: 1
@@ -111,9 +111,9 @@ optimizer:
 
 scheduler:
   warmup_epoch: 20
-  max_epoch: 40
-  start_factor: 0.1
-  eta_min: 0
+  max_epoch: 45
+  start_factor: 1.0e-9
+  eta_min : 1.0e-8
 
 inference:
   load_from_raw_predictions: false
@@ -126,7 +126,6 @@ post_processing:
     max_seg_num: 2000
     min_score: 0.001
     multiclass: true
-    voting_thresh: 0.7
   save_dict: false
 
 workflow:
