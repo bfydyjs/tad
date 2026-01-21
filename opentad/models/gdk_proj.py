@@ -17,7 +17,7 @@ class GDKProj(nn.Module):
         use_abs_pe=False,  # use absolute position embedding
         max_seq_len=2304,
         mlp_dim=512,  # the number of dim of mlp
-        encoder_win_size=1,  # size of local window for mha
+        # encoder_win_size=1,  # size of local window for mha
         kernel_sizes=[3,11],  # the expanded kernel weight
         init_conv_vars=1.0,  # initialization of gaussian variance for the weight
         path_pdrop=0.0,  # dropout rate for drop path
@@ -80,12 +80,12 @@ class GDKProj(nn.Module):
 
         # main branch using transformer with pooling
         self.branch_blocks = nn.ModuleList()
-        kernel_sizes_branch = [encoder_win_size] + kernel_sizes[1:]
+        # kernel_sizes_branch = [encoder_win_size] + kernel_sizes[1:]
         for _ in range(arch[2]):
             self.branch_blocks.append(
                 GDKLayer(
                     out_channels,
-                    kernel_sizes_branch,
+                    kernel_sizes,
                     downsample_stride=2,
                     path_pdrop=path_pdrop,
                     mlp_hidden_dim=mlp_dim,
