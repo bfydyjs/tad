@@ -26,7 +26,7 @@ def build_scheduler(cfg, optimizer, dataloader_len):
     main_scheduler = CosineAnnealingLR(
         optimizer,
         T_max=total_iters - warmup_iters,
-        eta_min=cfg.get("eta_min", 0),
+        eta_min=cfg.get("eta_min", 1.0e-8),
     )
 
     # Combine Schedulers
