@@ -66,11 +66,11 @@ model:
     use_abs_pe: true
     max_seq_len: 2304
     mlp_dim: 2048
-    encoder_win_size: 15
-    kernel_sizes: [3,2]
-    init_conv_vars: 0.2 # 0.2>0.05
+    # encoder_win_size: 15
+    kernel_sizes: [15,21]
+    init_conv_vars: 0.1 # 0.1>0.05>0.2
     path_pdrop: 0.1 # 0.1 better than 0.2
-    input_noise: 0.5
+    input_noise: 0.05
   neck:
     type: FPNIdentity
     in_channels: 256
@@ -114,7 +114,7 @@ optimizer:
   weight_decay: 0.025  
 
 scheduler:
-  warmup_epoch: 9
+  warmup_epoch: 8
   max_epoch: 20
   # start_factor: 1.0e-9
   # eta_min: 0

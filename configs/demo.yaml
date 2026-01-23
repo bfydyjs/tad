@@ -129,7 +129,7 @@ dataloader:
   train:
     batch_size: 2
     num_workers: 1
-  val:
+  val: # 验证过程会消耗随机数，修改val.batch_size会影响训练结果
     batch_size: 1
     num_workers: 1
 # 如果pipline中没有使用Padding等操作把视频长度统一，batch_size只能设为1

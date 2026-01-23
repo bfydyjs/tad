@@ -47,6 +47,9 @@ torchrun \
 - 支持学习率范围测试（LR Range Test）
 - 检测器优化，速度加快
 
+# 未来改进计划
+- 将warmup_epoch改为按百分比（warmup_ratio）设置
+
 - torch.compiles实现失败，如果未来 PyTorch 3.0+等高版本让用 torch.compile 成为可能，可以尝试重新启用。
 - 代码不再改动
 

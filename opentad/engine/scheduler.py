@@ -6,7 +6,14 @@ def build_scheduler(cfg, optimizer, dataloader_len):
 
     # Convert epochs to iterations
     total_iters = int(max_epoch * dataloader_len)
-    warmup_iters = int(cfg.get("warmup_epoch", 0) * dataloader_len)
+
+    # Determine warmup iterations based on epoch or ratio
+    if "warmup_epoch" in cfg:
+        warmup_iters = int(cfg["warmup_epoch"] * dataloader_len)
+    elif "warmup_ratio" in cfg:
+        warmup_iters = int(total_iters * cfg["warmup_ratio"])
+    else:
+        warmup_iters = 0
 
     # Calculate start factor for LinearLR
     start_factor = cfg.get("start_factor", 0.001)

@@ -63,8 +63,8 @@ model:
     use_abs_pe: false
     max_seq_len: 2304
     mlp_dim: 768  # 768>1024,一开始1204>768,但极值不如768
-    encoder_win_size: 1 # 1稍微比5好
-    kernel_sizes: [3,6,9,11]
+    # encoder_win_size: 1 # 1稍微比5好
+    kernel_sizes: [1,7,9,11]
     init_conv_vars: 0.05
     path_pdrop: 0.1 # 0.1>0.2
     input_noise: 5.0e-4 # 5.0e-4
@@ -113,7 +113,8 @@ optimizer:
 scheduler:
   warmup_epoch: 7
   max_epoch: 35
-  start_factor: 0.1
+  start_factor: 1.0e-9
+  eta_min: 0
 
 inference:
   load_from_raw_predictions: false
