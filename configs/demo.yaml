@@ -136,6 +136,7 @@ dataloader:
   test:
     batch_size: 1
     num_workers: 1
+  amp: false # default: false,开启显存降低20%左右，但是训练速度变快15%左右，效果略有提升或略有下降，梯度偶尔会出现NaN或Inf
   clip_grad_norm: 1 # 普遍设为1
 
 optimizer:
