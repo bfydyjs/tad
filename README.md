@@ -24,7 +24,7 @@ torchrun \
 
 ## Inference
 ```bash
-python eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint exps/thumos/actionformer_i3d/gpu1_id0/checkpoint/epoch_34.pth
+python eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint exps/thumos/actionformer_i3d/gpu1_id0/checkpoint/best.pt
 ```
 ```bash
 torchrun \
