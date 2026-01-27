@@ -158,8 +158,14 @@ def main():
         ax2.fill_between([start, end], 0, 1, color='lightgreen', alpha=0.5)
         
     plt.tight_layout()
-    plt.savefig(args.output, dpi=300)
-    print(f"Done. Saved visualization to {args.output}")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_path = os.path.join(script_dir, "..", "output", "figures", "heatmap.png")
+    output_path = os.path.normpath(output_path)
+    
+    print(f"Saving figure to: {output_path}")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    plt.savefig(output_path, dpi=300)
+    print(f"Done. Saved visualization to {output_path}")
 
 if __name__ == "__main__":
     main()
