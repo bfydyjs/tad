@@ -11,6 +11,8 @@ dataset
 !/data/
 /data/*
 !/data/*.sh
+!/output/
+/output/*
 
 dcgm
 log
