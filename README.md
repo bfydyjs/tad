@@ -32,7 +32,7 @@ torchrun \
     --nproc_per_node=4 \
     --rdzv_backend=c10d \
     --rdzv_endpoint=localhost:0 \
-    eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint exps/thumos/actionformer_i3d/gpu1_id0/checkpoint/epoch_34.pth
+    eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint exps/thumos/actionformer_i3d/gpu1_id0/checkpoint/best.pt
 ```
 ## 改进
 - 尽量使用稳定的社区版本包，避免重复造轮子。
