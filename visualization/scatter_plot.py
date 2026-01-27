@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import os
-import matplotlib
 
 def main():
     # 1. 数据结构优化：将数据组织在一起，方便管理和修改
