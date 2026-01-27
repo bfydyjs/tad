@@ -7,7 +7,7 @@ dataset:
     block_list: data/thumos-14/features/i3d_actionformer_stride4_thumos/missing_files.txt
     feature_stride: 4
     sample_stride: 1
-    offset_frames: 4
+    offset_frames: 8
   train:
     <<: *dataset_common
     subset_name: training
@@ -62,11 +62,12 @@ model:
     use_abs_pe: false
     max_seq_len: 2304
     mlp_dim: 768
-    encoder_win_size: 1
-    kernel_sizes: [3,2] # [3,7]>[3,5][3,11][3,9]
-    init_conv_vars: 0.05
+    kernel_sizes: [7, 21] # [3,7]>[3,5][3,11][3,9]
+    init_conv_vars: 0.1 #0.05; 0; 0.1
+    # gate_temperature: 1.0
+    # gate_hidden_ratio: 0.1
     path_pdrop: 0.1
-    input_noise: 1.0e-5
+    input_noise: 0.1
   neck:
     type: FPNIdentity
     in_channels: 512
@@ -87,7 +88,7 @@ model:
     loss_normalizer_momentum: 0.9
     center_sample: radius
     center_sample_radius: 1.5
-    label_smoothing: 0.05
+    label_smoothing: 0.1 #0.05>0
     loss:
       cls_loss:
         type: FocalLoss
@@ -107,13 +108,13 @@ dataloader:
 
 optimizer:
   lr: 1.0e-4
-  weight_decay: 0.025
+  weight_decay: 0.1
 
 scheduler:
   warmup_epoch: 20
-  max_epoch: 45
-  start_factor: 1.0e-9
-  eta_min : 1.0e-8
+  max_epoch: 40
+  # start_factor: 1.0e-9
+  # eta_min : 0
 
 inference:
   load_from_raw_predictions: false

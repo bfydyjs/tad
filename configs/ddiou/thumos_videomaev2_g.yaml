@@ -62,11 +62,10 @@ model:
     use_abs_pe: false
     max_seq_len: 2304
     mlp_dim: 768
-    encoder_win_size: 1
-    kernel_sizes: [3,11]
+    kernel_sizes: [1,11]
     init_conv_vars: 0.05
     path_pdrop: 0.005
-    input_noise: 1.0e-5
+    input_noise: 0.00001
   neck:
     type: FPNIdentity
     in_channels: 512
@@ -87,7 +86,7 @@ model:
     loss_normalizer_momentum: 0.9
     center_sample: radius
     center_sample_radius: 1.5
-    label_smoothing: 0.0
+    label_smoothing: 0
     loss:
       cls_loss:
         type: FocalLoss
@@ -111,9 +110,9 @@ optimizer:
 
 scheduler:
   warmup_epoch: 15
-  max_epoch: 45
-  start_factor: 0.1
-  eta_min: 0
+  max_epoch: 40
+  # eta_min: 1.0e-5
+  # start_factor: 1.0e-9
 
 inference:
   load_from_raw_predictions: false

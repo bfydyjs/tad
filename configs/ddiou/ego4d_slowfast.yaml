@@ -33,7 +33,6 @@ dataset:
     subset_name: val
     filter_gt: false
     test_mode: true
-    # dataloader setting
     window_size: 1024
     window_overlap_ratio: 0
     pipeline:
@@ -65,22 +64,19 @@ model:
     type: GDKProj
     in_channels: 2304
     out_channels: 512
-    arch: [2, 2, 8]  # layers in embed / stem / branch
+    arch: [2, 2, 6]  # layers in embed / stem / branch
     use_abs_pe: true
     max_seq_len: 2304
     mlp_dim: 1024
-    encoder_win_size: 15
-    # use_abs_pe: false
-    # encoder_win_size: 9
-    kernel_sizes: [3,2]
-    init_conv_vars: 0
+    kernel_sizes: [15,21]
+    init_conv_vars: 0.1
     path_pdrop: 0.005
     input_noise: 1.0e-5
   neck:
     type: FPNIdentity
     in_channels: 512
     out_channels: 512
-    num_levels: 9
+    num_levels: 7
   rpn_head:
     type: DecoupledIoUHead
     num_classes: 110
@@ -90,8 +86,8 @@ model:
     iou_loss_weight: 1.0
     cls_prior_prob: 0.01
     prior_generator:
-      strides: [1, 2, 4, 8, 16, 32, 64, 128, 256]
-      regression_range: [[0, 4], [2, 8], [4, 16], [8, 32], [16, 64], [32, 128], [64, 256], [128, 512], [256, 10000]]
+      strides: [1, 2, 4, 8, 16, 32, 64]
+      regression_range: [[0, 4], [2, 8], [4, 16], [8, 32], [16, 64], [32, 128], [64, 10000]]
     loss_normalizer: 100
     loss_normalizer_momentum: 0.9
     center_sample: radius
@@ -119,8 +115,8 @@ optimizer:
   weight_decay: 0.05
 
 scheduler:
-  warmup_epoch: 20
-  max_epoch: 45
+  warmup_epoch: 7
+  max_epoch: 30
 
 inference:
   load_from_raw_predictions: false
@@ -139,6 +135,6 @@ workflow:
   logging_interval: 100
   checkpoint_interval: 1
   val_eval_interval: 1
-  val_start_epoch: 30
+  val_start_epoch: 20
 
 work_dir: exps/ego4d/slowfast

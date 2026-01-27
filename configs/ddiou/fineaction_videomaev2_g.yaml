@@ -13,7 +13,7 @@ dataset:
   train:
     <<: *dataset_common
     subset_name: training
-    filter_gt: true # 起作用，true>false
+    filter_gt: true
     pipeline:
       - type: LoadFeats
         feat_format: npy
@@ -32,7 +32,7 @@ dataset:
   val: &dataset_val
     <<: *dataset_common
     subset_name: validation
-    filter_gt: false # 这个true=false
+    filter_gt: false
     test_mode: true
     pipeline:
       - type: LoadFeats
@@ -66,10 +66,9 @@ model:
     use_abs_pe: true
     max_seq_len: 2304
     mlp_dim: 2048
-    # encoder_win_size: 15
     kernel_sizes: [15,21]
-    init_conv_vars: 0.1 # 0.1>0.05>0.2
-    path_pdrop: 0.1 # 0.1 better than 0.2
+    init_conv_vars: 0.1 # 0.1; 0.05; 0.2
+    path_pdrop: 0.1 # 0.1; 0.2
     input_noise: 0.05
   neck:
     type: FPNIdentity
@@ -116,8 +115,6 @@ optimizer:
 scheduler:
   warmup_epoch: 8
   max_epoch: 20
-  # start_factor: 1.0e-9
-  # eta_min: 0
 
 inference:
   load_from_raw_predictions: false
@@ -129,7 +126,7 @@ post_processing:
     sigma: 0.7
     max_seg_num: 200
     min_score: 0.001
-    multiclass: true # true>false
+    multiclass: true
   external_cls:
     type: StandardClassifier
     path: ./data/fineaction/classifiers/new_swinB_1x1x256_views2x3_max_label_avg_prob.json

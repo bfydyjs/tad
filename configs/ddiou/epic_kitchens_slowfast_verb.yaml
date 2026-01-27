@@ -62,8 +62,7 @@ model:
     arch: [2, 2, 5]  # layers in embed / stem / branch
     use_abs_pe: false
     max_seq_len: 2304
-    mlp_dim: 768  # 768>1024,一开始1204>768,但极值不如768
-    # encoder_win_size: 1 # 1稍微比5好
+    mlp_dim: 768  
     kernel_sizes: [1,7,9,11]
     init_conv_vars: 0.05
     path_pdrop: 0.1 # 0.1>0.2
@@ -83,7 +82,7 @@ model:
     cls_prior_prob: 0.01
     prior_generator:
       strides: [1, 2, 4, 8, 16, 32]
-      regression_range: [[0, 4], [4, 8], [8, 16], [16, 32], [32, 64], [64, 1000]] # 关键提升，重叠反而不好
+      regression_range: [[0, 4], [4, 8], [8, 16], [16, 32], [32, 64], [64, 1000]]
     loss_normalizer: 100 # 100>200
     loss_normalizer_momentum: 0.9
     center_sample: radius

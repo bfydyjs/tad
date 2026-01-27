@@ -13,7 +13,7 @@ dataset:
   train:
     <<: *dataset_common
     subset_name: training
-    filter_gt: false
+    filter_gt: true
     pipeline:
       - type: LoadFeats
         feat_format: npy
@@ -69,9 +69,8 @@ model:
     use_abs_pe: true
     max_seq_len: 768
     mlp_dim: 2048
-    encoder_win_size: 15
-    kernel_sizes: [3,2]
-    init_conv_vars: 0.15
+    kernel_sizes: [15,21]
+    init_conv_vars: 0.1
     path_pdrop: 0.1
     input_noise: 0.7
   neck:
@@ -113,7 +112,7 @@ dataloader:
   clip_grad_norm: 0.4
 
 optimizer:
-  lr: 1.0e-3
+  lr: 5.0e-4
   weight_decay: 0.025
 
 scheduler:
