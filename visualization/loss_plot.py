@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-# 读取 CSV 文件
+# 读取 wandb 下载的 CSV 文件
 df = pd.read_csv(r"C:\Users\yanho\Downloads\wandb_export_2026-01-27T15_29_05.168+08_00.csv")
 
 # 查看列名（可选，用于调试）
