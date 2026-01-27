@@ -22,6 +22,9 @@ class GDKProj(nn.Module):
         init_conv_vars=1.0,  # initialization of gaussian variance for the weight
         path_pdrop=0.0,  # dropout rate for drop path
         input_noise=0.0,
+        gate_hidden_ratio=0.25,
+        gate_temperature=1.0,
+
     ):
         super().__init__()
         assert len(arch) == 3
@@ -75,7 +78,15 @@ class GDKProj(nn.Module):
         kernel_sizes_stem = [1] + kernel_sizes[1:]
         for _ in range(arch[1]):
             self.stem_blocks.append(
-                GDKLayer(out_channels, kernel_sizes_stem, downsample_stride=1, mlp_hidden_dim=mlp_dim, init_conv_vars=init_conv_vars)
+                GDKLayer(
+                    out_channels,
+                    kernel_sizes_stem,
+                    downsample_stride=1,
+                    mlp_hidden_dim=mlp_dim,
+                    init_conv_vars=init_conv_vars,
+                    gate_hidden_ratio=gate_hidden_ratio,
+                    gate_temperature=gate_temperature,
+                    )
             )
 
         # main branch using transformer with pooling
@@ -90,6 +101,8 @@ class GDKProj(nn.Module):
                     path_pdrop=path_pdrop,
                     mlp_hidden_dim=mlp_dim,
                     init_conv_vars=init_conv_vars,
+                    gate_hidden_ratio=gate_hidden_ratio,
+                    gate_temperature=gate_temperature,
                 )
             )
 
