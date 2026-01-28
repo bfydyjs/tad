@@ -4,16 +4,16 @@ from pathlib import Path
 def main():
     # 1. 数据结构优化：将数据组织在一起，方便管理和修改
     data = [
-        {"name": "FPN(yolo11n)", "params": 2.1, "mAP": 32.8, "marker": 'o', "color": 'lightblue'},
-        {"name": "BIFPN",        "params": 2.3, "mAP": 33.9, "marker": 's', "color": 'lightcoral'},
-        {"name": "BIFPN-GLSA",   "params": 2.4, "mAP": 31.5, "marker": 'D', "color": 'gold'},
-        {"name": "HSFPN",        "params": 2.6, "mAP": 31.2, "marker": 'p', "color": 'plum'},
-        {"name": "AFPN",         "params": 2.8, "mAP": 30.5, "marker": 'v', "color": 'lightgreen'}, # 修改 marker 为 'v' 避免重复
-        {"name": "FreqGFPN",     "params": 2.5, "mAP": 30.8, "marker": 'X', "color": 'orange'},     # 修改 yellow -> orange 提高对比度
-        {"name": "GFPN",         "params": 3.0, "mAP": 32.0, "marker": '^', "color": 'gray'},       # 修改 lightgray -> gray 提高可见性
-        {"name": "CGFPRN",       "params": 3.4, "mAP": 30.2, "marker": '<', "color": 'tan'},
-        {"name": "MAFPN",        "params": 3.2, "mAP": 31.8, "marker": '>', "color": 'teal'},
-        {"name": "EHMPFN (Ours)","params": 2.0, "mAP": 35.5, "marker": '*', "color": 'red'},        # 标红显示自己的方法
+        {"name": "FPN(yolo11n)", "params": 2.1, "mAP": 32.8, "marker": 'o', "color": 'lightblue',  's': 100},
+        {"name": "BIFPN",        "params": 2.3, "mAP": 33.9, "marker": 's', "color": 'lightcoral', 's': 100},
+        {"name": "BIFPN-GLSA",   "params": 2.4, "mAP": 31.5, "marker": 'D', "color": 'gold',       's': 100},
+        {"name": "HSFPN",        "params": 2.6, "mAP": 31.2, "marker": 'p', "color": 'plum',       's': 100},
+        {"name": "AFPN",         "params": 2.8, "mAP": 30.5, "marker": 'v', "color": 'lightgreen', 's': 100}, # 修改 marker 为 'v' 避免重复
+        {"name": "FreqGFPN",     "params": 2.5, "mAP": 30.8, "marker": 'X', "color": 'orange',     's': 100},     # 修改 yellow -> orange 提高对比度
+        {"name": "GFPN",         "params": 3.0, "mAP": 32.0, "marker": '^', "color": 'gray',       's': 100},       # 修改 lightgray -> gray 提高可见性
+        {"name": "CGFPRN",       "params": 3.4, "mAP": 30.2, "marker": '<', "color": 'tan',        's': 100},
+        {"name": "MAFPN",        "params": 3.2, "mAP": 31.8, "marker": '>', "color": 'teal',       's': 100},
+        {"name": "EHMPFN (Ours)","params": 2.0, "mAP": 35.5, "marker": '*', "color": 'red',        's': 300},        # 一般用*标红显示最好的方法（自己的方法）
     ]
 
     # 设置字体样式（可选，更像论文风格）
@@ -28,7 +28,7 @@ def main():
         # 增加 zorder=3 确保点在网格线上面
         plt.scatter(
             item["params"], item["mAP"],
-            s=130, # 稍微加大点的大小
+            s=item["s"], # 稍微加大点的大小
             marker=item["marker"],
             color=item["color"],
             label=item["name"],
@@ -82,7 +82,7 @@ def main():
     plt.tight_layout()
 
     # 5. 保存文件
-    output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "scatter_plot.png").resolve()
+    output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "scatter.png").resolve()
     
     print(f"Saving figure to: {output_path}")
     output_path.parent.mkdir(parents=True, exist_ok=True)

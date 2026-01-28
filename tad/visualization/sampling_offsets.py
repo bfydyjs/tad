@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 # ----------------------------
 # 1. 模拟数据：假设我们有 N=50 个 action queries
@@ -55,5 +56,8 @@ ax2.grid(True, alpha=0.3)
 ax2.legend(loc='upper left')
 
 plt.tight_layout()
-plt.savefig("sampling_offsets.png", dpi=300, bbox_inches='tight')
+output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "sampling_offsets.png")
+print(f"Saving figure to: {output_path}")
+output_path.parent.mkdir(parents=True, exist_ok=True)
+plt.savefig(output_path, dpi=300, bbox_inches='tight')
 plt.show()
