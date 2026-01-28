@@ -1,15 +1,14 @@
 import argparse
-import os
 import sys
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.patches import Rectangle
+from pathlib import Path
 
 # 将项目根目录添加到路径，以便导入 opentad
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(current_dir)
+project_root = Path(__file__).resolve().parent.parent
 sys.path.append(project_root)
 
 from opentad.models import build_detector
@@ -246,12 +245,10 @@ def main():
         ax2.fill_between([start, end], 0, 1, color='#32CD32', alpha=0.8)
         
     # plt.tight_layout() # GridSpec 布局下通常不需要 tight_layout，且可能破坏对齐
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    output_path = os.path.join(script_dir, "..", "output", "figures", "heatmap.png")
-    output_path = os.path.normpath(output_path)
+    output_path = (Path(__file__).resolve().parent / ".." / "output" / "figures" / "heatmap.png")
     
     print(f"Saving figure to: {output_path}")
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path, dpi=300)
     print(f"Done. Saved visualization to {output_path}")
 

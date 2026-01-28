@@ -1,12 +1,11 @@
 import copy
-import os
 import pickle
 import random
 import torch
 import random
 import pandas as pd
 import numpy as np
-
+from pathlib import Path
 from ..builder import PIPELINES
 from torch.nn import functional as F
 
@@ -20,9 +19,8 @@ class PrepareVideoInfo:
 
     def __call__(self, results):
         results["modality"] = self.modality
-        results["filename"] = os.path.join(
-            results["data_path"],
-            f"{self.prefix}{results['video_name']}.{self.format}",
+        results["filename"] = str(
+            Path(results["data_path"]) / f"{self.prefix}{results['video_name']}.{self.format}"
         )
         return results
 

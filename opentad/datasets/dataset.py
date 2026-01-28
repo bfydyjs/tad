@@ -1,6 +1,6 @@
 import json
-import os
 import numpy as np
+from pathlib import Path
 from mmengine.dataset import Compose
 
 from .builder import DATASETS, get_class_index
@@ -33,7 +33,7 @@ class BaseDataset:
         self.data_list = []
 
     def get_class_map(self, class_map_path):
-        if not os.path.exists(class_map_path):
+        if not Path(class_map_path).exists():
             class_map = get_class_index(self.ann_file, class_map_path)
             self.logger(f"Class map is saved in {class_map_path}, total {len(class_map)} classes.")
         else:

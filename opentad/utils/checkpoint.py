@@ -1,8 +1,9 @@
 import os
 import torch
+from pathlib import Path
 
 def save_checkpoint(model, model_ema, optimizer, scheduler, epoch, work_dir=None, mode=None, **kwargs):
-    save_dir = os.path.join(work_dir, "checkpoint")
+    save_dir = Path(work_dir) / "checkpoint"
     save_states = {
         "epoch": epoch,
         "state_dict": model.state_dict(),
@@ -16,7 +17,7 @@ def save_checkpoint(model, model_ema, optimizer, scheduler, epoch, work_dir=None
 
     os.makedirs(save_dir, exist_ok=True)
 
-    checkpoint_path = os.path.join(save_dir, mode)# mode: 'last' or 'best'
+    checkpoint_path =Path(save_dir) / mode # mode: 'last' or 'best'
     temp_path = checkpoint_path + ".tmp"
     torch.save(save_states, temp_path)
     os.replace(temp_path, checkpoint_path)

@@ -1,6 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import os
+from pathlib import Path
 
 # 读取 wandb 下载的 CSV 文件
 df = pd.read_csv(r"C:\Users\yanho\Downloads\wandb_export_2026-01-27T15_29_05.168+08_00.csv")
@@ -34,11 +34,9 @@ plt.grid(True, linestyle="--", alpha=0.6)
 plt.legend()
 plt.tight_layout()
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-output_path = os.path.join(script_dir, "..", "output", "figures", "loss_plot.png")
-output_path = os.path.normpath(output_path)
+output_path = (Path(__file__).resolve().parent / ".." / "output" / "figures" / "map_heatmap.png").resolve()
 print(f"Saving figure to: {output_path}")
-os.makedirs(os.path.dirname(output_path), exist_ok=True)
+output_path.parent.mkdir(parents=True, exist_ok=True)
 plt.savefig(output_path, dpi=300)
 
 plt.show()

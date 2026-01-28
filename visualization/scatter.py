@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import os
+from pathlib import Path
 
 def main():
     # 1. 数据结构优化：将数据组织在一起，方便管理和修改
@@ -82,12 +82,11 @@ def main():
     plt.tight_layout()
 
     # 5. 保存文件
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    output_path = os.path.join(script_dir, "..", "output", "figures", "scatter_plot.png")
-    output_path = os.path.normpath(output_path)
+    script_dir = Path(__file__).resolve().parent
+    output_path = (script_dir / ".." / "output" / "figures" / "scatter_plot.png").resolve()
     
     print(f"Saving figure to: {output_path}")
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.show()
 

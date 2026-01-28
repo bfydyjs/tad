@@ -4,6 +4,7 @@ import random
 import shutil
 import torch
 import torch.distributed as dist
+from pathlib import Path
 
 
 def set_seed(seed, disable_deterministic=False):
@@ -23,14 +24,13 @@ def set_seed(seed, disable_deterministic=False):
 
 
 def update_workdir(cfg, exp_id, gpu_num):
-    cfg.work_dir = os.path.join(cfg.work_dir, f"gpu{gpu_num}_id{exp_id}/")
+    cfg.work_dir = Path(cfg.work_dir) / f"gpu{gpu_num}_id{exp_id}"
     return cfg
 
 
 def create_folder(folder_path):
-    dir_name = os.path.expanduser(folder_path)
-    if not os.path.exists(dir_name):
-        os.makedirs(dir_name, mode=0o777, exist_ok=True)
+    path = Path(folder_path).expanduser()
+    path.mkdir(mode=0o777, parents=True, exist_ok=True)
 
 
 def save_config(cfg, folder_path):

@@ -1,7 +1,7 @@
-import os
 import pickle
 import torch
 import torch.nn.functional as F
+from pathlib import Path
 
 
 def boundary_choose(score):
@@ -15,7 +15,7 @@ def save_predictions(predictions, metas, folder):
     for idx in range(len(metas)):
         video_name = metas[idx]["video_name"]
 
-        file_path = os.path.join(folder, f"{video_name}.pkl")
+        file_path = Path(folder) / f"{video_name}.pkl"
         prediction = [data[idx] for data in predictions]
         with open(file_path, "wb") as outfile:
             pickle.dump(prediction, outfile, pickle.HIGHEST_PROTOCOL)
@@ -26,7 +26,7 @@ def load_single_prediction(metas, folder):
     predictions = []
     for idx in range(len(metas)):
         video_name = metas[idx]["video_name"]
-        file_path = os.path.join(folder, f"{video_name}.pkl")
+        file_path = Path(folder) / f"{video_name}.pkl"
         with open(file_path, "rb") as infile:
             prediction = pickle.load(infile)
         predictions.append(prediction)

@@ -4,6 +4,7 @@ sys.dont_write_bytecode = True
 import argparse
 import torch
 import torch.distributed as dist
+from pathlib import Path
 from torch.nn.parallel import DistributedDataParallel
 from opentad.models import build_detector
 from opentad.datasets import build_dataset, build_dataloader
@@ -90,12 +91,13 @@ def main():
     if cfg.inference.load_from_raw_predictions:  # if load with saved predictions, no need to load checkpoint
         logger.info(f"Loading from raw predictions: {cfg.inference.fuse_list}")
     else:  # load checkpoint: args -> config -> best
+        work_dir = Path(cfg.work_dir)
         if args.checkpoint != "none":
             checkpoint_path = args.checkpoint
         elif "test_epoch" in cfg.inference.keys():
-            checkpoint_path = os.path.join(cfg.work_dir, f"checkpoint/epoch_{cfg.inference.test_epoch}.pt")
+            checkpoint_path = work_dir / "checkpoint" / f"epoch_{cfg.inference.test_epoch}.pt"
         else:
-            checkpoint_path = os.path.join(cfg.work_dir, "checkpoint/best.pt")
+            checkpoint_path = work_dir / "checkpoint" / "best.pt"
         logger.info(f"Loading checkpoint from: {checkpoint_path}")
         device = f"cuda:{args.rank % torch.cuda.device_count()}"
         checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)

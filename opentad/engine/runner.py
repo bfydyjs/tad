@@ -1,4 +1,3 @@
-import os
 import time
 import copy
 import json
@@ -7,6 +6,7 @@ import torch
 import wandb
 import torch.distributed as dist
 
+from pathlib import Path
 from opentad.utils import create_folder
 from opentad.utils.misc import AverageMeter, reduce_loss
 from opentad.models.utils.post_processing import build_classifier, batched_nms
@@ -159,7 +159,7 @@ def eval_one_epoch(
         else:
             model.load_state_dict(model_ema.module.state_dict())
 
-    cfg.inference["folder"] = os.path.join(cfg.work_dir, "outputs")
+    cfg.inference["folder"] = Path(cfg.work_dir) / "outputs"
     if cfg.inference.save_raw_prediction:
         create_folder(cfg.inference["folder"])
 
@@ -213,7 +213,7 @@ def eval_one_epoch(
     if rank == 0:
         result_eval = dict(results=result_dict)
         if cfg.post_processing.save_dict:
-            result_path = os.path.join(cfg.work_dir, "result_detection.json")
+            result_path = Path(cfg.work_dir) / "result_detection.json"
             with open(result_path, "w") as out:
                 json.dump(result_eval, out)
 

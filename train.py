@@ -5,6 +5,7 @@ import argparse
 import wandb
 import torch
 import torch.distributed as dist
+from pathlib import Path
 from torch.distributed.algorithms.ddp_comm_hooks import default as comm_hooks
 from torch.nn.parallel import DistributedDataParallel
 from torch.amp import GradScaler
@@ -150,8 +151,9 @@ def main():
             lr_finder = LRFinder(model, optimizer, device=args.local_rank)
             lr_finder.range_test(train_loader)
             if args.rank == 0:
-                lr_finder.plot(save_path=os.path.join(cfg.work_dir, "lr_finder_curve.png"))
-                logger.info(f"LR Range Test finished. Plot saved to {os.path.join(cfg.work_dir, 'lr_finder_curve.png')}")
+                save_path = Path(cfg.work_dir) / "lr_finder_curve.png"
+                lr_finder.plot(save_path=str(save_path))
+                logger.info(f"LR Range Test finished. Plot saved to {save_path}")
             return
     
         # override the max_epoch

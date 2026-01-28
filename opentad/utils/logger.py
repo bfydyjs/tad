@@ -1,6 +1,6 @@
 import logging
-import os
 import sys
+from pathlib import Path
 
 
 def setup_logger(name, save_dir, distributed_rank=0, filename="train.log"):
@@ -20,7 +20,7 @@ def setup_logger(name, save_dir, distributed_rank=0, filename="train.log"):
     logger.addHandler(ch)
 
     if save_dir:
-        fh = logging.FileHandler(os.path.join(save_dir, filename))
+        fh = logging.FileHandler(Path(save_dir) / filename)
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(formatter)
         logger.addHandler(fh)

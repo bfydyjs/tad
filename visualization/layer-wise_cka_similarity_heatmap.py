@@ -1,7 +1,7 @@
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pathlib import Path
 
 # 模拟数据（CKA 矩阵）
 cka_a_pre = np.array([
@@ -34,10 +34,8 @@ axes[0,1].set_xlabel('Scale Level')
 axes[0,1].set_ylabel('Scale Level')
 
 plt.tight_layout()
-script_dir = os.path.dirname(os.path.abspath(__file__))
-output_path = os.path.join(script_dir, "..", "output", "figures", "cka_comparison.png")
-output_path = os.path.normpath(output_path)
+output_path = (Path(__file__).resolve().parent / ".." / "output" / "figures" / "cka_comparison.png").resolve()
 print(f"Saving figure to: {output_path}")
-os.makedirs(os.path.dirname(output_path), exist_ok=True)
+output_path.parent.mkdir(parents=True, exist_ok=True)
 plt.savefig(output_path, dpi=300)
 plt.show()
