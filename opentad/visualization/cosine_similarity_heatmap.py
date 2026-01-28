@@ -6,11 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.patches import Rectangle
 from pathlib import Path
-
-# 将项目根目录添加到路径，以便导入 opentad
-project_root = Path(__file__).resolve().parent.parent
-sys.path.append(project_root)
-
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from opentad.models import build_detector
 from opentad.datasets import build_dataset
 from opentad.utils import Config
@@ -172,6 +168,7 @@ def main():
     # cbar_ax 参数让 colorbar 绘制在指定的轴上，不挤压 ax1
     # 推荐移除 Colorbar 标签，保持图面整洁，相关含义应在论文 Figure Caption 中说明
     sns.heatmap(similarity_matrix, cmap='viridis', ax=ax1, cbar_ax=cbar_ax) 
+    # sns.heatmap(similarity_matrix, cmap='viridis', ax=ax1, cbar_ax=cbar_ax, vmin=0.0, vmax=1.0) 
     
     # 旋转 Colorbar 标签以节省空间
     # cbar_ax.yaxis.label.set_size(14)
@@ -245,7 +242,7 @@ def main():
         ax2.fill_between([start, end], 0, 1, color='#32CD32', alpha=0.8)
         
     # plt.tight_layout() # GridSpec 布局下通常不需要 tight_layout，且可能破坏对齐
-    output_path = (Path(__file__).resolve().parent / ".." / "output" / "figures" / "heatmap.png")
+    output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "heatmap.png")
     
     print(f"Saving figure to: {output_path}")
     output_path.parent.mkdir(parents=True, exist_ok=True)

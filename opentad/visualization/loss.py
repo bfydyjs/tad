@@ -34,7 +34,7 @@ plt.grid(True, linestyle="--", alpha=0.6)
 plt.legend()
 plt.tight_layout()
 
-output_path = (Path(__file__).resolve().parent / ".." / "output" / "figures" / "map_heatmap.png").resolve()
+output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "training_loss_curve.png")
 print(f"Saving figure to: {output_path}")
 output_path.parent.mkdir(parents=True, exist_ok=True)
 plt.savefig(output_path, dpi=300)

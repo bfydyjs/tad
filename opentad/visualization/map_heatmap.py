@@ -27,7 +27,7 @@ ax.set_yticklabels(num_layers)
 
 plt.title('Ablation Study: mAP vs Kernel Size and Number of Dilated Convolutions')
 plt.tight_layout()
-output_path = (Path(__file__).resolve().parent / ".." / "output" / "figures" / "map_heatmap.png").resolve()
+output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "map_heatmap.png")
 
 print(f"Saving figure to: {output_path}")
 output_path.parent.mkdir(parents=True, exist_ok=True)

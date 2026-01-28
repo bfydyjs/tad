@@ -34,7 +34,7 @@ axes[0,1].set_xlabel('Scale Level')
 axes[0,1].set_ylabel('Scale Level')
 
 plt.tight_layout()
-output_path = (Path(__file__).resolve().parent / ".." / "output" / "figures" / "cka_comparison.png").resolve()
+output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "cka_comparison.png")
 print(f"Saving figure to: {output_path}")
 output_path.parent.mkdir(parents=True, exist_ok=True)
 plt.savefig(output_path, dpi=300)

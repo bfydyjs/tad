@@ -82,8 +82,7 @@ def main():
     plt.tight_layout()
 
     # 5. 保存文件
-    script_dir = Path(__file__).resolve().parent
-    output_path = (script_dir / ".." / "output" / "figures" / "scatter_plot.png").resolve()
+    output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "scatter_plot.png").resolve()
     
     print(f"Saving figure to: {output_path}")
     output_path.parent.mkdir(parents=True, exist_ok=True)
