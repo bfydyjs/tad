@@ -1,11 +1,11 @@
 def get_custom_config(cfg):
 # 1. return full config
-    parts = cfg.work_dir.strip("/").split("/")
+    parts = str(cfg.work_dir).strip("/").split("/")
     cfg.group = "_".join(parts[-3:-1]) 
     return cfg
 
 # 2. return optional selected fields
-#     parts = cfg.work_dir.strip("/").split("/")
+#     parts = str(cfg.work_dir).strip("/").split("/")
 #     cfg.group = "_".join(parts[-3:-1]) 
 #     return {
 #         "group": cfg.group,

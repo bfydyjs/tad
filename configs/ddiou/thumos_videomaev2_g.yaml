@@ -110,7 +110,7 @@ optimizer:
 
 scheduler:
   warmup_epoch: 15
-  max_epoch: 40
+  max_epoch: 45
   # eta_min: 1.0e-5
   # start_factor: 1.0e-9
 
