@@ -7,9 +7,9 @@ import seaborn as sns
 from matplotlib.patches import Rectangle
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from opentad.models import build_detector
-from opentad.datasets import build_dataset
-from opentad.utils import Config
+from tad.models import build_detector
+from tad.datasets import build_dataset
+from tad.utils import Config
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Visualize Cosine Similarity Heatmap from Real Model Features")

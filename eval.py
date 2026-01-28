@@ -6,10 +6,10 @@ import torch
 import torch.distributed as dist
 from pathlib import Path
 from torch.nn.parallel import DistributedDataParallel
-from opentad.models import build_detector
-from opentad.datasets import build_dataset, build_dataloader
-from opentad.engine import eval_one_epoch
-from opentad.utils import update_workdir, set_seed, create_folder, setup_logger, Config, DictAction
+from tad.models import build_detector
+from tad.datasets import build_dataset, build_dataloader
+from tad.engine import eval_one_epoch
+from tad.utils import update_workdir, set_seed, create_folder, setup_logger, Config, DictAction
 
 
 def parse_args():

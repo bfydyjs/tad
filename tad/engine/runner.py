@@ -7,11 +7,11 @@ import wandb
 import torch.distributed as dist
 
 from pathlib import Path
-from opentad.utils import create_folder
-from opentad.utils.misc import AverageMeter, reduce_loss
-from opentad.models.utils.post_processing import build_classifier, batched_nms
-from opentad.datasets.dataset import SlidingWindowDataset
-from opentad.metrics import build_evaluator
+from tad.utils import create_folder
+from tad.utils.misc import AverageMeter, reduce_loss
+from tad.models.utils.post_processing import build_classifier, batched_nms
+from tad.datasets.dataset import SlidingWindowDataset
+from tad.metrics import build_evaluator
 
 
 def train_one_epoch(

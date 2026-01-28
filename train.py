@@ -9,10 +9,10 @@ from pathlib import Path
 from torch.distributed.algorithms.ddp_comm_hooks import default as comm_hooks
 from torch.nn.parallel import DistributedDataParallel
 from torch.amp import GradScaler
-from opentad.models import build_detector
-from opentad.datasets import build_dataset, build_dataloader
-from opentad.engine import train_one_epoch, eval_one_epoch, build_optimizer, build_scheduler
-from opentad.utils import set_seed,update_workdir,create_folder,save_config,setup_logger,ModelEma,save_checkpoint,Config,DictAction,get_custom_config,LRFinder
+from tad.models import build_detector
+from tad.datasets import build_dataset, build_dataloader
+from tad.engine import train_one_epoch, eval_one_epoch, build_optimizer, build_scheduler
+from tad.utils import set_seed,update_workdir,create_folder,save_config,setup_logger,ModelEma,save_checkpoint,Config,DictAction,get_custom_config,LRFinder
 
 
 def parse_args():
