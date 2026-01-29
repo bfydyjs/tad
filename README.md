@@ -78,3 +78,18 @@ fineaction|8436|~344K|1
 hacs_slowfast|37605|~1.2M|1
 thumos_i3d|200|~2.0M|2
 thumos_videomaev2_g|200|~1.4M|1
+
+
+特征相关性热力图、特征重要性排序图、特征累计贡献度
+模型对比图、多模型性能对比雷达图，包括准确率、精确率、召回率、F1分数对比图、AUC值对比、运行时间对比
+数据 t-SNE 三维降维与状态标定可视化
+
+AUC(Area Under the Curve)
+最常见的是ROC-AUC，用于评估二分类模型的性能。
+recall.py中的AUC并不是ROC-AUC，而是AR-AUC。
+Accuracy = (TP + TN) / (TP + TN + FP + FN)
+正负样本不平衡 ：视频中大部分区域是背景（负样本），动作片段（正样本）占比很小，直接计算准确率会被背景预测主导（如模型全预测为背景也能达到高准确率，但无实际检测价值）。
+mAP.py中使用查准率（Precision）来计算AP，而不是查全率（Recall）。使用的AUC是PR-AUC。
+PR-AUC=AP（Average Precision）≠P(Precision)
+AR-AUC: AUC 是 平均召回率与平均每个视频的 proposal 数量曲线下的面积
+mAP所有类别 AP 的算术平均值
