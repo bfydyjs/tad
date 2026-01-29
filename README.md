@@ -87,9 +87,10 @@ thumos_videomaev2_g|200|~1.4M|1
 AUC(Area Under the Curve)
 最常见的是ROC-AUC，用于评估二分类模型的性能。
 recall.py中的AUC并不是ROC-AUC，而是AR-AUC。
-Accuracy = (TP + TN) / (TP + TN + FP + FN)
-正负样本不平衡 ：视频中大部分区域是背景（负样本），动作片段（正样本）占比很小，直接计算准确率会被背景预测主导（如模型全预测为背景也能达到高准确率，但无实际检测价值）。
+Accuracy = (TP + TN) / (TP + TN + FP + FN)正负样本不平衡 ：视频中大部分区域是背景（负样本），动作片段（正样本）占比很小，直接计算准确率会被背景预测主导（如模型全预测为背景，即TN=1，也能达到高准确率，但无实际检测价值）。
 mAP.py中使用查准率（Precision）来计算AP，而不是查全率（Recall）。使用的AUC是PR-AUC。
 PR-AUC=AP（Average Precision）≠P(Precision)
 AR-AUC: AUC 是 平均召回率与平均每个视频的 proposal 数量曲线下的面积
 mAP所有类别 AP 的算术平均值
+
+[0.1:0.1:0.5] 是 MATLAB 的冒号运算符表示法

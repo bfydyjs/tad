@@ -157,11 +157,25 @@ class Recall:
         self.recall = recall
         self.avg_recall = avg_recall
         self.proposals_per_video = proposals_per_video
-        self.auc = float(area_under_curve) / proposals_per_video[-1]
+        self.average_auc = float(area_under_curve) / proposals_per_video[-1]
 
-        metric_dict = dict(AUC=self.auc)
+        # Calculate AUC for each tIoU threshold
+        self.auc_per_tiou = []
+        for i, tiou in enumerate(self.tiou_thresholds):
+            tiou_area = np.trapz(recall[i, :], proposals_per_video)
+            tiou_auc = float(tiou_area) / proposals_per_video[-1]
+            self.auc_per_tiou.append(tiou_auc)
+
+        metric_dict = dict(average_AUC=self.average_auc)
+        # Add per tIoU AUC to metric_dict
+        for i, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou)):
+            metric_dict[f"AUC@{tiou}"] = auc
+        # Add per tIoU AR@k to metric_dict
         for k in self.topk:
-            metric_dict[f"AR@{k}"] = np.mean(self.recall[:, k - 1])
+            metric_dict[f"average_AR@{k}"] = np.mean(self.recall[:, k - 1])
+            # Add per tIoU AR@k
+            for i, tiou in enumerate(self.tiou_thresholds):
+                metric_dict[f"AR@{tiou}@{k}"] = self.recall[i, k - 1]
         return metric_dict
 
     def logging(self, logger=None):
@@ -174,9 +188,20 @@ class Recall:
         pprint(f"Number of ground truth instances: {len(self.ground_truth)}")
         pprint(f"Number of predictions: {len(self.proposal)}")
         pprint(f"Fixed threshold for tiou score: {self.tiou_thresholds}")
-        pprint(f"AUC: {self.auc * 100:>4.2f} (%)")
+        pprint(f"average_AUC: {self.average_auc * 100:>4.2f} (%)")
+        # Print per tIoU AUC
+        for i, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou)):
+            pprint(f"AUC@{tiou:.2f} is {auc * 100:>4.2f}%")
+        pprint("")
+        # Print average AR@k
         for k in self.topk:
-            pprint(f"AR@{k:3d} is {np.mean(self.recall[:, k - 1]) * 100:>4.2f}%")
+            pprint(f"average_AR@{k:3d} is {np.mean(self.recall[:, k - 1]) * 100:>4.2f}%")
+        # Print per tIoU AR@k
+        for i, tiou in enumerate(self.tiou_thresholds):
+            pprint("")
+            pprint(f"Per tIoU {tiou:.2f}:")
+            for k in self.topk:
+                pprint(f"AR@{k:3d} is {self.recall[i, k - 1] * 100:>4.2f}%")
 
 
 def average_recall_vs_avg_nr_proposals(

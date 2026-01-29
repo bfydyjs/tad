@@ -224,7 +224,8 @@ def eval_one_epoch(
             logger.info("[Evaluation]:")
             metrics_dict = evaluator.evaluate()
             evaluator.logging(logger)
-            return metrics_dict["average_mAP"]
+            if "average_mAP" in metrics_dict:
+                return metrics_dict["average_mAP"]
     return 0.0
 
 
