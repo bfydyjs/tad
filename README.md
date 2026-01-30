@@ -87,6 +87,14 @@ thumos_videomaev2_g|200|~1.4M|1
 AUC(Area Under the Curve)
 最常见的是ROC-AUC，用于评估二分类模型的性能。
 ## recall.py
+
+2026-01-29 20:04:01  INFO: Fixed threshold for tiou score: [0.3, 0.4, 0.5, 0.6, 0.7]
+2026-01-29 20:04:01  INFO: AUC: 73.46 (%)
+2026-01-29 20:04:01  INFO: AR@  1 is 3.12%
+2026-01-29 20:04:01  INFO: AR@  5 is 22.45%
+2026-01-29 20:04:01  INFO: AR@ 10 is 39.62%
+2026-01-29 20:04:01  INFO: AR@100 is 90.68%
+
 recall.py中的AUC并不是ROC-AUC，而是AR-AUC。
 方式 1：基于所有 tIoU 平均后的召回率曲线（当前代码实现）
 - 计算过程 ：1. 对每个 proposal 数量，计算所有 tIoU 阈值的平均召回率 2. 基于这条平均召回率曲线计算 AUC
@@ -98,6 +106,9 @@ recall.py中的AUC并不是ROC-AUC，而是AR-AUC。
 - 横坐标：平均每个视频的提议数（Average Number of Proposals per Video）
 - 纵坐标：召回率（Recall）
 - AUC₂ = meanₜ[∫recall(t, p)dp / P_max]
+
+在目标检测和时序动作检测领域 ：当提到 "recall" 作为评估指标时，默认指的是 数据集级别的平均召回率 （所有样本的平均）
+单个样本的召回率 ：通常会明确标注为 "per-video recall" 或类似名称
 
 方式 1 强调的是"平均召回率"的曲线下面积；方式 2 强调的是"每个 tIoU 的 AUC"的平均值，但是两种方式计算的结果是相同的。
 Accuracy = (TP + TN) / (TP + TN + FP + FN)正负样本不平衡 ：视频中大部分区域是背景（负样本），动作片段（正样本）占比很小，直接计算准确率会被背景预测主导（如模型全预测为背景，即TN=1，也能达到高准确率，但无实际检测价值）。

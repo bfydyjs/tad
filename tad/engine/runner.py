@@ -219,7 +219,7 @@ def eval_one_epoch(
 
         if not skip_eval:
             # build evaluator
-            evaluator = build_evaluator(dict(prediction_filename=result_eval, **cfg.evaluation))
+            evaluator = build_evaluator(dict(prediction_file=result_eval, **cfg.evaluation))
             # evaluate and output
             logger.info("[Evaluation]:")
             metrics_dict = evaluator.evaluate()

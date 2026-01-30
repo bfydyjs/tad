@@ -172,10 +172,10 @@ class Recall:
             metric_dict[f"AUC@{tiou}"] = auc
         # Add per tIoU AR@k to metric_dict
         for k in self.topk:
-            metric_dict[f"average_AR@{k}"] = np.mean(self.recall[:, k - 1])
+            metric_dict[f"Average Recall@{k}"] = self.avg_recall[k - 1] 
             # Add per tIoU AR@k
             for i, tiou in enumerate(self.tiou_thresholds):
-                metric_dict[f"AR@{tiou}@{k}"] = self.recall[i, k - 1]
+                metric_dict[f"Recall@{tiou}@{k}"] = self.recall[i, k - 1]
         return metric_dict
 
     def logging(self, logger=None):
@@ -195,13 +195,13 @@ class Recall:
         pprint("")
         # Print average AR@k
         for k in self.topk:
-            pprint(f"average_AR@{k:3d} is {np.mean(self.recall[:, k - 1]) * 100:>4.2f}%")
-        # Print per tIoU AR@k
+            pprint(f"Average Recall@{k:3d} is {self.avg_recall[k - 1] * 100:>4.2f}%")
+        # Print per tIoU Recall@k
         for i, tiou in enumerate(self.tiou_thresholds):
             pprint("")
             pprint(f"tIoU={tiou:.2f}:")
             for k in self.topk:
-                pprint(f"AR@{k:3d} is {self.recall[i, k - 1] * 100:>4.2f}%")
+                pprint(f"Recall@{k:3d} is {self.recall[i, k - 1] * 100:>4.2f}%")
 
 
 def average_recall_vs_avg_nr_proposals(
