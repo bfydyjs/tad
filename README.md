@@ -90,9 +90,14 @@ AUC(Area Under the Curve)
 recall.py中的AUC并不是ROC-AUC，而是AR-AUC。
 方式 1：基于所有 tIoU 平均后的召回率曲线（当前代码实现）
 - 计算过程 ：1. 对每个 proposal 数量，计算所有 tIoU 阈值的平均召回率 2. 基于这条平均召回率曲线计算 AUC
-
+- 横坐标：平均每个视频的提议数（Average Number of Proposals per Video）
+- 纵坐标：平均召回率（Average Recall）
+- AUC₁ = ∫[meanₜ(recall(t, p))]dp / P_max
 方式 2：所有 tIoU 各自 AUC 的平均值
 - 计算过程 ：1. 对每个 tIoU 阈值，计算其单独的召回率曲线和 AUC 2. 对所有 tIoU 阈值的 AUC 求平均
+- 横坐标：平均每个视频的提议数（Average Number of Proposals per Video）
+- 纵坐标：召回率（Recall）
+- AUC₂ = meanₜ[∫recall(t, p)dp / P_max]
 
 方式 1 强调的是"平均召回率"的曲线下面积；方式 2 强调的是"每个 tIoU 的 AUC"的平均值，但是两种方式计算的结果是相同的。
 Accuracy = (TP + TN) / (TP + TN + FP + FN)正负样本不平衡 ：视频中大部分区域是背景（负样本），动作片段（正样本）占比很小，直接计算准确率会被背景预测主导（如模型全预测为背景，即TN=1，也能达到高准确率，但无实际检测价值）。

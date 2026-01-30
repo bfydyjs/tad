@@ -94,12 +94,12 @@ class Recall:
         )
         return ground_truth, activity_index
 
-    def _import_proposal(self, proposal_filename):
+    def _import_proposal(self, proposal_file):
         """Reads proposal file, checks if it is well formatted, and returns
            the proposal instances.
         Parameters
         ----------
-        proposal_filename : str
+        proposal_file : str
             Full path to the proposal json file.
         Outputs
         -------
@@ -107,13 +107,13 @@ class Recall:
             Data frame containing the proposal instances.
         """
         # if prediction_file is a string, then json load
-        if isinstance(proposal_filename, str):
-            with open(proposal_filename, "r") as fobj:
+        if isinstance(proposal_file, str):
+            with open(proposal_file, "r") as fobj:
                 data = json.load(fobj)
-        elif isinstance(proposal_filename, dict):
-            data = proposal_filename
+        elif isinstance(proposal_file, dict):
+            data = proposal_file
         else:
-            raise IOError(f"Type of prediction file is {type(proposal_filename)}.")
+            raise IOError(f"Type of prediction file is {type(proposal_file)}.")
 
         # Checking format...
         if not all([field in list(data.keys()) for field in self.pred_fields]):
@@ -199,7 +199,7 @@ class Recall:
         # Print per tIoU AR@k
         for i, tiou in enumerate(self.tiou_thresholds):
             pprint("")
-            pprint(f"Per tIoU {tiou:.2f}:")
+            pprint(f"tIoU={tiou:.2f}:")
             for k in self.topk:
                 pprint(f"AR@{k:3d} is {self.recall[i, k - 1] * 100:>4.2f}%")
 
