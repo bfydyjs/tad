@@ -10,8 +10,8 @@ from .builder import EVALUATORS, remove_duplicate_annotations
 class mAP:
     def __init__(
         self,
-        ground_truth_filename,
-        prediction_filename,
+        ground_truth_file,
+        prediction_file,
         subset,
         tiou_thresholds,
         top_k=None,
@@ -20,9 +20,9 @@ class mAP:
     ):
         super().__init__()
 
-        if not ground_truth_filename:
+        if not ground_truth_file:
             raise IOError("Please input a valid ground truth file.")
-        if not prediction_filename:
+        if not prediction_file:
             raise IOError("Please input a valid prediction file.")
 
         self.subset = subset
@@ -40,16 +40,16 @@ class mAP:
                 self.blocked_videos = json.load(json_file)
 
         # Import ground truth and predictions.
-        self.ground_truth, self.activity_index = self._import_ground_truth(ground_truth_filename)
-        self.prediction = self._import_prediction(prediction_filename)
+        self.ground_truth, self.activity_index = self._import_ground_truth(ground_truth_file)
+        self.prediction = self._import_prediction(prediction_file)
 
-    def _import_ground_truth(self, ground_truth_filename):
+    def _import_ground_truth(self, ground_truth_file):
         """Reads ground truth file, checks if it is well formatted, and returns
            the ground truth instances and the activity classes.
 
         Parameters
         ----------
-        ground_truth_filename : str
+        ground_truth_file : str
             Full path to the ground truth json file.
 
         Outputs
@@ -59,7 +59,7 @@ class mAP:
         activity_index : dict
             Dictionary containing class index.
         """
-        with open(ground_truth_filename, "r") as fobj:
+        with open(ground_truth_file, "r") as fobj:
             data = json.load(fobj)
         # Checking format
         if not all([field in list(data.keys()) for field in self.gt_fields]):
@@ -96,13 +96,13 @@ class mAP:
         )
         return ground_truth, activity_index
 
-    def _import_prediction(self, prediction_filename):
+    def _import_prediction(self, prediction_file):
         """Reads prediction file, checks if it is well formatted, and returns
            the prediction instances.
 
         Parameters
         ----------
-        prediction_filename : str
+        prediction_file : str
             Full path to the prediction json file.
 
         Outputs
@@ -110,14 +110,14 @@ class mAP:
         prediction : df
             Data frame containing the prediction instances.
         """
-        # if prediction_filename is a string, then json load
-        if isinstance(prediction_filename, str):
-            with open(prediction_filename, "r") as fobj:
+        # if prediction_file is a string, then json load
+        if isinstance(prediction_file, str):
+            with open(prediction_file, "r") as fobj:
                 data = json.load(fobj)
-        elif isinstance(prediction_filename, dict):
-            data = prediction_filename
+        elif isinstance(prediction_file, dict):
+            data = prediction_file
         else:
-            raise IOError(f"Type of prediction file is {type(prediction_filename)}.")
+            raise IOError(f"Type of prediction file is {type(prediction_file)}.")
 
         # Checking format...
         if not all([field in list(data.keys()) for field in self.pred_fields]):
@@ -466,8 +466,8 @@ def interpolated_prec_rec(prec, rec):
 class mAP_EPIC:
     def __init__(
         self,
-        ground_truth_filename,
-        prediction_filename,
+        ground_truth_file,
+        prediction_file,
         subset,
         tiou_thresholds,
         blocked_videos=None,
@@ -478,9 +478,9 @@ class mAP_EPIC:
     ):
         super().__init__()
 
-        if not ground_truth_filename:
+        if not ground_truth_file:
             raise IOError("Please input a valid ground truth file.")
-        if not prediction_filename:
+        if not prediction_file:
             raise IOError("Please input a valid prediction file.")
 
         self.subset = subset
@@ -502,20 +502,20 @@ class mAP_EPIC:
                 self.blocked_videos = json.load(json_file)
 
         # Import ground truth and predictions.
-        self.ground_truth = self._import_ground_truth(ground_truth_filename)
-        self.prediction = self._import_prediction(prediction_filename)
+        self.ground_truth = self._import_ground_truth(ground_truth_file)
+        self.prediction = self._import_prediction(prediction_file)
 
         self.activity_index = {j: i for i, j in enumerate(sorted(self.ground_truth["label"].unique()))}
         self.ground_truth["label"] = self.ground_truth["label"].replace(self.activity_index)
         self.prediction["label"] = self.prediction["label"].replace(self.activity_index)
 
-    def _import_ground_truth(self, ground_truth_filename):
+    def _import_ground_truth(self, ground_truth_file):
         """Reads ground truth file, checks if it is well formatted, and returns
            the ground truth instances and the activity classes.
 
         Parameters
         ----------
-        ground_truth_filename : str
+        ground_truth_file : str
             Full path to the ground truth json file.
 
         Outputs
@@ -523,7 +523,7 @@ class mAP_EPIC:
         ground_truth : df
             Data frame containing the ground truth instances.
         """
-        with open(ground_truth_filename, "r") as fobj:
+        with open(ground_truth_file, "r") as fobj:
             data = json.load(fobj)
         # Checking format
         if not all([field in list(data.keys()) for field in self.gt_fields]):
@@ -561,13 +561,13 @@ class mAP_EPIC:
         )
         return ground_truth
 
-    def _import_prediction(self, prediction_filename):
+    def _import_prediction(self, prediction_file):
         """Reads prediction file, checks if it is well formatted, and returns
            the prediction instances.
 
         Parameters
         ----------
-        prediction_filename : str
+        prediction_file : str
             Full path to the prediction json file.
 
         Outputs
@@ -575,14 +575,14 @@ class mAP_EPIC:
         prediction : df
             Data frame containing the prediction instances.
         """
-        # if prediction_filename is a string, then json load
-        if isinstance(prediction_filename, str):
-            with open(prediction_filename, "r") as fobj:
+        # if prediction_file is a string, then json load
+        if isinstance(prediction_file, str):
+            with open(prediction_file, "r") as fobj:
                 data = json.load(fobj)
-        elif isinstance(prediction_filename, dict):
-            data = prediction_filename
+        elif isinstance(prediction_file, dict):
+            data = prediction_file
         else:
-            raise IOError(f"Type of prediction file is {type(prediction_filename)}.")
+            raise IOError(f"Type of prediction file is {type(prediction_file)}.")
 
         # Checking format...
         if not all([field in list(data.keys()) for field in self.pred_fields]):

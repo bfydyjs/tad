@@ -10,24 +10,24 @@ from .mAP import segment_iou
 class Recall:
     def __init__(
         self,
-        ground_truth_filename,
-        prediction_filename,
+        ground_truth_file,
+        prediction_file,
         subset,
         tiou_thresholds,
         topk=[1, 5, 10, 100],
-        max_avg_nr_proposals=100,
+        max_avg_proposals_per_video=100,
         blocked_videos=None,
     ):
         super().__init__()
 
-        if not ground_truth_filename:
+        if not ground_truth_file:
             raise IOError("Please input a valid ground truth file.")
-        if not prediction_filename:
+        if not prediction_file:
             raise IOError("Please input a valid prediction file.")
 
         self.subset = subset
         self.tiou_thresholds = tiou_thresholds
-        self.max_avg_nr_proposals = max_avg_nr_proposals
+        self.max_avg_proposals_per_video = max_avg_proposals_per_video
         self.topk = [int(k) for k in topk]
         self.gt_fields = ["database"]
         self.pred_fields = ["results"]
@@ -40,15 +40,15 @@ class Recall:
                 self.blocked_videos = json.load(json_file)
 
         # Import ground truth and proposals.
-        self.ground_truth, self.activity_index = self._import_ground_truth(ground_truth_filename)
-        self.proposal = self._import_proposal(prediction_filename)
+        self.ground_truth, self.activity_index = self._import_ground_truth(ground_truth_file)
+        self.proposal = self._import_proposal(prediction_file)
 
-    def _import_ground_truth(self, ground_truth_filename):
+    def _import_ground_truth(self, ground_truth_file):
         """Reads ground truth file, checks if it is well formatted, and returns
            the ground truth instances and the activity classes.
         Parameters
         ----------
-        ground_truth_filename : str
+        ground_truth_file : str
             Full path to the ground truth json file.
         Outputs
         -------
@@ -57,7 +57,7 @@ class Recall:
         activity_index : dict
             Dictionary containing class index.
         """
-        with open(ground_truth_filename, "r") as fobj:
+        with open(ground_truth_file, "r") as fobj:
             data = json.load(fobj)
         # Checking format
         if not all([field in list(data.keys()) for field in self.gt_fields]):
@@ -106,7 +106,7 @@ class Recall:
         proposal : df
             Data frame containing the proposal instances.
         """
-        # if prediction_filename is a string, then json load
+        # if prediction_file is a string, then json load
         if isinstance(proposal_filename, str):
             with open(proposal_filename, "r") as fobj:
                 data = json.load(fobj)
@@ -148,7 +148,7 @@ class Recall:
         recall, avg_recall, proposals_per_video = average_recall_vs_avg_nr_proposals(
             self.ground_truth,
             self.proposal,
-            max_avg_nr_proposals=self.max_avg_nr_proposals,
+            max_avg_nr_proposals=self.max_avg_proposals_per_video,
             tiou_thresholds=self.tiou_thresholds,
         )
 

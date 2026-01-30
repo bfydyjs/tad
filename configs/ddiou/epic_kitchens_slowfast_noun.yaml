@@ -51,7 +51,7 @@ evaluation:
   type: mAP
   subset: val
   tiou_thresholds: [0.1, 0.2, 0.3, 0.4, 0.5]
-  ground_truth_filename: data/epic_kitchens-100/annotations/epic_kitchens_noun.json
+  ground_truth_file: data/epic_kitchens-100/annotations/epic_kitchens_noun.json
 
 model:
   type: DyFADet

@@ -63,7 +63,7 @@ evaluation:
   type: mAP
   subset: validation
   tiou_thresholds: [0.3, 0.4, 0.5, 0.6, 0.7]
-  ground_truth_filename: data/thumos-14/annotations/thumos_14_anno.json
+  ground_truth_file: data/thumos-14/annotations/thumos_14_anno.json
 
 model:
   type: DyFADet
