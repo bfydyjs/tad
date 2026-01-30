@@ -24,7 +24,7 @@ torchrun \
 
 ## Inference
 ```bash
-python eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint exps/thumos/actionformer_i3d/gpu1_id0/checkpoint/best.pt
+python eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
 ```
 ```bash
 torchrun \
@@ -32,7 +32,7 @@ torchrun \
     --nproc_per_node=4 \
     --rdzv_backend=c10d \
     --rdzv_endpoint=localhost:0 \
-    eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint exps/thumos/actionformer_i3d/gpu1_id0/checkpoint/best.pt
+    eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
 ```
 ## 改进
 - 尽量使用稳定的社区版本包，避免重复造轮子。
@@ -86,8 +86,18 @@ thumos_videomaev2_g|200|~1.4M|1
 
 AUC(Area Under the Curve)
 最常见的是ROC-AUC，用于评估二分类模型的性能。
+## recall.py
 recall.py中的AUC并不是ROC-AUC，而是AR-AUC。
+方式 1：基于所有 tIoU 平均后的召回率曲线（当前代码实现）
+- 计算过程 ：1. 对每个 proposal 数量，计算所有 tIoU 阈值的平均召回率 2. 基于这条平均召回率曲线计算 AUC
+
+方式 2：所有 tIoU 各自 AUC 的平均值
+- 计算过程 ：1. 对每个 tIoU 阈值，计算其单独的召回率曲线和 AUC 2. 对所有 tIoU 阈值的 AUC 求平均
+
+方式 1 强调的是"平均召回率"的曲线下面积；方式 2 强调的是"每个 tIoU 的 AUC"的平均值，但是两种方式计算的结果是相同的。
 Accuracy = (TP + TN) / (TP + TN + FP + FN)正负样本不平衡 ：视频中大部分区域是背景（负样本），动作片段（正样本）占比很小，直接计算准确率会被背景预测主导（如模型全预测为背景，即TN=1，也能达到高准确率，但无实际检测价值）。
+
+## mAP.py
 mAP.py中使用查准率（Precision）来计算AP，而不是查全率（Recall）。使用的AUC是PR-AUC。
 PR-AUC=AP（Average Precision）≠P(Precision)
 AR-AUC: AUC 是 平均召回率与平均每个视频的 proposal 数量曲线下的面积

@@ -47,12 +47,10 @@ dataset:
     <<: *dataset_val
 
 evaluation:
-  type: Recall
+  type: mAP
   subset: validation
   tiou_thresholds: [0.3, 0.4, 0.5, 0.6, 0.7]
   ground_truth_filename: data/thumos-14/annotations/thumos_14_anno.json
-  topk: [1, 5, 10, 100]
-  max_avg_nr_proposals: 100
 
 model:
   type: DyFADet
