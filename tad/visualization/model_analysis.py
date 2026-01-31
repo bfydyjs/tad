@@ -5,6 +5,15 @@ import torch
 from fvcore.nn import FlopCountAnalysis
 from typing import Tuple, Union
 from pathlib import Path
+
+# fvcore 和 thop 都计算 MACs，但 fvcore 返回的“FLOPs”实际上与 MACs 等价，
+# 而 thop 计算的 FLOPs 是 MACs 的两倍，因此二者之间存在明显的差异。
+# 本文采用计算机视觉领域的常用定义，将一次乘加运算（MAC）视为一次计算，
+# 因此工具 fvcore 所报告的 “FLOPs” 实际等价于 MACs，而非物理意义上将乘法与加法分别计数的 FLOPs。
+# 科学计算 / HPC 领域：1 FLOP = 1 次浮点运算（加 or 乘），所以 MAC = 2 FLOPs。
+# 深度学习 / CV 领域：1 FLOP ≈ 1 MAC（即 1 次乘加算 1 次操作）。
+# 论文中可以这样写“We report model complexity in terms of multiply-add operations (commonly referred to as FLOPs in the literature).”
+
 # Add the parent directory of the 'tad' package to Python path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 def calculate_flops_params(
@@ -111,20 +120,9 @@ def calculate_flops_params(
 
     # Calculate FLOPs (total for batch=1 → per-sample)
     flops = FlopCountAnalysis(wrapper, (dummy_input, dummy_masks, dummy_metas)).total()
+    # Parameter counting requires only the model architecture, not input data.
     params = sum(p.numel() for p in model.parameters() if p.requires_grad) 
     return flops, params
-
-
-def format_number(x: Union[int, float]) -> str:
-    """Format large numbers to human-readable strings."""
-    if x >= 1e9:
-        return f"{x / 1e9:.2f}G"
-    elif x >= 1e6:
-        return f"{x / 1e6:.2f}M"
-    elif x >= 1e3:
-        return f"{x / 1e3:.2f}K"
-    else:
-        return f"{x:.2f}"
 
 
 if __name__ == "__main__":
@@ -135,10 +133,8 @@ if __name__ == "__main__":
     cfg = Config.fromfile(config_file)
     model = build_detector(cfg.model)
     flops, params = calculate_flops_params(model, input_shape=(1408, 2304))
-    # Parameter counting requires only the model architecture, not input data.
-    print(f"FLOPs: {format_number(flops)}")
-    print(f"Params: {format_number(params)}\n")
-
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
 
     # pip install opentad/models/roi_heads/roi_extractors/align1d --no-build-isolation
     # pip install opentad/models/roi_heads/roi_extractors/boundary_pooling --no-build-isolation
@@ -149,10 +145,8 @@ if __name__ == "__main__":
     cfg = Config.fromfile(config_file)
     model = build_detector(cfg.model)
     flops, params = calculate_flops_params(model, input_shape=(1408, 2304))
-    # Parameter counting requires only the model architecture, not input data.
-    print(f"FLOPs: {format_number(flops)}")
-    print(f"Params: {format_number(params)}\n")
-
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
     
     # rename DyFADet_pytorch to DyFADet-pytorch
     from DyFADet_pytorch.libs.modeling import make_meta_arch
@@ -162,8 +156,7 @@ if __name__ == "__main__":
     cfg = load_config(config_file)
     model = make_meta_arch(cfg['model_name'], **cfg['model'])
     flops, params = calculate_flops_params(model, input_shape=(1408, 2304))
-    # Parameter counting requires only the model architecture, not input data.
-    print(f"FLOPs: {format_number(flops)}")
-    print(f"Params: {format_number(params)}\n")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
 
     
