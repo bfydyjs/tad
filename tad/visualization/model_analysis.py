@@ -5,6 +5,8 @@ import torch
 from fvcore.nn import FlopCountAnalysis
 from typing import Tuple, Union
 from pathlib import Path
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 # fvcore 和 thop 都计算 MACs，但 fvcore 返回的“FLOPs”实际上与 MACs 等价，
 # 而 thop 计算的 FLOPs 是 MACs 的两倍，因此二者之间存在明显的差异。
@@ -13,6 +15,14 @@ from pathlib import Path
 # 科学计算 / HPC 领域：1 FLOP = 1 次浮点运算（加 or 乘），所以 MAC = 2 FLOPs。
 # 深度学习 / CV 领域：1 FLOP ≈ 1 MAC（即 1 次乘加算 1 次操作）。
 # 论文中可以这样写“We report model complexity in terms of multiply-add operations (commonly referred to as FLOPs in the literature).”
+# 在模型复杂度分析中，本文遵循计算机视觉领域的常见惯例，将一次乘加运算（MAC）计为一次浮点运算（FLOP）。
+# 因此，我们使用 fvcore [X] 工具报告的 "FLOPs" 在数值上等价于 MACs 的数量。
+# 这与将乘法与加法分别计数（即 1 MAC = 2 FLOPs）的高性能计算定义有所不同。
+# fvcore [X] （加上引用）
+# 或 fvcore (v0.1.5)
+
+# Please clarify whether the reported FLOPs refer to multiply-add operations or separate floating-point operations. 
+# Different definitions in literature make direct comparison difficult.
 
 # Add the parent directory of the 'tad' package to Python path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -70,31 +80,28 @@ def calculate_flops_params(
             
             # 检查是否是 DyFADet 类型
             elif model_name == 'DyFADet':
-                # Try different approaches for DyFADet model
+                # For DyFADet model, use direct forward through all components
+                # This ensures all submodules are called during FLOPs calculation
                 try:
-                    # First try the original approach with backbone and neck
-                    batched_inputs = inputs
                     # Ensure mask has the correct shape [B, 1, T] for interpolate
                     batched_masks = masks.unsqueeze(1)  # Add channel dimension
                     
-                    # Forward through backbone and neck only
-                    feats, masks = self.model.backbone(batched_inputs, batched_masks)
+                    # Forward through backbone and neck
+                    feats, masks = self.model.backbone(inputs, batched_masks)
+                    fpn_feats, fpn_masks = self.model.neck(feats, masks)
+                    
+                    # Forward through point generator, cls_head and reg_head
+                    points = self.model.point_generator(fpn_feats)
+                    out_cls_logits = self.model.cls_head(fpn_feats, fpn_masks)
+                    out_offsets = self.model.reg_head(fpn_feats, fpn_masks)
+                    
+                    return out_cls_logits, out_offsets
+                except Exception as e:
+                    # If any error occurs, fall back to backbone and neck only
+                    batched_masks = masks.unsqueeze(1)
+                    feats, masks = self.model.backbone(inputs, batched_masks)
                     fpn_feats, fpn_masks = self.model.neck(feats, masks)
                     return fpn_feats
-                except AttributeError:
-                    # If backbone/neck attributes don't exist, try simple forward with inputs
-                    # Create video_list format input
-                    video_list = [{
-                        'feats': inputs.squeeze(0),  # Remove batch dimension
-                        'segments': torch.tensor([[0, inputs.shape[-1]]], device=inputs.device),  # Dummy segments
-                        'labels': torch.tensor([0], device=inputs.device),  # Dummy label
-                        'video_id': 'dummy',
-                        'fps': 30.0,
-                        'duration': inputs.shape[-1],
-                        'feat_stride': 1.0,
-                        'feat_num_frames': 1
-                    }]
-                    return self.model(video_list)
             
             # 检查是否是 Detector 类型
             elif model_name == 'Detector':
@@ -128,11 +135,21 @@ def calculate_flops_params(
 if __name__ == "__main__":
     from tad.tad.models import build_detector
     from tad.tad.utils import Config
+    config_file = Path(__file__).resolve().parent / "tad" / "configs" / "ddiou" / "thumos_i3d.yaml"
+    print(config_file)
+    cfg = Config.fromfile(config_file)
+    model = build_detector(cfg.model)
+    flops, params = calculate_flops_params(model, input_shape=(2048, 2304))
+    print("DDIOU: thumos_i3d.yaml")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
+
     config_file = Path(__file__).resolve().parent / "tad" / "configs" / "ddiou" / "thumos_videomaev2_g.yaml"
     print(config_file)
     cfg = Config.fromfile(config_file)
     model = build_detector(cfg.model)
     flops, params = calculate_flops_params(model, input_shape=(1408, 2304))
+    print("DDIOU: thumos_videomaev2_g.yaml")
     print(f"GFLOPs: {flops / 1e9:.2f}")
     print(f"Params: {params / 1e6:.2f}M\n")
 
@@ -145,17 +162,37 @@ if __name__ == "__main__":
     cfg = Config.fromfile(config_file)
     model = build_detector(cfg.model)
     flops, params = calculate_flops_params(model, input_shape=(1408, 2304))
+    print("DyFADet: thumos_videomaev2_g.py")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
+
+    config_file = Path(__file__).resolve().parent / "OpenTAD" / "configs" / "actionformer" / "thumos_i3d.py"
+    print(config_file)
+    cfg = Config.fromfile(config_file)
+    model = build_detector(cfg.model)
+    flops, params = calculate_flops_params(model, input_shape=(2048, 2304))
+    print("ActionFormer: thumos_i3d.py")
     print(f"GFLOPs: {flops / 1e9:.2f}")
     print(f"Params: {params / 1e6:.2f}M\n")
     
     # rename DyFADet_pytorch to DyFADet-pytorch
     from DyFADet_pytorch.libs.modeling import make_meta_arch
     from DyFADet_pytorch.libs.core import load_config
+    config_file = Path(__file__).resolve().parent / "DyFADet_pytorch" / "configs" / "thumos_i3d.yaml"
+    print(config_file)
+    cfg = load_config(config_file)
+    model = make_meta_arch(cfg['model_name'], **cfg['model'])
+    flops, params = calculate_flops_params(model, input_shape=(2048, 2304))
+    print("DyFADet-pytorch: thumos_i3d")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
+
     config_file = Path(__file__).resolve().parent / "DyFADet_pytorch" / "configs" / "thumos_mae.yaml"
     print(config_file)
     cfg = load_config(config_file)
     model = make_meta_arch(cfg['model_name'], **cfg['model'])
     flops, params = calculate_flops_params(model, input_shape=(1408, 2304))
+    print("DyFADet-pytorch: thumos_mae.yaml")
     print(f"GFLOPs: {flops / 1e9:.2f}")
     print(f"Params: {params / 1e6:.2f}M\n")
 
