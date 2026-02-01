@@ -31,11 +31,7 @@ def calculate_params_gflops(
 
 
     input_shape = (cfg.model.projection.in_channels, cfg.model.projection.max_seq_len)
-    # Add batch dimension = 1
-    dummy_input = torch.randn(1, *input_shape, device=device)
-    # Create dummy masks (all True, assuming no padding)
-    dummy_masks = torch.ones(1, input_shape[-1], device=device).bool()
-    # Create dummy metas (empty dict)
+
     dummy_metas = {}
 
     gflops = None
