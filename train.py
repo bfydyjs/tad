@@ -12,7 +12,7 @@ from torch.amp import GradScaler
 from tad.models import build_detector
 from tad.datasets import build_dataset, build_dataloader
 from tad.engine import train_one_epoch, eval_one_epoch, build_optimizer, build_scheduler
-from tad.utils import set_seed,update_workdir,create_folder,save_config,setup_logger,ModelEma,save_checkpoint,Config,DictAction,get_custom_config,LRFinder
+from tad.utils import set_seed,update_workdir,create_folder,save_config,setup_logger,ModelEma,save_checkpoint,Config,DictAction,get_custom_config,LRFinder,calculate_params_gflops
 
 
 def parse_args():
@@ -68,16 +68,6 @@ def main():
     if "common" in cfg.dataset:
         del cfg.dataset["common"]
     logger.info(f"Config: \n{cfg.pretty_text}")
-    # wandb: init project
-    custom_config = get_custom_config(cfg)
-    if args.rank == 0:
-        wandb.init(
-            project="tad",
-            name=f"{datetime.datetime.now().strftime('%m%d_%H%M')}",
-            config=custom_config,
-            dir=cfg.work_dir,
-            resume="allow"
-        )
 
     try:
         # build dataset
@@ -103,7 +93,19 @@ def main():
     
         # build model
         model = build_detector(cfg.model)
-    
+        params, gflops = calculate_params_gflops(model, cfg)
+        logger.info(f"Params: {params / 1e6:.2f} M\n")
+        # wandb: init project
+        custom_config = get_custom_config(cfg, params=params, gflops=gflops)
+        if args.rank == 0:
+            wandb.init(
+                project="tad",
+                name=f"{datetime.datetime.now().strftime('%m%d_%H%M')}",
+                config=custom_config,
+                dir=cfg.work_dir,
+                resume="allow"
+            )
+
         # DDP
         use_static_graph = getattr(cfg.dataloader, "static_graph", False)
         model = model.to(args.local_rank)

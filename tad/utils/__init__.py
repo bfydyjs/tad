@@ -5,6 +5,7 @@ from .ema import ModelEma
 from .checkpoint import save_checkpoint
 from .load_config import Config, DictAction
 from .wandb_config import get_custom_config
+from .model_analysis import calculate_params_gflops
 
 __all__ = [
     "set_seed",
@@ -18,4 +19,5 @@ __all__ = [
     "Config",
     "DictAction",
     "get_custom_config",
+    "calculate_params_gflops"
 ]
