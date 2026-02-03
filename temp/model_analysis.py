@@ -8,11 +8,13 @@ from pathlib import Path
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-# fvcore 和 thop 都计算 MACs，但 fvcore 返回的“FLOPs”实际上与 MACs 等价，
-# 而 thop 计算的 FLOPs 是 MACs 的两倍，因此二者之间存在明显的差异。
+# 但 fvcore 返回的“FLOPs”实际上是 MACs，在FlopCountAnalysis 类的文档字符串中（第 53 行），
+# 明确说明了计算标准："We count one fused multiply-add as one flop."
+# fvcore 和 thop 都计算 MACs，但推荐使用 fvcore，因为 fvcore 更加全面和准确地处理了各种操作和模块，
+# 通常 fvcore 的计算结果更大一些，更接近实际情况。
 # 本文采用计算机视觉领域的常用定义，将一次乘加运算（MAC）视为一次计算，
 # 因此工具 fvcore 所报告的 “FLOPs” 实际等价于 MACs，而非物理意义上将乘法与加法分别计数的 FLOPs。
-# 科学计算 / HPC 领域：1 FLOP = 1 次浮点运算（加 or 乘），所以 MAC = 2 FLOPs。
+# 科学计算 / HPC 领域：1 FLOP = 1 次浮点运算（加 or 乘），所以 MACs = 2 FLOPs。
 # 深度学习 / CV 领域：1 FLOP ≈ 1 MAC（即 1 次乘加算 1 次操作）。
 # 论文中可以这样写“We report model complexity in terms of multiply-add operations (commonly referred to as FLOPs in the literature).”
 # 在模型复杂度分析中，本文遵循计算机视觉领域的常见惯例，将一次乘加运算（MAC）计为一次浮点运算（FLOP）。
@@ -165,7 +167,6 @@ if __name__ == "__main__":
     print("DyFADet: thumos_videomaev2_g.py")
     print(f"GFLOPs: {flops / 1e9:.2f}")
     print(f"Params: {params / 1e6:.2f}M\n")
-
     config_file = Path(__file__).resolve().parent / "OpenTAD" / "configs" / "actionformer" / "thumos_i3d.py"
     print(config_file)
     cfg = Config.fromfile(config_file)
@@ -174,6 +175,24 @@ if __name__ == "__main__":
     print("ActionFormer: thumos_i3d.py")
     print(f"GFLOPs: {flops / 1e9:.2f}")
     print(f"Params: {params / 1e6:.2f}M\n")
+    config_file = Path(__file__).resolve().parent / "OpenTAD" / "configs" / "gtad" / "thumos_i3d.py"
+    print(config_file)
+    cfg = Config.fromfile(config_file)
+    model = build_detector(cfg.model)
+    # GTAD requires CUDA for its custom Align1D operator
+    flops, params = calculate_flops_params(model, input_shape=(2048, 2304), device="cuda" if torch.cuda.is_available() else "cpu")
+    print("GTAD: thumos_i3d.py")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")    
+    config_file = Path(__file__).resolve().parent / "OpenTAD" / "configs" / "tadtr" / "thumos_i3d.py"
+    print(config_file)
+    cfg = Config.fromfile(config_file)
+    model = build_detector(cfg.model)
+    # GTAD requires CUDA for its custom Align1D operator
+    flops, params = calculate_flops_params(model, input_shape=(2048, 2304), device="cuda" if torch.cuda.is_available() else "cpu")
+    print("TadTR: thumos_i3d.py")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n") 
     
     # rename DyFADet_pytorch to DyFADet-pytorch
     from DyFADet_pytorch.libs.modeling import make_meta_arch
@@ -196,4 +215,3 @@ if __name__ == "__main__":
     print(f"GFLOPs: {flops / 1e9:.2f}")
     print(f"Params: {params / 1e6:.2f}M\n")
 
-    
