@@ -250,7 +250,7 @@ def main():
                                 mode='best.pt',
                                 val_map_best=val_map_best
                             )
-            log_dict["epoch"] = epoch
+            log_dict["Epoch"] = epoch
             if args.rank == 0:               
                 wandb.log(log_dict, step=global_step)
     
