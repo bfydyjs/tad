@@ -4,7 +4,7 @@ import seaborn as sns
 from pathlib import Path
 
 # 模拟数据：mAP values for different combinations
-kernel_sizes_1 = [3, 5, 7, 9, 11, 13, 15,17]
+kernel_sizes_1 = [3, 5, 7, 9, 11, 13, 15]
 kernel_sizes_2 = [3, 5, 7, 9, 11, 13, 15]
 
 # 构造 mAP 矩阵（行：layers，列：kernel_size）
@@ -51,8 +51,8 @@ cbar.ax.tick_params(length=0)
 
 plt.tight_layout()
 
-output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "map_heatmap.png")
+output_path = (Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "map_heatmap.png")
 print(f"Saving figure to: {output_path}")
 output_path.parent.mkdir(parents=True, exist_ok=True)
-plt.savefig(output_path, dpi=300)
+plt.savefig(output_path)
 plt.show()

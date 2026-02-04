@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
-
+from setup_paper_style import setup_paper_style
 def main():
     # 1. 数据结构优化：将数据组织在一起，方便管理和修改
     data = [
@@ -16,10 +16,8 @@ def main():
         {"name": "EHMPFN (Ours)","params": 2.0, "mAP": 35.5, "marker": '*', "color": 'red',        's': 300},        # 一般用*标红显示最好的方法（自己的方法）
     ]
 
-    # 设置字体样式（可选，更像论文风格）
-    plt.rcParams['font.family'] = 'sans-serif' 
-    plt.rcParams['font.sans-serif'] = ['Arial', 'DejaVu Sans']
 
+    setup_paper_style()
     # Create a figure
     plt.figure(figsize=(10, 7))
 
@@ -65,7 +63,7 @@ def main():
     plt.title("Performance vs. Efficiency Comparison", fontsize=16, pad=20)
 
     # 增加网格线，设为虚线
-    plt.grid(True, linestyle='--', alpha=0.5, zorder=0)
+    plt.grid(True, linestyle='--', zorder=0)
 
     # 自动计算边界并增加一点留白
     all_params = [d["params"] for d in data]
@@ -82,11 +80,11 @@ def main():
     plt.tight_layout()
 
     # 5. 保存文件
-    output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "scatter.png").resolve()
+    output_path = (Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "scatter.png").resolve()
     
     print(f"Saving figure to: {output_path}")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, )
     plt.show()
 
 if __name__ == "__main__":

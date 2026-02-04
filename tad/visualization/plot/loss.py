@@ -1,12 +1,10 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
+from setup_paper_style import setup_paper_style
 
 # 读取 wandb 下载的 CSV 文件
 df = pd.read_csv(r"C:\Users\yanho\Downloads\wandb_export_2026-01-27T15_29_05.168+08_00.csv")
-
-# 查看列名（可选，用于调试）
-print("Columns:", df.columns.tolist())
 
 # 提取 Step 和 loss 列
 # 注意：列名中包含引号和空格，pandas 通常会自动去除外层引号，但保留内部
@@ -25,18 +23,19 @@ if loss_col not in df.columns:
         raise KeyError("未能找到包含 'train/loss' 的列")
 
 # 绘图
-plt.figure(figsize=(10, 6))
+setup_paper_style() # 配置论文风格
+plt.figure()
 plt.plot(df[step_col], df[loss_col], label="Training Loss", color="tab:blue")
 plt.xlabel("Step")
 plt.ylabel("Loss")
 plt.title("Training Loss Curve")
-plt.grid(True, linestyle="--", alpha=0.6)
+plt.grid(True, linestyle="--")
 plt.legend()
 plt.tight_layout()
 
-output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "training_loss_curve.png")
+output_path = (Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "training_loss_curve.png")
 print(f"Saving figure to: {output_path}")
 output_path.parent.mkdir(parents=True, exist_ok=True)
-plt.savefig(output_path, dpi=300)
+plt.savefig(output_path)
 
 plt.show()

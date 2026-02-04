@@ -1,7 +1,12 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
+from setup_paper_style import setup_paper_style
+
+
+
 # ==========================================
 # 1. 在这里填入你运行 average_cosine_similarity.py 得到的数字
+# 2. 服务器上不支持Arial字体，不要在服务器上运行此脚本生成图表
 # ==========================================
 
 # 模型 A 的数据 (例如: ActionFormer)
@@ -21,33 +26,10 @@ baseline_value = (model_a_data[0] + model_b_data[0]) / 2
 # ==========================================
 # 2. 绘图配置 (Paper Style)
 # ==========================================
-# 设置无衬线字体 (Journal Standard: Arial/Helvetica)，drawio默认的Helvetica实际上是Arial
-plt.rcParams['font.family'] = 'sans-serif'
-# 优先顺序
-plt.rcParams['font.sans-serif'] = ['Arial', 'Helvetica', 'DejaVu Sans'] 
-
-# 全局参数设置
-plt.rcParams.update({
-    'font.size': 11,           # 基础字体大小
-    'axes.labelsize': 12,      # 坐标轴标签大小
-    'axes.titlesize': 12,      # 标题大小
-    'xtick.labelsize': 11,     # x轴刻度标签大小
-    'ytick.labelsize': 11,     # y轴刻度标签大小
-    'legend.fontsize': 11,     # 图例字体大小
-    'legend.frameon': True,    # 图例边框
-    'legend.framealpha': 0.8,  # 图例透明度
-    'legend.edgecolor': 'black', # 图例边框颜色
-    'lines.linewidth': 2.0,    # 线条宽度
-    'lines.markersize': 8,     # 标记大小
-    'axes.linewidth': 1.2,     # 坐标轴线宽
-    'grid.linewidth': 0.8,     # 网格线宽
-    'grid.alpha': 0.3,         # 网格透明度
-    'savefig.dpi': 600,        # 输出分辨率
-    'savefig.bbox': 'tight',   # 紧凑边框
-    'savefig.pad_inches': 0.1, # 内边距
-})
+# 样式配置已移至 setup_paper_style.py
 
 def plot_comparison():
+    setup_paper_style()
     # 检查数据长度是否一致
     # 如果不一致，取最短的长度
     min_len = min(len(model_a_data), len(model_b_data))
@@ -74,7 +56,7 @@ def plot_comparison():
                color='gray', linewidth=1.5, linestyle='--', label='Raw Baseline')
 
     # Grid
-    plt.grid(True, linestyle='--', linewidth=1, alpha=0.6, color='#bdbdbd')
+    plt.grid(True, linestyle='--', color='#bdbdbd')
     
     # Y-Axis Limits (自动调整 + buffer)
     all_values = y_a + y_b + [baseline_value]
@@ -84,7 +66,7 @@ def plot_comparison():
     plt.xlim(min(x)-0.5, max(x)+0.5)
     
     # Labels
-    plt.xlabel('LevelsGRQat')
+    plt.xlabel('Levels')
     plt.ylabel('Cosine Similarity')
     
     # Ticks
@@ -95,8 +77,10 @@ def plot_comparison():
     plt.legend(loc='lower right', frameon=True, edgecolor='#bfbfbf', fancybox=False)
     
     plt.tight_layout()
-    output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "cosine_similarity_comparison.pdf")
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    output_path = (Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "cosine_similarity_comparison.pdf")
+    # 确保目录存在
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(output_path)
     print(f"Plot saved to {output_path}")
     plt.show()
 
