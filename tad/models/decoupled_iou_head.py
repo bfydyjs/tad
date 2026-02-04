@@ -213,7 +213,10 @@ class DecoupledIoUHead(AnchorFreeHead):
         iou_scores = torch.cat(iou_pred, dim=-1).permute(0, 2, 1).sigmoid() # [B,T,1]
         
         # 融合分数：Score = Cls * IoU
-        final_scores = cls_scores * iou_scores
+        if self.iou_loss_weight > 0:
+            final_scores = cls_scores * iou_scores
+        else:
+            final_scores = cls_scores
 
         # Mask out invalid
         masks = torch.cat(mask_list, dim=1)  # [B,T]

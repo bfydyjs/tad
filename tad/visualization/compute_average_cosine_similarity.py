@@ -2,8 +2,6 @@ import argparse
 import sys
 import torch
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 from pathlib import Path
 from tqdm import tqdm
 
@@ -52,23 +50,10 @@ def compute_avg_cosine_similarity(feature_tensor):
 
 def main():
     args = parse_args()
-    
-    # 1. 加载配置
-    print(f"Loading config from {args.config}...")
+    # ----------------------------------------------------------
     cfg = Config.fromfile(args.config)
     cfg.dataset.val.test_mode = False 
-    
-    # 2. 构建数据集
-    print("Building dataset...")
-    try:
-        dataset = build_dataset(cfg.dataset.val)
-    except Exception as e:
-        print(f"Error building dataset: {e}")
-        return
-    print(f"Dataset loaded with {len(dataset)} samples.")
-
-    # 3. 构建模型
-    print(f"Building model and loading checkpoint from {args.checkpoint}...")
+    dataset = build_dataset(cfg.dataset.val)
     model = build_detector(cfg.model)
     checkpoint = torch.load(args.checkpoint, map_location=args.device)
     
@@ -79,22 +64,19 @@ def main():
         
     model.to(args.device)
     model.eval()
+    # ----------------------------------------------------------
+
 
     # Determine range of samples
     if args.samples is None:
         num_samples = len(dataset)
         indices = range(num_samples)
-        title_suffix = f"(All {num_samples} samples)"
     elif args.samples == 1:
         num_samples = 1
         indices = [args.index]
-        metas = dataset[args.index]['metas'].data if hasattr(dataset[args.index]['metas'], 'data') else dataset[args.index]['metas']
-        video_name = metas.get('video_name', f'sample_{args.index}')
-        title_suffix = f": {video_name}"
     else:
         num_samples = min(args.samples, len(dataset))
         indices = range(num_samples)
-        title_suffix = f"({num_samples} samples)"
 
     print(f"Processing {len(indices)} samples...")
 
@@ -131,17 +113,12 @@ def main():
     sorted_levels = sorted(global_layer_sims.keys())
     avg_layer_sims = [np.mean(global_layer_sims[lvl]) for lvl in sorted_levels]
 
-    print(f"Final Results:")
-    print(f" >> Avg Raw Sim: {avg_raw_sim:.4f}")
-    for i, sim in zip(sorted_levels, avg_layer_sims):
-        print(f" >> Avg Layer {i} Sim: {sim:.4f}")
-
-    print("-" * 30)
+    print("-" * 60)
     print(f"Data for {args.config}:")
-    # Format: [Raw, Level 0, Level 1, ...]
+    # Format: [Raw（Level 0）, Level 1, Level 2, ...]
     data_list = [avg_raw_sim] + avg_layer_sims
     print(f"[{', '.join(f'{x:.4f}' for x in data_list)}]")
-    print("-" * 30)
+    print("-" * 60)
 
 if __name__ == "__main__":
     main()
