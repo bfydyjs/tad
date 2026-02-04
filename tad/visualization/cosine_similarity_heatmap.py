@@ -1,3 +1,5 @@
+# python tad/visualization/cosine_similarity_heatmap.py configs/ddiou/thumos_videomaev2_g.yaml exps/thumos/videomaev2_g/gpu1_id1/checkpoint/best.pt
+
 import argparse
 import sys
 import torch

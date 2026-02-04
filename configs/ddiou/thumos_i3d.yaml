@@ -62,7 +62,7 @@ model:
     use_abs_pe: false
     max_seq_len: 2304
     mlp_dim: 768
-    kernel_sizes: [7, 21] # [3,7]>[3,5][3,11][3,9]
+    kernel_sizes: [5, 9] # [3,7]>[3,5][3,11][3,9]
     init_conv_vars: 0.1 #0.05; 0; 0.1
     # gate_temperature: 1.0
     # gate_hidden_ratio: 0.1
