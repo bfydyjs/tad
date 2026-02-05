@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
-from matplotlib.ticker import MultipleLocator
 from setup_paper_style import setup_paper_style
 
 # ==========================================
