@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
+from matplotlib.ticker import MultipleLocator
 from setup_paper_style import setup_paper_style
 
 # ==========================================
@@ -21,6 +22,7 @@ baseline_value = (model_a_data[0] + model_b_data[0]) / 2
 # Apply paper-style plotting configuration
 # ========================================
 
+
 def plot_comparison():
     setup_paper_style()
     min_len = min(len(model_a_data), len(model_b_data))
@@ -28,38 +30,51 @@ def plot_comparison():
     y_b = model_b_data[:min_len]
     x = list(range(min_len))
     x_labels = [str(i) for i in x]
-    
+
     plt.figure(figsize=(10, 6))
 
-    plt.plot(x, y_a, marker='o', linestyle='-', label=model_a_name, color='#1f77b4')
-    plt.plot(x, y_b, marker='o', linestyle='-', label=model_b_name, color='#ff7f0e')
+    plt.plot(x, y_a, marker="o", linestyle="-", label=model_a_name, color="#1f77b4")
+    plt.plot(x, y_b, marker="o", linestyle="-", label=model_b_name, color="#ff7f0e")
 
-    plt.hlines(y=baseline_value, xmin=min(x), xmax=max(x), 
-               color='gray', linewidth=1.5, linestyle='--', label='Raw Baseline')
-    
-    plt.grid(True, linestyle='--', color='#bdbdbd')
+    plt.hlines(
+        y=baseline_value,
+        xmin=min(x),
+        xmax=max(x),
+        color="gray",
+        linewidth=1.5,
+        linestyle="--",
+        label="Raw Baseline",
+    )
+
+    plt.grid(True, color="#bdbdbd")
 
     all_values = y_a + y_b + [baseline_value]
 
     y_min = max(0.0, min(all_values) - 0.05)
     y_max = min(1.05, max(all_values) + 0.05)
-    
+
     plt.ylim(y_min, y_max)
-    plt.xlim(min(x)-0.2, max(x)+0.2)
-    
-    plt.xlabel('Levels')
-    plt.ylabel('Cosine Similarity')
-    
+    plt.xlim(min(x) - 0.2, max(x) + 0.2)
+
+    plt.xlabel("Levels")
+    plt.ylabel("Cosine Similarity")
+
     plt.xticks(x, labels=x_labels)
-    
-    plt.legend(loc='lower right', frameon=True, edgecolor='#bfbfbf', fancybox=False)
-    
+
+    plt.legend(loc="lower right", frameon=True, edgecolor="#bfbfbf", fancybox=False)
+
     plt.tight_layout()
-    output_path = (Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "cosine_similarity_comparison.pdf")
+    output_path = (
+        Path(__file__).resolve().parent.parent.parent.parent
+        / "output"
+        / "figures"
+        / "cosine_similarity_comparison.pdf"
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path)
     print(f"Plot saved to {output_path}")
     plt.show()
+
 
 if __name__ == "__main__":
     plot_comparison()
