@@ -1,9 +1,10 @@
+from collections.abc import Sequence
+
+import numpy as np
+import scipy
 import torch
 import torch.nn.functional as F
 import torchvision
-import scipy
-import numpy as np
-from collections.abc import Sequence
 from einops import rearrange, reduce
 
 from ..builder import PIPELINES
@@ -72,7 +73,7 @@ class Collect:
         return data
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(" f"keys={self.keys}, meta_keys={self.meta_keys}, "
+        return f"{self.__class__.__name__}(keys={self.keys}, meta_keys={self.meta_keys}, "
 
 
 @PIPELINES.register_module()

@@ -3,8 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .actionformer_proj import get_sinusoid_encoding
-from .bricks import ConvModule, AffineDropPath
+from .bricks import AffineDropPath, ConvModule
 from .builder import PROJECTIONS
+
 
 class LiteMamba(nn.Module):
     def __init__(self, d_model, d_conv=4, expand=2, **kwargs):
@@ -12,18 +13,18 @@ class LiteMamba(nn.Module):
         self.d_model = d_model
         self.d_inner = int(expand * d_model)
         self.d_conv = d_conv
-        
+
         self.in_proj = nn.Linear(d_model, self.d_inner * 2)
         self.conv = nn.Conv1d(self.d_inner, self.d_inner, kernel_size=d_conv, padding=d_conv//2, groups=self.d_inner)
         self.act = nn.SiLU()
         self.out_proj = nn.Linear(self.d_inner, d_model)
-    
+
     def forward(self, x):
         # x: [B, L, D]
         B, L, D = x.shape
-        x_and_z = self.in_proj(x) 
-        x_val, z_val = x_and_z.chunk(2, dim=-1) 
-        
+        x_and_z = self.in_proj(x)
+        x_val, z_val = x_and_z.chunk(2, dim=-1)
+
         x_conv = self.conv(x_val.transpose(1, 2))[:, :, :L].transpose(1, 2)
         x_act = self.act(x_conv)
         out = x_act * F.silu(z_val)
@@ -31,8 +32,8 @@ class LiteMamba(nn.Module):
         return out
 
 try:
-    from mamba_ssm.modules.mamba_simple import Mamba as ViM
     from mamba_ssm.modules.mamba_new import Mamba as DBM
+    from mamba_ssm.modules.mamba_simple import Mamba as ViM
     MAMBA_AVAILABLE = True
 except ImportError:
     print("Warning: mamba_ssm not found. Using LiteMamba (Pure PyTorch) fallback.")

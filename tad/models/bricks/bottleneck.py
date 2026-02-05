@@ -1,9 +1,10 @@
 import math
+
 import torch
 import torch.nn as nn
 
 from .conv import ConvModule
-from .transformer import DropPath, AffineDropPath
+from .transformer import AffineDropPath
 
 
 class Bottleneck(nn.Module):

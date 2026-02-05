@@ -1,7 +1,6 @@
 from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CppExtension
 
-
 setup(
     name="nms_1d_cpu",
     version="0.0.1",

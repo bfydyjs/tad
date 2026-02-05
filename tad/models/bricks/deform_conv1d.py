@@ -1,11 +1,9 @@
 import math
-import torch
-from torch import nn, Tensor
-from torch.nn.parameter import Parameter
-from torch.nn import init
-from typing import Optional
 
-import torch.nn as nn
+import torch
+from torch import Tensor, nn
+from torch.nn import init
+from torch.nn.parameter import Parameter
 from torchvision.ops.deform_conv import deform_conv2d
 
 
@@ -13,11 +11,11 @@ def deform_conv1d(
     input: Tensor,  # shape [B,in_channels,T_in]
     offset: Tensor,  # shape [B,kernel_size_t,T_out]
     weight: Tensor,  # shape [out_channels,in_channels,kernel_size_t]
-    bias: Optional[Tensor] = None,  # shape [out_channels]
+    bias: Tensor | None = None,  # shape [out_channels]
     stride: int = 1,
     padding: int = 0,
     dilation: int = 1,
-    mask: Optional[Tensor] = None,  # not implemented yet
+    mask: Tensor | None = None,  # not implemented yet
 ) -> Tensor:
     assert mask is None, "mask is not implemented yet"
 
@@ -86,7 +84,7 @@ class DeformConv1d(nn.Module):
             bound = 1 / math.sqrt(fan_in)
             init.uniform_(self.bias, -bound, bound)
 
-    def forward(self, input: Tensor, offset: Tensor, mask: Optional[Tensor] = None) -> Tensor:
+    def forward(self, input: Tensor, offset: Tensor, mask: Tensor | None = None) -> Tensor:
         """
         Args:
             input (Tensor[batch_size, in_channels, in_length]): input tensor

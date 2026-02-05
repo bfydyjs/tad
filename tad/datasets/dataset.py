@@ -1,6 +1,7 @@
 import json
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 from mmengine.dataset import Compose
 
 from .builder import DATASETS, get_class_index
@@ -37,13 +38,13 @@ class BaseDataset:
             class_map = get_class_index(self.ann_file, class_map_path)
             self.logger(f"Class map is saved in {class_map_path}, total {len(class_map)} classes.")
         else:
-            with open(class_map_path, "r", encoding="utf8") as f:
+            with open(class_map_path, encoding="utf8") as f:
                 lines = f.readlines()
             class_map = [item.rstrip("\n") for item in lines]
         return class_map
 
     def load_annotation_database(self):
-        with open(self.ann_file, "r") as f:
+        with open(self.ann_file) as f:
             anno_database = json.load(f)["database"]
 
         # some videos might be missed in the features or videos, we need to block them
@@ -51,7 +52,7 @@ class BaseDataset:
             if isinstance(self.block_list, list):
                 blocked_videos = self.block_list
             else:
-                with open(self.block_list, "r") as f:
+                with open(self.block_list) as f:
                     blocked_videos = [line.rstrip("\n") for line in f]
         else:
             blocked_videos = []

@@ -2,9 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 from .bricks import ConvModule, Scale
+from .builder import HEADS, build_loss
+
 
 @HEADS.register_module()
 class DecoupledIoUHead(AnchorFreeHead):
@@ -42,13 +43,13 @@ class DecoupledIoUHead(AnchorFreeHead):
         )
         self.iou_loss_weight = iou_loss_weight
         # 用于计算 IoU 损失的辅助工具
-        self.iou_calculator = build_loss(dict(type="IOULoss")) 
+        self.iou_calculator = build_loss(dict(type="IOULoss"))
 
     def _init_layers(self):
         """Initialize layers of the head."""
         self.cls_convs = nn.ModuleList([])
         self.reg_convs = nn.ModuleList([])
-        
+
         # 解耦的两个卷积塔
         for i in range(self.num_convs):
             self.cls_convs.append(
@@ -79,7 +80,7 @@ class DecoupledIoUHead(AnchorFreeHead):
         self.reg_head = nn.Conv1d(self.feat_channels, 2, kernel_size=3, padding=1)
         # 新增：IoU 预测头 (共享回归特征)
         self.iou_head = nn.Conv1d(self.feat_channels, 1, kernel_size=3, padding=1)
-        
+
         self.scale = nn.ModuleList([Scale() for _ in range(len(self.prior_generator.strides))])
 
         # 初始化分类偏置
@@ -125,7 +126,7 @@ class DecoupledIoUHead(AnchorFreeHead):
             iou_pred.append(self.iou_head(reg_feat))
 
         points = self.prior_generator(feat_list)
-        
+
         # 获取 proposals 和 scores (包含 IoU 修正)
         return self.get_valid_proposals_scores(points, reg_pred, cls_pred, iou_pred, mask_list)
 
@@ -151,7 +152,7 @@ class DecoupledIoUHead(AnchorFreeHead):
         cls_pred_cat = [x.permute(0, 2, 1) for x in cls_pred]
         cls_pred_cat = torch.cat(cls_pred_cat, dim=1)[valid_mask]
         gt_target = gt_cls[valid_mask]
-        
+
         # Label Smoothing
         gt_target *= 1 - self.label_smoothing
         gt_target += self.label_smoothing / (self.num_classes + 1)
@@ -162,11 +163,11 @@ class DecoupledIoUHead(AnchorFreeHead):
         # 2. Regression Loss & 3. IoU Loss
         split_size = [reg.shape[-1] for reg in reg_pred]
         gt_reg_split = torch.stack(gt_reg).permute(0, 2, 1).split(split_size, dim=-1)
-        
+
         # 获取预测框和 GT 框
         pred_segments = self.get_refined_proposals(points, reg_pred)[pos_mask]
         gt_segments_decoded = self.get_refined_proposals(points, gt_reg_split)[pos_mask]
-        
+
         # 处理 IoU 预测
         iou_pred_cat = [x.permute(0, 2, 1) for x in iou_pred]
         iou_pred_cat = torch.cat(iou_pred_cat, dim=1) # [B, T, 1]
@@ -185,7 +186,7 @@ class DecoupledIoUHead(AnchorFreeHead):
             with torch.no_grad():
                 iou_targets = self.iou_calculator(pred_segments, gt_segments_decoded, reduction="none")
                 iou_targets = iou_targets.clamp(min=0, max=1.0)
-            
+
             # IoU Loss (Binary Cross Entropy)
             iou_loss = F.binary_cross_entropy_with_logits(iou_pred_pos, iou_targets, reduction="sum")
             iou_loss /= loss_normalizer
@@ -197,7 +198,7 @@ class DecoupledIoUHead(AnchorFreeHead):
             loss_weight = cls_loss.detach() / max(reg_loss.item(), 0.01)
 
         return {
-            "cls_loss": cls_loss, 
+            "cls_loss": cls_loss,
             "reg_loss": reg_loss * loss_weight,
             "iou_loss": iou_loss * self.iou_loss_weight # 通常 IoU loss 权重设为 1.0 或 0.5
         }
@@ -205,13 +206,13 @@ class DecoupledIoUHead(AnchorFreeHead):
     def get_valid_proposals_scores(self, points, reg_pred, cls_pred, iou_pred, mask_list):
         # 获取基础 Proposals
         proposals = self.get_refined_proposals(points, reg_pred)  # [B,T,2]
-        
+
         # 获取分类分数
         cls_scores = torch.cat(cls_pred, dim=-1).permute(0, 2, 1).sigmoid()  # [B,T,num_classes]
-        
+
         # 获取 IoU 分数
         iou_scores = torch.cat(iou_pred, dim=-1).permute(0, 2, 1).sigmoid() # [B,T,1]
-        
+
         # 融合分数：Score = Cls * IoU
         if self.iou_loss_weight > 0:
             final_scores = cls_scores * iou_scores

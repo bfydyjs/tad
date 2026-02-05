@@ -1,10 +1,11 @@
 import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .builder import HEADS
 from .actionformer_head import ActionFormerHead
+from .builder import HEADS
 
 
 @HEADS.register_module()

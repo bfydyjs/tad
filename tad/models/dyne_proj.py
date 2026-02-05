@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .actionformer_proj import get_sinusoid_encoding
-from .bricks import ConvModule, AffineDropPath
+from .bricks import AffineDropPath, ConvModule
 from .builder import PROJECTIONS
 
 

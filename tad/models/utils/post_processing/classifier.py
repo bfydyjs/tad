@@ -1,4 +1,5 @@
 import json
+
 import numpy as np
 import torch
 from mmengine.registry import Registry
@@ -16,7 +17,7 @@ class CUHKANETClassifier:
     def __init__(self, path, topk=1):
         super().__init__()
 
-        with open(path, "r") as f:
+        with open(path) as f:
             cuhk_data = json.load(f)
         self.cuhk_data_score = cuhk_data["results"]
         self.cuhk_data_action = np.array(cuhk_data["class"])
@@ -104,7 +105,7 @@ class TCANetHACSClassifier:
     def __init__(self, path, topk=1):
         super().__init__()
 
-        with open(path, "r") as f:
+        with open(path) as f:
             cls_data = json.load(f)
         self.cls_data_score = cls_data["results"]
         self.cls_data_action = cls_data["class"]
@@ -139,7 +140,7 @@ class StandardClassifier:
     def __init__(self, path, topk=1, apply_softmax=False):
         super().__init__()
 
-        with open(path, "r") as f:
+        with open(path) as f:
             cls_data = json.load(f)
         self.cls_data_score = cls_data["results"]
         self.cls_data_label = np.array(cls_data["class"]) if "class" in cls_data else np.array(cls_data["classes"])

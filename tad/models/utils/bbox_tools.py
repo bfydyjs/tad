@@ -1,5 +1,6 @@
-import torch
 import math
+
+import torch
 
 
 def compute_delta(bboxes_init, gt_segments, wc=2.0, wl=2.0):

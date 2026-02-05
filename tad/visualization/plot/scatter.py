@@ -1,5 +1,6 @@
-import matplotlib.pyplot as plt
 from pathlib import Path
+
+import matplotlib.pyplot as plt
 from setup_paper_style import setup_paper_style
 
 
@@ -11,11 +12,11 @@ def main():
         {"name": "BIFPN-GLSA",   "params": 2.4, "mAP": 31.5, "marker": 'D', "color": 'gold',       's': 100},
         {"name": "HSFPN",        "params": 2.6, "mAP": 31.2, "marker": 'p', "color": 'plum',       's': 100},
         {"name": "AFPN",         "params": 2.8, "mAP": 30.5, "marker": 'v', "color": 'lightgreen', 's': 100}, # 修改 marker 为 'v' 避免重复
-        {"name": "FreqGFPN",     "params": 2.5, "mAP": 30.8, "marker": 'X', "color": 'orange',     's': 100},     # 修改 yellow -> orange 提高对比度
-        {"name": "GFPN",         "params": 3.0, "mAP": 32.0, "marker": '^', "color": 'gray',       's': 100},       # 修改 lightgray -> gray 提高可见性
+        {"name": "FreqGFPN",     "params": 2.5, "mAP": 30.8, "marker": 'X', "color": 'orange',     's': 100}, # 修改 yellow -> orange 提高对比度
+        {"name": "GFPN",         "params": 3.0, "mAP": 32.0, "marker": '^', "color": 'gray',       's': 100}, # 修改 lightgray -> gray 提高可见性
         {"name": "CGFPRN",       "params": 3.4, "mAP": 30.2, "marker": '<', "color": 'tan',        's': 100},
         {"name": "MAFPN",        "params": 3.2, "mAP": 31.8, "marker": '>', "color": 'teal',       's': 100},
-        {"name": "EHMPFN (Ours)","params": 2.0, "mAP": 35.5, "marker": '*', "color": 'red',        's': 300},        # 一般用*标红显示最好的方法（自己的方法）
+        {"name": "EHMPFN (Ours)","params": 2.0, "mAP": 35.5, "marker": '*', "color": 'red',        's': 300}, # 一般用*标红显示最好的方法（自己的方法）
     ]
 
     setup_paper_style()
@@ -73,7 +74,7 @@ def main():
     plt.title("Performance vs. Efficiency Comparison", fontsize=16, pad=20)
 
     # 增加网格线，设为虚线
-    plt.grid(True, linestyle="--", zorder=0)
+    plt.grid(True, zorder=0)
 
     # 自动计算边界并增加一点留白
     all_params = [d["params"] for d in data]

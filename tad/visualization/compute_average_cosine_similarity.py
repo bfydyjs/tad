@@ -1,16 +1,18 @@
 import argparse
 import sys
-import torch
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import torch
 from tqdm import tqdm
 
 # 添加项目根目录到路径，确保能导入 tad 模块
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from tad.models import build_detector
 from tad.datasets import build_dataset
+from tad.models import build_detector
 from tad.utils import Config
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Calculate and Plot Average Cosine Similarity across Layers")
@@ -28,40 +30,40 @@ def compute_avg_cosine_similarity(feature_tensor):
     feature_tensor: [C, T] or [1, C, T]
     """
     # 移除 batch 维度 [1, C, T] -> [C, T]
-    if feature_tensor.dim() == 3: 
+    if feature_tensor.dim() == 3:
         feature_tensor = feature_tensor[0]
-    
+
     # 转置为 [T, C] 用于计算
-    features = feature_tensor.transpose(0, 1).detach().cpu().numpy() 
-    
+    features = feature_tensor.transpose(0, 1).detach().cpu().numpy()
+
     # 归一化 (L2 Norm)
     norms = np.linalg.norm(features, axis=1, keepdims=True)
     features_norm = features / (norms + 1e-8)
-    
+
     # 计算余弦相似度矩阵 [T, T]
     similarity_matrix = np.dot(features_norm, features_norm.T)
-    
+
     # 计算平均值 matrix mean
     # 注意：通常包含对角线(1.0)能反映整体分布，也可以选择去除对角线只看互相似度
     # 这里直接采用整体平均值，反映了特征在时间维度上的整体一致性/平滑度
     avg_sim = np.mean(similarity_matrix)
-        
+
     return avg_sim
 
 def main():
     args = parse_args()
     # ----------------------------------------------------------
     cfg = Config.fromfile(args.config)
-    cfg.dataset.val.test_mode = False 
+    cfg.dataset.val.test_mode = False
     dataset = build_dataset(cfg.dataset.val)
     model = build_detector(cfg.model)
     checkpoint = torch.load(args.checkpoint, map_location=args.device)
-    
+
     if "state_dict" in checkpoint:
         model.load_state_dict(checkpoint["state_dict"])
     else:
         model.load_state_dict(checkpoint)
-        
+
     model.to(args.device)
     model.eval()
     # ----------------------------------------------------------
@@ -85,10 +87,10 @@ def main():
 
     for i in tqdm(indices):
         data_sample = dataset[i]
-        
-        inputs = data_sample['inputs'].to(args.device).unsqueeze(0) 
-        masks = data_sample['masks'].to(args.device).unsqueeze(0)   
-        
+
+        inputs = data_sample['inputs'].to(args.device).unsqueeze(0)
+        masks = data_sample['masks'].to(args.device).unsqueeze(0)
+
         # (a) Raw Features
         raw_sim = compute_avg_cosine_similarity(inputs[0])
         global_raw_sim.append(raw_sim)
@@ -96,7 +98,7 @@ def main():
         # (b) Model Output Features
         with torch.no_grad():
             feats, _ = model.extract_feat(inputs, masks)
-            
+
         if isinstance(feats, (list, tuple)):
             for lvl, f in enumerate(feats):
                 if lvl not in global_layer_sims: global_layer_sims[lvl] = []
@@ -109,7 +111,7 @@ def main():
 
     # Calculate global averages
     avg_raw_sim = np.mean(global_raw_sim)
-    
+
     sorted_levels = sorted(global_layer_sims.keys())
     avg_layer_sims = [np.mean(global_layer_sims[lvl]) for lvl in sorted_levels]
 

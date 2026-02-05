@@ -1,12 +1,12 @@
 import copy
+
 import torch
 import torch.nn as nn
-from torch.nn.modules.batchnorm import _BatchNorm
 import torch.utils.checkpoint as cp
-
 from mmengine.dataset import Compose
 from mmengine.registry import MODELS as MM_BACKBONES
 from mmengine.runner import load_checkpoint
+from torch.nn.modules.batchnorm import _BatchNorm
 
 BACKBONES = MM_BACKBONES
 

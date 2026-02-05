@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .actionformer_proj import get_sinusoid_encoding
-from .bricks import ConvModule, AffineDropPath
+from .bricks import AffineDropPath, ConvModule
 from .builder import PROJECTIONS
 
 
@@ -225,7 +225,7 @@ class GDKLayer(nn.Module):
 
         self.psi_conv = nn.Conv1d(embed_dim, embed_dim, kernel_sizes[0], stride=1, padding=kernel_sizes[0] // 2, groups=embed_dim)
         self.weight_conv = nn.Conv1d(embed_dim, embed_dim, kernel_sizes[0], stride=1, padding=kernel_sizes[0] // 2, groups=embed_dim)
-        
+
         adaptive_kernel_list = []
         for ksz in kernel_sizes:
             ksz = int(round(ksz))

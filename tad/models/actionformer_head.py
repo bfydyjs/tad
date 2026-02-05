@@ -1,5 +1,5 @@
-from .builder import HEADS
 from .anchor_free_head import AnchorFreeHead
+from .builder import HEADS
 
 
 @HEADS.register_module()

@@ -44,7 +44,7 @@ def parse_args():
     return args
 
 
-def main(): # noqa: C901
+def main():  # noqa: C901
     args = parse_args()
 
     # load config
@@ -118,7 +118,7 @@ def main(): # noqa: C901
                 name=f"{datetime.datetime.now().strftime('%m%d_%H%M')}",
                 config=custom_config,
                 dir=cfg.work_dir,
-                resume="allow"
+                resume="allow",
             )
 
         # DDP
@@ -131,7 +131,8 @@ def main(): # noqa: C901
                 device_ids=[args.local_rank],
                 output_device=args.local_rank,
                 find_unused_parameters=False if use_static_graph else True,
-                static_graph=use_static_graph,  # default is False, should be true when use activation checkpointing in E2E
+                static_graph=use_static_graph,
+                # default is False, should be true when use activation checkpointing in E2E
             )
             logger.info(f"Using DDP with total {args.world_size} GPUS...")
         else:
@@ -231,8 +232,8 @@ def main(): # noqa: C901
                         scheduler,
                         epoch,
                         work_dir=cfg.work_dir,
-                        mode='last.pt',
-                        val_map_best=val_map_best
+                        mode="last.pt",
+                        val_map_best=val_map_best,
                     )
 
             # val_eval for one epoch
@@ -252,7 +253,7 @@ def main(): # noqa: C901
                     log_dict["val_mAP (%)"] = round(val_map * 100, 2)
                     # save the best checkpoint
                     if val_map > val_map_best:
-                        logger.info(f"New best mAP {val_map*100:.2f} % at epoch {epoch}")
+                        logger.info(f"New best mAP {val_map * 100:.2f} % at epoch {epoch}")
                         val_map_best = val_map
                         if args.rank == 0:
                             save_checkpoint(
@@ -262,8 +263,8 @@ def main(): # noqa: C901
                                 scheduler,
                                 epoch,
                                 work_dir=cfg.work_dir,
-                                mode='best.pt',
-                                val_map_best=val_map_best
+                                mode="best.pt",
+                                val_map_best=val_map_best,
                             )
             log_dict["Epoch"] = epoch
             if args.rank == 0:

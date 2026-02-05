@@ -1,7 +1,8 @@
 import pickle
+from pathlib import Path
+
 import torch
 import torch.nn.functional as F
-from pathlib import Path
 
 
 def boundary_choose(score):

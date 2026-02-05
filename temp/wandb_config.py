@@ -1,7 +1,7 @@
 def get_custom_config(cfg, params=None, gflops=None):
 # 1. return full config
     parts = str(cfg.work_dir).strip("/").split("/")
-    cfg.group = "_".join(parts[-3:-1]) 
+    cfg.group = "_".join(parts[-3:-1])
     if params is not None:
         cfg.Params = params
     if gflops is not None:
@@ -10,7 +10,7 @@ def get_custom_config(cfg, params=None, gflops=None):
 
 # 2. return optional selected fields
 #     parts = str(cfg.work_dir).strip("/").split("/")
-#     cfg.group = "_".join(parts[-3:-1]) 
+#     cfg.group = "_".join(parts[-3:-1])
 #     return {
 #         "group": cfg.group,
 #         "model": {

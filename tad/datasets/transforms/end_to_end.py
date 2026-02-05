@@ -1,13 +1,11 @@
-import copy
-import pickle
 import random
-import torch
-import random
-import pandas as pd
-import numpy as np
 from pathlib import Path
-from ..builder import PIPELINES
+
+import numpy as np
+import torch
 from torch.nn import functional as F
+
+from ..builder import PIPELINES
 
 
 @PIPELINES.register_module()

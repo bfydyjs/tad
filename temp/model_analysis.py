@@ -1,11 +1,12 @@
 # 移动到与库同一目录下
 
 import sys
+import warnings
+from pathlib import Path
+
 import torch
 from fvcore.nn import FlopCountAnalysis
-from typing import Tuple, Union
-from pathlib import Path
-import warnings
+
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # 但 fvcore 返回的“FLOPs”实际上是 MACs，在FlopCountAnalysis 类的文档字符串中（第 53 行），
@@ -23,16 +24,16 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # fvcore [X] （加上引用）
 # 或 fvcore (v0.1.5)
 
-# Please clarify whether the reported FLOPs refer to multiply-add operations or separate floating-point operations. 
+# Please clarify whether the reported FLOPs refer to multiply-add operations or separate floating-point operations.
 # Different definitions in literature make direct comparison difficult.
 
 # Add the parent directory of the 'tad' package to Python path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 def calculate_flops_params(
     model: torch.nn.Module,
-    input_shape: Tuple[int, ...],
+    input_shape: tuple[int, ...],
     device: str = "cpu"
-) -> Tuple[float, int]:
+) -> tuple[float, int]:
     """
     Calculate per-sample FLOPs and total trainable parameters of a model.
 
@@ -71,15 +72,15 @@ def calculate_flops_params(
         def __init__(self, model):
             super().__init__()
             self.model = model
-        
+
         def forward(self, inputs, masks, metas):
             # 根据模型类型选择不同的前向传播方法
             model_name = self.model.__class__.__name__
-            
+
             # 首先检查是否有 forward_test 方法（如 TAD 模型）
             if hasattr(self.model, 'forward_test'):
                 return self.model.forward_test(inputs, masks, metas, None)
-            
+
             # 检查是否是 DyFADet 类型
             elif model_name == 'DyFADet':
                 # For DyFADet model, use direct forward through all components
@@ -87,29 +88,29 @@ def calculate_flops_params(
                 try:
                     # Ensure mask has the correct shape [B, 1, T] for interpolate
                     batched_masks = masks.unsqueeze(1)  # Add channel dimension
-                    
+
                     # Forward through backbone and neck
                     feats, masks = self.model.backbone(inputs, batched_masks)
                     fpn_feats, fpn_masks = self.model.neck(feats, masks)
-                    
+
                     # Forward through point generator, cls_head and reg_head
                     points = self.model.point_generator(fpn_feats)
                     out_cls_logits = self.model.cls_head(fpn_feats, fpn_masks)
                     out_offsets = self.model.reg_head(fpn_feats, fpn_masks)
-                    
+
                     return out_cls_logits, out_offsets
-                except Exception as e:
+                except Exception:
                     # If any error occurs, fall back to backbone and neck only
                     batched_masks = masks.unsqueeze(1)
                     feats, masks = self.model.backbone(inputs, batched_masks)
                     fpn_feats, fpn_masks = self.model.neck(feats, masks)
                     return fpn_feats
-            
+
             # 检查是否是 Detector 类型
             elif model_name == 'Detector':
                 # For Detector model, use forward with masks and metas
                 return self.model(inputs, masks, metas)
-            
+
             # 其他模型类型
             else:
                 # Try default forward method with different parameter combinations
@@ -130,7 +131,7 @@ def calculate_flops_params(
     # Calculate FLOPs (total for batch=1 → per-sample)
     flops = FlopCountAnalysis(wrapper, (dummy_input, dummy_masks, dummy_metas)).total()
     # Parameter counting requires only the model architecture, not input data.
-    params = sum(p.numel() for p in model.parameters() if p.requires_grad) 
+    params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     return flops, params
 
 
@@ -157,8 +158,8 @@ if __name__ == "__main__":
 
     # pip install opentad/models/roi_heads/roi_extractors/align1d --no-build-isolation
     # pip install opentad/models/roi_heads/roi_extractors/boundary_pooling --no-build-isolation
-    from OpenTAD.opentad.models import build_detector
     from mmengine.config import Config
+    from OpenTAD.opentad.models import build_detector
     config_file = Path(__file__).resolve().parent / "OpenTAD" / "configs" / "dyfadet" / "thumos_videomaev2_g.py"
     print(config_file)
     cfg = Config.fromfile(config_file)
@@ -183,7 +184,7 @@ if __name__ == "__main__":
     flops, params = calculate_flops_params(model, input_shape=(2048, 2304), device="cuda" if torch.cuda.is_available() else "cpu")
     print("GTAD: thumos_i3d.py")
     print(f"GFLOPs: {flops / 1e9:.2f}")
-    print(f"Params: {params / 1e6:.2f}M\n")    
+    print(f"Params: {params / 1e6:.2f}M\n")
     config_file = Path(__file__).resolve().parent / "OpenTAD" / "configs" / "tadtr" / "thumos_i3d.py"
     print(config_file)
     cfg = Config.fromfile(config_file)
@@ -192,11 +193,11 @@ if __name__ == "__main__":
     flops, params = calculate_flops_params(model, input_shape=(2048, 2304), device="cuda" if torch.cuda.is_available() else "cpu")
     print("TadTR: thumos_i3d.py")
     print(f"GFLOPs: {flops / 1e9:.2f}")
-    print(f"Params: {params / 1e6:.2f}M\n") 
-    
+    print(f"Params: {params / 1e6:.2f}M\n")
+
     # rename DyFADet_pytorch to DyFADet-pytorch
-    from DyFADet_pytorch.libs.modeling import make_meta_arch
     from DyFADet_pytorch.libs.core import load_config
+    from DyFADet_pytorch.libs.modeling import make_meta_arch
     config_file = Path(__file__).resolve().parent / "DyFADet_pytorch" / "configs" / "thumos_i3d.yaml"
     print(config_file)
     cfg = load_config(config_file)

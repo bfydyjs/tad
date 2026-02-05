@@ -1,4 +1,5 @@
 import json
+
 import numpy as np
 import pandas as pd
 
@@ -21,9 +22,9 @@ class Recall:
         super().__init__()
 
         if not ground_truth_file:
-            raise IOError("Please input a valid ground truth file.")
+            raise OSError("Please input a valid ground truth file.")
         if not prediction_file:
-            raise IOError("Please input a valid prediction file.")
+            raise OSError("Please input a valid prediction file.")
 
         self.subset = subset
         self.tiou_thresholds = tiou_thresholds
@@ -57,11 +58,11 @@ class Recall:
         activity_index : dict
             Dictionary containing class index.
         """
-        with open(ground_truth_file, "r") as fobj:
+        with open(ground_truth_file) as fobj:
             data = json.load(fobj)
         # Checking format
         if not all([field in list(data.keys()) for field in self.gt_fields]):
-            raise IOError("Please input a valid ground truth file.")
+            raise OSError("Please input a valid ground truth file.")
 
         # Read ground truth data.
         activity_index, cidx = {}, 0
@@ -108,16 +109,16 @@ class Recall:
         """
         # if prediction_file is a string, then json load
         if isinstance(proposal_file, str):
-            with open(proposal_file, "r") as fobj:
+            with open(proposal_file) as fobj:
                 data = json.load(fobj)
         elif isinstance(proposal_file, dict):
             data = proposal_file
         else:
-            raise IOError(f"Type of prediction file is {type(proposal_file)}.")
+            raise OSError(f"Type of prediction file is {type(proposal_file)}.")
 
         # Checking format...
         if not all([field in list(data.keys()) for field in self.pred_fields]):
-            raise IOError("Please input a valid proposal file.")
+            raise OSError("Please input a valid proposal file.")
 
         # Read predictions.
         video_lst, t_start_lst, t_end_lst = [], [], []
@@ -172,7 +173,7 @@ class Recall:
             metric_dict[f"AUC@{tiou}"] = auc
         # Add per tIoU AR@k to metric_dict
         for k in self.topk:
-            metric_dict[f"Average Recall@{k}"] = self.avg_recall[k - 1] 
+            metric_dict[f"Average Recall@{k}"] = self.avg_recall[k - 1]
             # Add per tIoU AR@k
             for i, tiou in enumerate(self.tiou_thresholds):
                 metric_dict[f"Recall@{tiou}@{k}"] = self.recall[i, k - 1]

@@ -1,4 +1,4 @@
-from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
+from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 
 
 def build_scheduler(cfg, optimizer, dataloader_len):

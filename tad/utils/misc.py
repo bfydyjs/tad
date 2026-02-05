@@ -1,10 +1,11 @@
 import os
-import numpy as np
 import random
 import shutil
+from pathlib import Path
+
+import numpy as np
 import torch
 import torch.distributed as dist
-from pathlib import Path
 
 
 def set_seed(seed, disable_deterministic=False):
@@ -49,7 +50,7 @@ def reduce_loss(loss_dict):
     return loss_dict
 
 
-class AverageMeter(object):
+class AverageMeter:
     """Computes and stores the average and current value.
     Used to compute dataset stats from mini-batches
     """

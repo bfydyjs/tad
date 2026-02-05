@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from ..builder import MODELS
 
 
 # dynamic graph from knn

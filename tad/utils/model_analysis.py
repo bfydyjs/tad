@@ -1,18 +1,15 @@
 # 移动到与库同一目录下
 
-import sys
+
 import torch
-from fvcore.nn import FlopCountAnalysis
-from typing import Tuple, Union
-from pathlib import Path
-from typing import Tuple, Optional
+
 
 # Calculate Params and GFLOPs
 def calculate_params_gflops(
     model: torch.nn.Module,
     cfg = None,
     device: str = "cpu"
-) -> Tuple[int, Optional[float]]:
+) -> tuple[int, float | None]:
     """
     Calculate per-sample FLOPs and total trainable parameters of a model.
 
@@ -27,7 +24,7 @@ def calculate_params_gflops(
         params: Number of trainable parameters (int)
     """
 
-    params = sum(p.numel() for p in model.parameters() if p.requires_grad) 
+    params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
     input_shape = (cfg.model.projection.in_channels, cfg.model.projection.max_seq_len)

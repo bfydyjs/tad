@@ -1,5 +1,7 @@
-import yaml
 import argparse
+
+import yaml
+
 
 class DictAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -25,7 +27,7 @@ class Config(dict):
 
     @staticmethod
     def fromfile(filename):
-        with open(filename, 'r') as f:
+        with open(filename) as f:
             cfg_dict = yaml.safe_load(f)
         return Config._dict_to_config(cfg_dict)
 

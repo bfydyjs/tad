@@ -1,8 +1,9 @@
 import json
-import torch
-from torch.utils.data.dataloader import default_collate
 from collections.abc import Sequence
-from mmengine.registry import Registry, build_from_cfg, TRANSFORMS
+
+import torch
+from mmengine.registry import TRANSFORMS, Registry, build_from_cfg
+from torch.utils.data.dataloader import default_collate
 
 DATASETS = Registry("dataset")
 PIPELINES = TRANSFORMS
@@ -60,7 +61,7 @@ def collate(batch):
 
 
 def get_class_index(gt_json_path, class_map_path):
-    with open(gt_json_path, "r") as f:
+    with open(gt_json_path) as f:
         anno = json.load(f)
 
     anno = anno["database"]

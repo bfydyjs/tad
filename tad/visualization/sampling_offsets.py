@@ -1,6 +1,7 @@
-import numpy as np
-import matplotlib.pyplot as plt
 from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 # ----------------------------
 # 1. 模拟数据：假设我们有 N=50 个 action queries

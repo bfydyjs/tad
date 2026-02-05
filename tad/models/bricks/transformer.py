@@ -1,10 +1,11 @@
 import math
-import torch
-import torch.nn.functional as F
-import torch.nn as nn
 
-from .conv import ConvModule
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 from ..builder import MODELS
+from .conv import ConvModule
 
 
 @MODELS.register_module()

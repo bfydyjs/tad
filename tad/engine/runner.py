@@ -1,17 +1,18 @@
-import time
 import copy
 import json
-import tqdm
-import torch
-import wandb
-import torch.distributed as dist
-
+import time
 from pathlib import Path
-from tad.utils import create_folder
-from tad.utils.misc import AverageMeter, reduce_loss
-from tad.models.utils.post_processing import build_classifier, batched_nms
+
+import torch
+import torch.distributed as dist
+import tqdm
+import wandb
+
 from tad.datasets.dataset import SlidingWindowDataset
 from tad.metrics import build_evaluator
+from tad.models.utils.post_processing import batched_nms, build_classifier
+from tad.utils import create_folder
+from tad.utils.misc import AverageMeter, reduce_loss
 
 
 def train_one_epoch(
@@ -34,7 +35,7 @@ def train_one_epoch(
     grad_norm_tracker = AverageMeter()
     num_iters = len(train_loader)
     use_amp = False if scaler is None else True
-    
+
     # get the device of the model
     device = next(model.parameters()).device
 
@@ -44,7 +45,7 @@ def train_one_epoch(
     for iter_idx, data_dict in enumerate(train_loader):
         data_time = time.time() - end
         interval_data_time += data_time
-        
+
         # move data to device
         for k, v in data_dict.items():
             if isinstance(v, torch.Tensor):
@@ -128,7 +129,7 @@ def train_one_epoch(
                     }
                     if curr_backbone_lr is not None:
                         log_dict["train/lr_backbone"] = curr_backbone_lr
-                    
+
                     wandb.log(log_dict, step=current_step)
             except Exception:
                 pass
@@ -259,7 +260,7 @@ def gather_ddp_results(world_size, result_dict, post_cfg):
             segments, scores, labels = batched_nms(segments, scores, labels, **post_cfg.nms)
 
             results_per_video = []
-            for segment, label, score in zip(segments, labels, scores):
+            for segment, label, score in zip(segments, labels, scores, strict=True):
                 # convert to python scalars
                 results_per_video.append(
                     dict(

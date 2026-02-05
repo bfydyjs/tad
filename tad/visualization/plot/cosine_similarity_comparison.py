@@ -1,5 +1,6 @@
-import matplotlib.pyplot as plt
 from pathlib import Path
+
+import matplotlib.pyplot as plt
 from setup_paper_style import setup_paper_style
 
 # ==========================================

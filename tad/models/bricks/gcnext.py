@@ -1,7 +1,8 @@
 # copy from https://github.dev/frostinassiky/gtad/blob/3f145d5d3a8ce7ac8d2b985934dbb575ca1b7981/gtad_lib/models.py
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
+
 from ..builder import MODELS
 
 

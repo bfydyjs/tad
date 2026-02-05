@@ -1,12 +1,12 @@
-from .nms.nms import batched_nms
-from .utils import boundary_choose, save_predictions, load_predictions, convert_to_seconds
 from .classifier import build_classifier
+from .nms.nms import batched_nms
+from .utils import boundary_choose, convert_to_seconds, load_predictions, save_predictions
 
 __all__ = [
-    "boundary_choose",
     "batched_nms",
-    "save_predictions",
-    "load_predictions",
-    "convert_to_seconds",
+    "boundary_choose",
     "build_classifier",
+    "convert_to_seconds",
+    "load_predictions",
+    "save_predictions",
 ]

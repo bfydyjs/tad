@@ -1,11 +1,12 @@
 import math
+
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
+from .bricks import ConvModule, Scale
 from .builder import HEADS, build_loss
 from .point_generator import PointGenerator
-from .bricks import ConvModule, Scale
 
 
 @HEADS.register_module()

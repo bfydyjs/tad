@@ -1,8 +1,10 @@
-import numpy as np
 from copy import deepcopy
-from .dataset import ResizeDataset, PaddingDataset, SlidingWindowDataset
-from .util import filter_same_annotation
+
+import numpy as np
+
 from .builder import DATASETS
+from .dataset import PaddingDataset, ResizeDataset, SlidingWindowDataset
+from .util import filter_same_annotation
 
 
 @DATASETS.register_module()

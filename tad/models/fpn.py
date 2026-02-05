@@ -1,6 +1,7 @@
+import copy
+
 import torch.nn as nn
 import torch.nn.functional as F
-import copy
 
 from .bricks import ConvModule
 from .builder import NECKS

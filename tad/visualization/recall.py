@@ -1,8 +1,9 @@
 import json
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from pathlib import Path
 
 from .builder import EVALUATORS, remove_duplicate_annotations
 from .mAP import segment_iou
@@ -23,9 +24,9 @@ class Recall:
         super().__init__()
 
         if not ground_truth_file:
-            raise IOError("Please input a valid ground truth file.")
+            raise OSError("Please input a valid ground truth file.")
         if not prediction_file:
-            raise IOError("Please input a valid prediction file.")
+            raise OSError("Please input a valid prediction file.")
 
         self.subset = subset
         self.tiou_thresholds = tiou_thresholds
@@ -59,11 +60,11 @@ class Recall:
         activity_index : dict
             Dictionary containing class index.
         """
-        with open(ground_truth_file, "r") as fobj:
+        with open(ground_truth_file) as fobj:
             data = json.load(fobj)
         # Checking format
         if not all([field in list(data.keys()) for field in self.gt_fields]):
-            raise IOError("Please input a valid ground truth file.")
+            raise OSError("Please input a valid ground truth file.")
 
         # Read ground truth data.
         activity_index, cidx = {}, 0
@@ -110,16 +111,16 @@ class Recall:
         """
         # if prediction_file is a string, then json load
         if isinstance(proposal_file, str):
-            with open(proposal_file, "r") as fobj:
+            with open(proposal_file) as fobj:
                 data = json.load(fobj)
         elif isinstance(proposal_file, dict):
             data = proposal_file
         else:
-            raise IOError(f"Type of prediction file is {type(proposal_file)}.")
+            raise OSError(f"Type of prediction file is {type(proposal_file)}.")
 
         # Checking format...
         if not all([field in list(data.keys()) for field in self.pred_fields]):
-            raise IOError("Please input a valid proposal file.")
+            raise OSError("Please input a valid proposal file.")
 
         # Read predictions.
         video_lst, t_start_lst, t_end_lst = [], [], []
@@ -174,7 +175,7 @@ class Recall:
             metric_dict[f"AUC@{tiou}"] = auc
         # Add per tIoU AR@k to metric_dict
         for k in self.topk:
-            metric_dict[f"Average Recall@{k}"] = self.avg_recall[k - 1] 
+            metric_dict[f"Average Recall@{k}"] = self.avg_recall[k - 1]
             # Add per tIoU AR@k
             for i, tiou in enumerate(self.tiou_thresholds):
                 metric_dict[f"Recall@{tiou}@{k}"] = self.recall[i, k - 1]
@@ -205,51 +206,51 @@ class Recall:
             pprint(f"tIoU={tiou:.2f}:")
             for k in self.topk:
                 pprint(f"Recall@{k:3d} is {self.recall[i, k - 1] * 100:>4.2f}%")
-    
+
     def plot_recall_curves(self):
         """Plots recall curves for each k value, with tiou_thresholds on x-axis"""
         # Define colors for different k values
         colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
-        
+
         # Create subplots for different k values
         num_k = len(self.topk)
         fig, axes = plt.subplots(1, num_k, figsize=(5 * num_k, 4))
-        
+
         # Ensure axes is always a list
         if num_k == 1:
             axes = [axes]
-        
+
         # Plot each k value
         for k_idx, k in enumerate(self.topk):
             ax = axes[k_idx]
-            
+
             # For each tiou threshold, get the recall value at k
             recall_values = self.recall[:, k - 1]
-            
+
             # Plot the curve
             ax.plot(self.tiou_thresholds, recall_values, 'o-', color=colors[k_idx % len(colors)], label=f'Recall@{k}')
-            
+
             # Set labels and title
             ax.set_xlabel('tIoU Thresholds')
             ax.set_ylabel(f'per tIoU Recall@{k}')
             ax.set_title(f'Recall@{k} vs tIoU Thresholds')
             ax.grid(True)
             ax.legend()
-            
+
             # Set x-axis limits
             ax.set_xlim([min(self.tiou_thresholds) - 0.05, max(self.tiou_thresholds) + 0.05])
             # Set y-axis limits
             ax.set_ylim([0, 1.05])
-        
+
         # Adjust layout
         plt.tight_layout()
-        
+
         # Set default save path if not provided
         output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "recall_curves.png")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         print(f"Recall curves saved to: {output_path}")
-        
+
         # Show the figure
         plt.show()
 

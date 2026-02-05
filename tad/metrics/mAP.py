@@ -1,7 +1,8 @@
 import json
+import multiprocessing as mp
+
 import numpy as np
 import pandas as pd
-import multiprocessing as mp
 
 from .builder import EVALUATORS, remove_duplicate_annotations
 
@@ -21,9 +22,9 @@ class mAP:
         super().__init__()
 
         if not ground_truth_file:
-            raise IOError("Please input a valid ground truth file.")
+            raise OSError("Please input a valid ground truth file.")
         if not prediction_file:
-            raise IOError("Please input a valid prediction file.")
+            raise OSError("Please input a valid prediction file.")
 
         self.subset = subset
         self.tiou_thresholds = tiou_thresholds
@@ -59,11 +60,11 @@ class mAP:
         activity_index : dict
             Dictionary containing class index.
         """
-        with open(ground_truth_file, "r") as fobj:
+        with open(ground_truth_file) as fobj:
             data = json.load(fobj)
         # Checking format
         if not all([field in list(data.keys()) for field in self.gt_fields]):
-            raise IOError("Please input a valid ground truth file.")
+            raise OSError("Please input a valid ground truth file.")
 
         # Read ground truth data.
         activity_index, cidx = {}, 0
@@ -112,16 +113,16 @@ class mAP:
         """
         # if prediction_file is a string, then json load
         if isinstance(prediction_file, str):
-            with open(prediction_file, "r") as fobj:
+            with open(prediction_file) as fobj:
                 data = json.load(fobj)
         elif isinstance(prediction_file, dict):
             data = prediction_file
         else:
-            raise IOError(f"Type of prediction file is {type(prediction_file)}.")
+            raise OSError(f"Type of prediction file is {type(prediction_file)}.")
 
         # Checking format...
         if not all([field in list(data.keys()) for field in self.pred_fields]):
-            raise IOError("Please input a valid prediction file.")
+            raise OSError("Please input a valid prediction file.")
 
         # Read predictions.
         video_lst, t_start_lst, t_end_lst = [], [], []
@@ -313,7 +314,7 @@ def compute_average_precision_detection(ground_truth, prediction, tiou_threshold
         try:
             # Check if there is at least one ground truth in the video associated.
             ground_truth_videoid = ground_truth_gbvn.get_group(this_pred["video-id"])
-        except Exception as e:
+        except Exception:
             fp[:, idx] = 1
             continue
 
@@ -392,7 +393,7 @@ def compute_topkx_recall_detection(
         n_gts += len(ground_truth_videoid)
         try:
             prediction_videoid = prediction_gbvn.get_group(videoid)
-        except Exception as e:
+        except Exception:
             continue
 
         this_gt = ground_truth_videoid.reset_index()
@@ -479,9 +480,9 @@ class mAP_EPIC:
         super().__init__()
 
         if not ground_truth_file:
-            raise IOError("Please input a valid ground truth file.")
+            raise OSError("Please input a valid ground truth file.")
         if not prediction_file:
-            raise IOError("Please input a valid prediction file.")
+            raise OSError("Please input a valid prediction file.")
 
         self.subset = subset
         self.tiou_thresholds = tiou_thresholds
@@ -523,11 +524,11 @@ class mAP_EPIC:
         ground_truth : df
             Data frame containing the ground truth instances.
         """
-        with open(ground_truth_file, "r") as fobj:
+        with open(ground_truth_file) as fobj:
             data = json.load(fobj)
         # Checking format
         if not all([field in list(data.keys()) for field in self.gt_fields]):
-            raise IOError("Please input a valid ground truth file.")
+            raise OSError("Please input a valid ground truth file.")
 
         # Read ground truth data.
         video_lst, t_start_lst, t_end_lst, label_lst = [], [], [], []
@@ -577,16 +578,16 @@ class mAP_EPIC:
         """
         # if prediction_file is a string, then json load
         if isinstance(prediction_file, str):
-            with open(prediction_file, "r") as fobj:
+            with open(prediction_file) as fobj:
                 data = json.load(fobj)
         elif isinstance(prediction_file, dict):
             data = prediction_file
         else:
-            raise IOError(f"Type of prediction file is {type(prediction_file)}.")
+            raise OSError(f"Type of prediction file is {type(prediction_file)}.")
 
         # Checking format...
         if not all([field in list(data.keys()) for field in self.pred_fields]):
-            raise IOError("Please input a valid prediction file.")
+            raise OSError("Please input a valid prediction file.")
 
         # Read predictions.
         video_lst, t_start_lst, t_end_lst = [], [], []

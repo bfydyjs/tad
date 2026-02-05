@@ -1,14 +1,11 @@
-import copy
-import pickle
 import random
-import torch
-import random
-import pandas as pd
-import numpy as np
 from pathlib import Path
 
-from ..builder import PIPELINES
+import numpy as np
+import torch
 from torch.nn import functional as F
+
+from ..builder import PIPELINES
 
 
 @PIPELINES.register_module()
@@ -56,7 +53,10 @@ class LoadFeats:
         video_name = results["video_name"]
 
         if isinstance(results["data_path"], str):
-            file_path = Path(results["data_path"]) / f"{self.prefix}{video_name}{self.suffix}.{self.feat_format}"
+            file_path = (
+                Path(results["data_path"])
+                / f"{self.prefix}{video_name}{self.suffix}.{self.feat_format}"
+            )
             feats = self.load_single_feat(file_path, self.feat_format)
         elif isinstance(results["data_path"], list):
             feats = []
@@ -66,7 +66,9 @@ class LoadFeats:
                 self.feat_format = [self.feat_format] * len(results["data_path"])
 
             for data_path, feat_format in zip(results["data_path"], self.feat_format):
-                file_path = Path(data_path) / f"{self.prefix}{video_name}{self.suffix}.{feat_format}"
+                file_path = (
+                    Path(data_path) / f"{self.prefix}{video_name}{self.suffix}.{feat_format}"
+                )
                 feats.append(self.load_single_feat(file_path, feat_format))
 
             max_len = max([feat.shape[0] for feat in feats])
@@ -91,7 +93,7 @@ class LoadFeats:
         return results
 
     def __repr__(self):
-        repr_str = f"{self.__class__.__name__}(" f"feat_format={self.feat_format}"
+        repr_str = f"{self.__class__.__name__}(feat_format={self.feat_format}"
         return repr_str
 
 
