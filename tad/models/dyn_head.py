@@ -2,7 +2,7 @@ import math
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from torch.nn.functional import interpolate, pad, relu
 
 from .actionformer_head import ActionFormerHead
 from .builder import HEADS
@@ -26,9 +26,11 @@ class TDynHead(ActionFormerHead):
         cls_prior_prob=0.01,
         loss_weight=1.0,
         head_kernel_size=3,
-        dyn_head_cfg=dict(tau=1.5, init_gate=0.1, type="GeReTanH", dyn_type="c"),
+        dyn_head_cfg=None,
         **kwargs,
     ):
+        if dyn_head_cfg is None:
+            dyn_head_cfg = dict(tau=1.5, init_gate=0.1, type="GeReTanH", dyn_type="c")
         self.head_kernel_size = head_kernel_size
         self.dyn_head_cfg = dyn_head_cfg
 
@@ -105,9 +107,9 @@ class TDynHead(ActionFormerHead):
             cls_feat_list = self.cls_convs[i](cls_feat_list, mask_list)
             reg_feat_list = self.reg_convs[i](reg_feat_list, mask_list)
 
-        for l, (cls_feat, reg_feat) in enumerate(zip(cls_feat_list, reg_feat_list)):
+        for level, (cls_feat, reg_feat) in enumerate(zip(cls_feat_list, reg_feat_list, strict=False)):
             cls_pred.append(self.cls_head(cls_feat))
-            reg_pred.append(F.relu(self.scale[l](self.reg_head(reg_feat))))
+            reg_pred.append(relu(self.scale[level](self.reg_head(reg_feat))))
 
         points = self.prior_generator(feat_list)
 
@@ -124,9 +126,9 @@ class TDynHead(ActionFormerHead):
             cls_feat_list = self.cls_convs[i](cls_feat_list, mask_list)
             reg_feat_list = self.reg_convs[i](reg_feat_list, mask_list)
 
-        for l, (cls_feat, reg_feat) in enumerate(zip(cls_feat_list, reg_feat_list)):
+        for level, (cls_feat, reg_feat) in enumerate(zip(cls_feat_list, reg_feat_list, strict=False)):
             cls_pred.append(self.cls_head(cls_feat))
-            reg_pred.append(F.relu(self.scale[l](self.reg_head(reg_feat))))
+            reg_pred.append(relu(self.scale[level](self.reg_head(reg_feat))))
 
         points = self.prior_generator(feat_list)
 
@@ -161,7 +163,7 @@ class DynamicScale_chk(nn.Module):
             for _ in range(num_adjacent_scales)
         ]
         self.dynamic_convs = nn.ModuleList(dynamic_convs)
-        self.resize = lambda x, s: F.interpolate(x, size=s, mode="nearest")
+        self.resize = lambda x, s: interpolate(x, size=s, mode="nearest")
 
         self.scale_weight = nn.Parameter(torch.zeros(1))
         self.output_weight = nn.Parameter(torch.ones(1))
@@ -173,16 +175,16 @@ class DynamicScale_chk(nn.Module):
 
     def forward(self, inputs, fpn_masks):
         dynamic_scales = []
-        for l, x in enumerate(inputs):
-            dynamic_scales.append([m(x, fpn_masks[l]) for m in self.dynamic_convs])
+        for level, x in enumerate(inputs):
+            dynamic_scales.append([m(x, fpn_masks[level]) for m in self.dynamic_convs])
 
         outputs = []
-        for l, x in enumerate(inputs):
+        for level, x in enumerate(inputs):
             scale_feature = []
 
             for s in range(self.num_adjacent_scales):
-                l_source = l + s - self.num_adjacent_scales // 2
-                l_source = l_source if l_source < l else l_source + 1
+                l_source = level + s - self.num_adjacent_scales // 2
+                l_source = l_source if l_source < level else l_source + 1
                 if l_source >= 0 and l_source < len(inputs):
                     feature = self.resize(dynamic_scales[l_source][s], x.shape[-1:])
                     scale_feature.append(feature)
@@ -190,9 +192,9 @@ class DynamicScale_chk(nn.Module):
             scale_feature = sum(scale_feature) * self.scale_weight + x * self.output_weight
 
             if self.depth_module is not None:
-                scale_feature = self.depth_module(scale_feature, fpn_masks[l])
+                scale_feature = self.depth_module(scale_feature, fpn_masks[level])
 
-            outputs.append(F.relu(scale_feature))
+            outputs.append(relu(scale_feature))
 
         return outputs
 
@@ -286,7 +288,7 @@ class DTFAM(nn.Module):
         B, C, T = x.shape
 
         out = torch.zeros((B, self.ka * C, T), device=x.device)
-        padx = F.pad(x, (self.ka // 2, self.ka // 2))
+        padx = pad(x, (self.ka // 2, self.ka // 2))
 
         for i in range(self.ka):
             out[:, i * C : (i + 1) * C, :] = padx[:, :, i : i + T]
@@ -320,7 +322,7 @@ class DTFAM(nn.Module):
         out_conv = self.norm(out_conv.permute(0, 2, 1)).permute(0, 2, 1)
         if self.stride > 1:
             # downsample the mask using nearest neighbor
-            out_mask = F.interpolate(mask.unsqueeze(1).to(x.dtype), size=out_conv.size(-1), mode="nearest")
+            out_mask = interpolate(mask.unsqueeze(1).to(x.dtype), size=out_conv.size(-1), mode="nearest")
         else:
             out_mask = mask.unsqueeze(1).to(x.dtype)
 

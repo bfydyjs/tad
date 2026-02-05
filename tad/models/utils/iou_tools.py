@@ -7,14 +7,14 @@ def compute_iou_torch(gt_boxes, anchors):
     anchors:  shape [M, 2]
     """
 
-    N = gt_boxes.shape[0]
-    M = anchors.shape[0]
+    n = gt_boxes.shape[0]
+    m = anchors.shape[0]
 
-    gt_areas = (gt_boxes[:, 1] - gt_boxes[:, 0]).view(1, N)
-    anchors_areas = (anchors[:, 1] - anchors[:, 0]).view(M, 1)
+    gt_areas = (gt_boxes[:, 1] - gt_boxes[:, 0]).view(1, n)
+    anchors_areas = (anchors[:, 1] - anchors[:, 0]).view(m, 1)
 
-    boxes = anchors.view(M, 1, 2).repeat(1, N, 1)
-    query_boxes = gt_boxes.view(1, N, 2).repeat(M, 1, 1)
+    boxes = anchors.view(m, 1, 2).repeat(1, n, 1)
+    query_boxes = gt_boxes.view(1, n, 2).repeat(m, 1, 1)
 
     inter_max = torch.min(boxes[..., 1], query_boxes[..., 1])
     inter_min = torch.max(boxes[..., 0], query_boxes[..., 0])
@@ -30,13 +30,13 @@ def compute_ioa_torch(gt_boxes, anchors):
     anchors:  np.array shape [M, 2]
     """
 
-    N = gt_boxes.shape[0]
-    M = anchors.shape[0]
+    n = gt_boxes.shape[0]
+    m = anchors.shape[0]
 
-    anchors_areas = (anchors[:, 1] - anchors[:, 0]).view(M, 1)
+    anchors_areas = (anchors[:, 1] - anchors[:, 0]).view(m, 1)
 
-    boxes = anchors.view(M, 1, 2).repeat(1, N, 1)
-    query_boxes = gt_boxes.view(1, N, 2).repeat(M, 1, 1)
+    boxes = anchors.view(m, 1, 2).repeat(1, n, 1)
+    query_boxes = gt_boxes.view(1, n, 2).repeat(m, 1, 1)
 
     inter_max = torch.min(boxes[..., 1], query_boxes[..., 1])
     inter_min = torch.max(boxes[..., 0], query_boxes[..., 0])
@@ -53,10 +53,10 @@ def compute_batched_iou_torch(gt_boxes, anchors):
     gt_boxes has been aligned with anchors
     """
     bs = gt_boxes.shape[0]
-    N = gt_boxes.shape[1]
+    n = gt_boxes.shape[1]
 
-    gt_areas = (gt_boxes[..., 1] - gt_boxes[..., 0]).view(bs, N)
-    anchors_areas = (anchors[..., 1] - anchors[..., 0]).view(bs, N)
+    gt_areas = (gt_boxes[..., 1] - gt_boxes[..., 0]).view(bs, n)
+    anchors_areas = (anchors[..., 1] - anchors[..., 0]).view(bs, n)
 
     inter_max = torch.min(anchors[..., 1], gt_boxes[..., 1])
     inter_min = torch.max(anchors[..., 0], gt_boxes[..., 0])
@@ -72,14 +72,14 @@ def compute_giou_torch(gt_boxes, anchors):
     anchors:  shape [M, 2]
     """
 
-    N = gt_boxes.shape[0]
-    M = anchors.shape[0]
+    n = gt_boxes.shape[0]
+    m = anchors.shape[0]
 
-    gt_areas = (gt_boxes[:, 1] - gt_boxes[:, 0]).view(1, N)
-    anchors_areas = (anchors[:, 1] - anchors[:, 0]).view(M, 1)
+    gt_areas = (gt_boxes[:, 1] - gt_boxes[:, 0]).view(1, n)
+    anchors_areas = (anchors[:, 1] - anchors[:, 0]).view(m, 1)
 
-    boxes = anchors.view(M, 1, 2).repeat(1, N, 1)
-    query_boxes = gt_boxes.view(1, N, 2).repeat(M, 1, 1)
+    boxes = anchors.view(m, 1, 2).repeat(1, n, 1)
+    query_boxes = gt_boxes.view(1, n, 2).repeat(m, 1, 1)
 
     inter_max = torch.min(boxes[..., 1], query_boxes[..., 1])
     inter_min = torch.max(boxes[..., 0], query_boxes[..., 0])
@@ -115,14 +115,14 @@ def compute_diou_torch(gt_boxes, anchors, eps=1e-7):
     torch.Tensor: The DIoU between each pair of boxes, shape (M, N)
     """
 
-    N = gt_boxes.shape[0]
-    M = anchors.shape[0]
+    n = gt_boxes.shape[0]
+    m = anchors.shape[0]
 
-    gt_areas = (gt_boxes[:, 1] - gt_boxes[:, 0]).view(1, N)
-    anchors_areas = (anchors[:, 1] - anchors[:, 0]).view(M, 1)
+    gt_areas = (gt_boxes[:, 1] - gt_boxes[:, 0]).view(1, n)
+    anchors_areas = (anchors[:, 1] - anchors[:, 0]).view(m, 1)
 
-    boxes = anchors.view(M, 1, 2).repeat(1, N, 1)
-    query_boxes = gt_boxes.view(1, N, 2).repeat(M, 1, 1)
+    boxes = anchors.view(m, 1, 2).repeat(1, n, 1)
+    query_boxes = gt_boxes.view(1, n, 2).repeat(m, 1, 1)
 
     # overlap
     inter_max = torch.min(boxes[..., 1], query_boxes[..., 1])

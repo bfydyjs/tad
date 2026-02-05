@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from torch.nn.functional import interpolate
 
 from .transformer import AffineDropPath
 
@@ -99,12 +99,12 @@ class SGPBlock(nn.Module):
         torch.nn.init.constant_(self.global_fc.bias, 0)
 
     def forward(self, x, mask):
-        B, C, T = x.shape
+        _, _, t = x.shape
         x = self.downsample(x)
 
-        out_mask = F.interpolate(
+        out_mask = interpolate(
             mask.unsqueeze(1).to(x.dtype),
-            size=torch.div(T, self.stride, rounding_mode="trunc"),
+            size=torch.div(t, self.stride, rounding_mode="trunc"),
             mode="nearest",
         ).detach()
 

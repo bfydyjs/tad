@@ -2,7 +2,7 @@ import math
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from torch.nn.functional import softmax
 
 from ..builder import MODELS
 from .conv import ConvModule
@@ -190,7 +190,7 @@ class MaskedMHCA(nn.Module):
     def forward(self, x, mask):
         # x: batch size, feature channel, sequence length,
         # mask: batch size, 1, sequence length (bool)
-        B, C, T = x.size()
+        b, c, _ = x.size()
 
         # query conv -> (B, nh * hs, T')
         q, qx_mask = self.query_conv(x, mask)
@@ -208,21 +208,21 @@ class MaskedMHCA(nn.Module):
 
         # move head forward to be the batch dim
         # (B, nh * hs, T'/T'') -> (B, nh, T'/T'', hs)
-        k = k.view(B, self.n_head, self.n_channels, -1).transpose(2, 3)
-        q = q.view(B, self.n_head, self.n_channels, -1).transpose(2, 3)
-        v = v.view(B, self.n_head, self.n_channels, -1).transpose(2, 3)
+        k = k.view(b, self.n_head, self.n_channels, -1).transpose(2, 3)
+        q = q.view(b, self.n_head, self.n_channels, -1).transpose(2, 3)
+        v = v.view(b, self.n_head, self.n_channels, -1).transpose(2, 3)
 
         # self-attention: (B, nh, T', hs) x (B, nh, hs, T'') -> (B, nh, T', T'')
         att = (q * self.scale) @ k.transpose(-2, -1)
         # prevent q from attending to invalid tokens
         att = att.masked_fill(torch.logical_not(kv_mask[:, None, None, :]), float("-inf"))
         # softmax attn
-        att = F.softmax(att, dim=-1)
+        att = softmax(att, dim=-1)
         att = self.attn_drop(att)
         # (B, nh, T', T'') x (B, nh, T'', hs) -> (B, nh, T', hs)
         out = att @ (v * kv_mask[:, None, :, None].to(v.dtype))
         # re-assemble all head outputs side by side
-        out = out.transpose(2, 3).contiguous().view(B, C, -1)
+        out = out.transpose(2, 3).contiguous().view(b, c, -1)
 
         # output projection + skip connection
         out = self.proj_drop(self.proj(out)) * qx_mask.unsqueeze(1).to(out.dtype)
@@ -398,10 +398,12 @@ class LocalMaskedMHCA(nn.Module):
 
     def _sliding_chunks_query_key_matmul(self, query, key, num_heads, window_overlap):
         """
-        Matrix multiplication of query and key tensors using with a sliding window attention pattern. This implementation splits the input into overlapping chunks of size 2w with an overlap of size w (window_overlap)
+        Matrix multiplication of query and key tensors using with a sliding window attention pattern.
+        This implementation splits the input into overlapping chunks of size 2w with an overlap of size w
+        (window_overlap)
         """
         # query / key: B*nh, T, hs
-        bnh, seq_len, head_dim = query.size()
+        bnh, seq_len, _ = query.size()
         batch_size = bnh // num_heads
         assert seq_len % (window_overlap * 2) == 0
         assert query.size() == key.size()
@@ -425,9 +427,9 @@ class LocalMaskedMHCA(nn.Module):
         )
 
         # allocate space for the overall attention matrix where the chunks are combined. The last dimension
-        # has (window_overlap * 2 + 1) columns. The first (window_overlap) columns are the window_overlap lower triangles (attention from a word to
-        # window_overlap previous words). The following column is attention score from each word to itself, then
-        # followed by window_overlap columns for the upper triangle.
+        # has (window_overlap * 2 + 1) columns. The first (window_overlap) columns are the window_overlap
+        # lower triangles (attention from a word to window_overlap previous words). The following column is
+        # attention score from each word to itself, then followed by window_overlap columns for the upper triangle.
         diagonal_attention_scores = diagonal_chunked_attention_scores.new_empty(
             (batch_size * num_heads, chunks_count + 1, window_overlap, window_overlap * 2 + 1)
         )
@@ -495,7 +497,7 @@ class LocalMaskedMHCA(nn.Module):
     def forward(self, x, mask):
         # x: batch size, feature channel, sequence length,
         # mask: batch size, 1, sequence length (bool)
-        B, C, T = x.size()
+        b, c, _ = x.size()
 
         # step 1: depth convolutions
         # query conv -> (B, nh * hs, T')
@@ -513,13 +515,13 @@ class LocalMaskedMHCA(nn.Module):
         k = self.key(k)
         v = self.value(v)
         # (B, nh * hs, T) -> (B, nh, T, hs)
-        q = q.view(B, self.n_head, self.n_channels, -1).transpose(2, 3)
-        k = k.view(B, self.n_head, self.n_channels, -1).transpose(2, 3)
-        v = v.view(B, self.n_head, self.n_channels, -1).transpose(2, 3)
+        q = q.view(b, self.n_head, self.n_channels, -1).transpose(2, 3)
+        k = k.view(b, self.n_head, self.n_channels, -1).transpose(2, 3)
+        v = v.view(b, self.n_head, self.n_channels, -1).transpose(2, 3)
         # view as (B * nh, T, hs)
-        q = q.view(B * self.n_head, -1, self.n_channels).contiguous()
-        k = k.view(B * self.n_head, -1, self.n_channels).contiguous()
-        v = v.view(B * self.n_head, -1, self.n_channels).contiguous()
+        q = q.view(b * self.n_head, -1, self.n_channels).contiguous()
+        k = k.view(b * self.n_head, -1, self.n_channels).contiguous()
+        v = v.view(b * self.n_head, -1, self.n_channels).contiguous()
 
         # step 3: compute local self-attention with rel pe and masking
         q *= self.scale
@@ -530,7 +532,7 @@ class LocalMaskedMHCA(nn.Module):
         if self.use_rel_pe:
             att += self.rel_pe
         # kv_mask -> B, T'', 1
-        inverse_kv_mask = torch.logical_not(kv_mask[:, None, :, None].view(B, -1, 1))
+        inverse_kv_mask = torch.logical_not(kv_mask[:, None, :, None].view(b, -1, 1))
         # 0 for valid slot, -inf for masked ones
         float_inverse_kv_mask = inverse_kv_mask.type_as(q).masked_fill(inverse_kv_mask, -1e4)
         # compute the diagonal mask (for each local window)
@@ -552,7 +554,7 @@ class LocalMaskedMHCA(nn.Module):
         # chunked attn value product -> B, nh, T, hs
         out = self._sliding_chunks_matmul_attn_probs_value(att, v, self.n_head, self.window_overlap)
         # transpose to B, nh, hs, T -> B, nh*hs, T
-        out = out.transpose(2, 3).contiguous().view(B, C, -1)
+        out = out.transpose(2, 3).contiguous().view(b, c, -1)
         # output projection + skip connection
         out = self.proj_drop(self.proj(out)) * qx_mask.unsqueeze(1).to(out.dtype)
         return out, qx_mask
@@ -587,7 +589,8 @@ class DropPath(nn.Module):
 
 class AffineDropPath(nn.Module):
     """
-    Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks) with a per channel scaling factor (and zero init)
+    Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks) with a per channel scaling
+    factor (and zero init)
     See: https://arxiv.org/pdf/2103.17239.pdf
     """
 

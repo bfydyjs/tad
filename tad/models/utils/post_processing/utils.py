@@ -2,12 +2,12 @@ import pickle
 from pathlib import Path
 
 import torch
-import torch.nn.functional as F
+from torch.nn.functional import max_pool1d
 
 
 def boundary_choose(score):
     mask_high = score > score.max(dim=1, keepdim=True)[0] * 0.5
-    mask_peak = score == F.max_pool1d(score, kernel_size=3, stride=1, padding=1)
+    mask_peak = score == max_pool1d(score, kernel_size=3, stride=1, padding=1)
     mask = mask_peak | mask_high
     return mask
 
@@ -23,7 +23,9 @@ def save_predictions(predictions, metas, folder):
 
 
 def load_single_prediction(metas, folder):
-    """Should not be used for sliding window. Since we saved the files with video name, and sliding window will have multiple files with the same name."""
+    """Should not be used for sliding window. Since we saved the files with video name, and sliding window will have
+    multiple files with the same name.
+    """
     predictions = []
     for idx in range(len(metas)):
         video_name = metas[idx]["video_name"]
