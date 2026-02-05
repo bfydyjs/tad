@@ -1,18 +1,33 @@
+import argparse
+import datetime
 import os
 import time
-import datetime
-import argparse
-import wandb
+from pathlib import Path
+
 import torch
 import torch.distributed as dist
-from pathlib import Path
+import wandb
+from torch.amp import GradScaler
 from torch.distributed.algorithms.ddp_comm_hooks import default as comm_hooks
 from torch.nn.parallel import DistributedDataParallel
-from torch.amp import GradScaler
+
+from tad.datasets import build_dataloader, build_dataset
+from tad.engine import build_optimizer, build_scheduler, eval_one_epoch, train_one_epoch
 from tad.models import build_detector
-from tad.datasets import build_dataset, build_dataloader
-from tad.engine import train_one_epoch, eval_one_epoch, build_optimizer, build_scheduler
-from tad.utils import set_seed,update_workdir,create_folder,save_config,setup_logger,ModelEma,save_checkpoint,Config,DictAction,get_custom_config,LRFinder,calculate_params_gflops
+from tad.utils import (
+    Config,
+    DictAction,
+    LRFinder,
+    ModelEma,
+    calculate_params_gflops,
+    create_folder,
+    get_custom_config,
+    save_checkpoint,
+    save_config,
+    set_seed,
+    setup_logger,
+    update_workdir,
+)
 
 
 def parse_args():
@@ -29,7 +44,7 @@ def parse_args():
     return args
 
 
-def main():
+def main(): # noqa: C901
     args = parse_args()
 
     # load config
@@ -80,7 +95,7 @@ def main():
             drop_last=True,
             **cfg.dataloader.train,
         )
-    
+
         val_dataset = build_dataset(cfg.dataset.val, default_args=dict(logger=logger))
         val_loader = build_dataloader(
             val_dataset,
@@ -90,7 +105,7 @@ def main():
             drop_last=False,
             **cfg.dataloader.val,
         )
-    
+
         # build model
         model = build_detector(cfg.model)
         params, gflops = calculate_params_gflops(model, cfg)
@@ -121,7 +136,7 @@ def main():
             logger.info(f"Using DDP with total {args.world_size} GPUS...")
         else:
             logger.info("Running on single GPU (No DDP)...")
-    
+
         # FP16 compression
         use_fp16_compress = getattr(cfg.dataloader, "fp16_compress", False)
         if use_fp16_compress:
@@ -130,11 +145,11 @@ def main():
                 model.register_comm_hook(state=None, hook=comm_hooks.fp16_compress_hook)
             else:
                 logger.warning("FP16 compression is ignored in non-distributed mode.")
-    
+
         # Model EMA
         logger.info("Using Model EMA...")
         model_ema = ModelEma(model)
-    
+
         # AMP: automatic mixed precision
         use_amp = getattr(cfg.dataloader, "amp", False)
         if use_amp:
@@ -142,11 +157,11 @@ def main():
             scaler = GradScaler()
         else:
             scaler = None
-    
+
         # build optimizer and scheduler
         optimizer = build_optimizer(cfg.optimizer, model, logger)
         scheduler, max_epoch = build_scheduler(cfg.scheduler, optimizer, len(train_loader))
-    
+
         # LR Range Test
         if args.lr_range_test:
             logger.info("Running LR Range Test...")
@@ -157,10 +172,10 @@ def main():
                 lr_finder.plot(save_path=str(save_path))
                 logger.info(f"LR Range Test finished. Plot saved to {save_path}")
             return
-    
+
         # override the max_epoch
         max_epoch = cfg.workflow.get("end_epoch", max_epoch)
-    
+
         # resume: reset epoch, load checkpoint / best rmse
         val_map_best = 0.0
         if args.resume is not None:
@@ -176,21 +191,21 @@ def main():
             scheduler.load_state_dict(checkpoint["scheduler"])
             if model_ema is not None:
                 model_ema.module.load_state_dict(checkpoint["state_dict_ema"])
-    
+
             del checkpoint  #  save memory if the model is very large such as ViT-g
             torch.cuda.empty_cache()
         else:
             resume_epoch = -1
-    
+
         # train the detector
         logger.info("Training Starts...\n")
         start_time = time.time()
         val_start_epoch = cfg.workflow.get("val_start_epoch", 0)
-        
+
         for epoch in range(resume_epoch + 1, max_epoch):
             log_dict = {}
             train_loader.sampler.set_epoch(epoch)
-    
+
             # train for one epoch (returns last_global_step for exact alignment)
             global_step = train_one_epoch(
                 train_loader,
@@ -205,7 +220,7 @@ def main():
                 logging_interval=cfg.workflow.logging_interval,
                 scaler=scaler,
             )
-    
+
             # save checkpoint
             if (epoch == max_epoch - 1) or ((epoch + 1) % cfg.workflow.checkpoint_interval == 0):
                 if args.rank == 0:
@@ -219,7 +234,7 @@ def main():
                         mode='last.pt',
                         val_map_best=val_map_best
                     )
-    
+
             # val_eval for one epoch
             if epoch >= val_start_epoch:
                 if (cfg.workflow.val_eval_interval > 0) and ((epoch + 1) % cfg.workflow.val_eval_interval == 0):
@@ -251,9 +266,9 @@ def main():
                                 val_map_best=val_map_best
                             )
             log_dict["Epoch"] = epoch
-            if args.rank == 0:               
+            if args.rank == 0:
                 wandb.log(log_dict, step=global_step)
-    
+
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
         logger.info(f"Training Over, total time: {total_time_str}\n")
@@ -266,7 +281,7 @@ def main():
         if hasattr(args, "distributed") and args.distributed:
             if dist.is_initialized():
                 dist.destroy_process_group()
-    
-    
+
+
 if __name__ == "__main__":
     main()

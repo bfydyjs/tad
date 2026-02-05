@@ -1,17 +1,18 @@
+import argparse
 import os
 import sys
-sys.dont_write_bytecode = True
-import argparse
+from pathlib import Path
+
 import torch
 import torch.distributed as dist
-from pathlib import Path
 from torch.nn.parallel import DistributedDataParallel
-from tad.models import build_detector
-from tad.datasets import build_dataset, build_dataloader
+
+from tad.datasets import build_dataloader, build_dataset
 from tad.engine import eval_one_epoch
-from tad.utils import update_workdir, set_seed, create_folder, setup_logger, Config, DictAction
+from tad.models import build_detector
+from tad.utils import Config, DictAction, create_folder, set_seed, setup_logger, update_workdir
 
-
+sys.dont_write_bytecode = True
 def parse_args():
     parser = argparse.ArgumentParser(description="Test a Temporal Action Detector")
     parser.add_argument("config", metavar="FILE", type=str, help="path to config file")
@@ -25,7 +26,7 @@ def parse_args():
     return args
 
 
-def main():
+def main():  # noqa: C901
     args = parse_args()
 
     # load config
@@ -80,8 +81,8 @@ def main():
     model = model.to(args.local_rank)
     if args.distributed:
         model = DistributedDataParallel(
-            model, 
-            device_ids=[args.local_rank], 
+            model,
+            device_ids=[args.local_rank],
             output_device=args.local_rank
         )
         logger.info(f"Using DDP with total {args.world_size} GPUS...")
@@ -133,7 +134,7 @@ def main():
         skip_eval=args.skip_eval,
     )
     logger.info("Testing Over...\n")
-    
+
     if args.distributed:
         if dist.is_initialized():
             dist.destroy_process_group()
