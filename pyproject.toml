@@ -27,7 +27,7 @@ include = ["ddiou*"]
 [tool.ruff]
 line-length = 120
 target-version = "py311"
-fix = true # ruff check --fix
+fix = true
 unsafe-fixes = false
 
 [tool.ruff.lint]
