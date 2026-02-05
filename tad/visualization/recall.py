@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from .builder import EVALUATORS, remove_duplicate_annotations
-from .mAP import segment_iou
+from .map import segment_iou
 
 
 @EVALUATORS.register_module()
@@ -17,10 +17,12 @@ class Recall:
         prediction_file,
         subset,
         tiou_thresholds,
-        topk=[1, 5, 10, 100],
+        topk=None,
         max_avg_proposals_per_video=100,
         blocked_videos=None,
     ):
+        if topk is None:
+            topk = [1, 5, 10, 100]
         super().__init__()
 
         if not ground_truth_file:
@@ -164,14 +166,14 @@ class Recall:
 
         # Calculate AUC for each tIoU threshold
         self.auc_per_tiou = []
-        for i, tiou in enumerate(self.tiou_thresholds):
+        for i, _ in enumerate(self.tiou_thresholds):
             tiou_area = np.trapz(recall[i, :], proposals_per_video)
             tiou_auc = float(tiou_area) / proposals_per_video[-1]
             self.auc_per_tiou.append(tiou_auc)
 
         metric_dict = dict(average_AUC=self.average_auc)
         # Add per tIoU AUC to metric_dict
-        for i, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou)):
+        for _, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou, strict=False)):
             metric_dict[f"AUC@{tiou}"] = auc
         # Add per tIoU AR@k to metric_dict
         for k in self.topk:
@@ -194,7 +196,7 @@ class Recall:
         pprint(f"Fixed threshold for tiou score: {self.tiou_thresholds}")
         pprint(f"average_AUC: {self.average_auc * 100:>4.2f} (%)")
         # Print per tIoU AUC
-        for i, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou)):
+        for _, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou, strict=False)):
             pprint(f"AUC@{tiou:.2f} is {auc * 100:>4.2f}%")
         pprint("")
         # Print average AR@k
@@ -259,7 +261,7 @@ def average_recall_vs_avg_nr_proposals(
     ground_truth,
     proposals,
     max_avg_nr_proposals=None,
-    tiou_thresholds=np.linspace(0.5, 0.95, 10),
+    tiou_thresholds=None,
 ):
     """Computes the average recall given an average number
         of proposals per video.
@@ -282,6 +284,8 @@ def average_recall_vs_avg_nr_proposals(
     proposals_per_video : 1darray
         average number of proposals per video.
     """
+    if tiou_thresholds is None:
+        tiou_thresholds = np.linspace(0.5, 0.95, 10)
 
     # Get list of videos.
     video_lst = ground_truth["video-id"].unique()
