@@ -210,7 +210,7 @@ class Recall:
     def plot_recall_curves(self):
         """Plots recall curves for each k value, with tiou_thresholds on x-axis"""
         # Define colors for different k values
-        colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+        colors = ["r", "g", "b", "c", "m", "y", "k"]
 
         # Create subplots for different k values
         num_k = len(self.topk)
@@ -228,12 +228,12 @@ class Recall:
             recall_values = self.recall[:, k - 1]
 
             # Plot the curve
-            ax.plot(self.tiou_thresholds, recall_values, 'o-', color=colors[k_idx % len(colors)], label=f'Recall@{k}')
+            ax.plot(self.tiou_thresholds, recall_values, "o-", color=colors[k_idx % len(colors)], label=f"Recall@{k}")
 
             # Set labels and title
-            ax.set_xlabel('tIoU Thresholds')
-            ax.set_ylabel(f'per tIoU Recall@{k}')
-            ax.set_title(f'Recall@{k} vs tIoU Thresholds')
+            ax.set_xlabel("tIoU Thresholds")
+            ax.set_ylabel(f"per tIoU Recall@{k}")
+            ax.set_title(f"Recall@{k} vs tIoU Thresholds")
             ax.grid(True)
             ax.legend()
 
@@ -246,9 +246,9 @@ class Recall:
         plt.tight_layout()
 
         # Set default save path if not provided
-        output_path = (Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "recall_curves.png")
+        output_path = Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "recall_curves.png"
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         print(f"Recall curves saved to: {output_path}")
 
         # Show the figure

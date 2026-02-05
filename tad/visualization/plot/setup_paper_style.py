@@ -11,7 +11,11 @@ def setup_paper_style():
     plt.rcParams.update(
         {
             "font.family": "sans-serif",
-            "font.sans-serif": [ "Arial", "Helvetica", "DejaVu Sans",],  # Font fallback priority order
+            "font.sans-serif": [
+                "Arial",
+                "Helvetica",
+                "DejaVu Sans",
+            ],  # Font fallback priority order
             "font.size": 11,
             "axes.labelsize": 13,
             "axes.titlesize": 13,

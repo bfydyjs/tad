@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from torch.nn.functional import interpolate, silu
 
 from .actionformer_proj import get_sinusoid_encoding
 from .bricks import AffineDropPath, ConvModule
@@ -15,25 +15,27 @@ class LiteMamba(nn.Module):
         self.d_conv = d_conv
 
         self.in_proj = nn.Linear(d_model, self.d_inner * 2)
-        self.conv = nn.Conv1d(self.d_inner, self.d_inner, kernel_size=d_conv, padding=d_conv//2, groups=self.d_inner)
+        self.conv = nn.Conv1d(self.d_inner, self.d_inner, kernel_size=d_conv, padding=d_conv // 2, groups=self.d_inner)
         self.act = nn.SiLU()
         self.out_proj = nn.Linear(self.d_inner, d_model)
 
     def forward(self, x):
         # x: [B, L, D]
-        B, L, D = x.shape
+        _, L, _ = x.shape
         x_and_z = self.in_proj(x)
         x_val, z_val = x_and_z.chunk(2, dim=-1)
 
         x_conv = self.conv(x_val.transpose(1, 2))[:, :, :L].transpose(1, 2)
         x_act = self.act(x_conv)
-        out = x_act * F.silu(z_val)
+        out = x_act * silu(z_val)
         out = self.out_proj(out)
         return out
+
 
 try:
     from mamba_ssm.modules.mamba_new import Mamba as DBM
     from mamba_ssm.modules.mamba_simple import Mamba as ViM
+
     MAMBA_AVAILABLE = True
 except ImportError:
     print("Warning: mamba_ssm not found. Using LiteMamba (Pure PyTorch) fallback.")
@@ -56,13 +58,15 @@ class MambaProj(nn.Module):
         use_abs_pe=False,  # use absolute position embedding
         max_seq_len=2304,
         input_pdrop=0.0,  # drop out the input feature
-        mamba_cfg=dict(kernel_size=4, drop_path_rate=0.3, use_mamba_type="dbm"),  # default to DBM
+        mamba_cfg=None,  # default to DBM
         **kwargs,  # 接收未使用的参数
     ):
+        if mamba_cfg is None:
+            mamba_cfg = dict(kernel_size=4, drop_path_rate=0.3, use_mamba_type="dbm")
         super().__init__()
-        assert (
-            MAMBA_AVAILABLE
-        ), "Please install mamba-ssm to use this module. Check: https://github.com/OpenGVLab/video-mamba-suite"
+        assert MAMBA_AVAILABLE, (
+            "Please install mamba-ssm to use this module. Check: https://github.com/OpenGVLab/video-mamba-suite"
+        )
 
         assert len(arch) == 3
 
@@ -80,7 +84,7 @@ class MambaProj(nn.Module):
         if isinstance(self.in_channels, (list, tuple)):
             assert isinstance(self.out_channels, (list, tuple)) and len(self.in_channels) == len(self.out_channels)
             self.proj = nn.ModuleList([])
-            for n_in, n_out in zip(self.in_channels, self.out_channels):
+            for n_in, n_out in zip(self.in_channels, self.out_channels, strict=False):
                 self.proj.append(
                     ConvModule(
                         n_in,
@@ -140,7 +144,9 @@ class MambaProj(nn.Module):
 
         # feature projection
         if self.proj is not None:
-            x = torch.cat([proj(s, mask)[0] for proj, s in zip(self.proj, x.split(self.in_channels, dim=1))], dim=1)
+            x = torch.cat(
+                [proj(s, mask)[0] for proj, s in zip(self.proj, x.split(self.in_channels, dim=1), strict=False)], dim=1
+            )
 
         # drop out input if needed
         if self.input_pdrop is not None:
@@ -160,7 +166,7 @@ class MambaProj(nn.Module):
         # inference: re-interpolate position embeddings for over-length sequences
         if self.use_abs_pe and (not self.training):
             if x.shape[-1] >= self.max_seq_len:
-                pe = F.interpolate(self.pos_embed, x.shape[-1], mode="linear", align_corners=False)
+                pe = interpolate(self.pos_embed, x.shape[-1], mode="linear", align_corners=False)
             else:
                 pe = self.pos_embed
             # add pe to x

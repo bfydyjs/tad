@@ -11,17 +11,17 @@ from .mamba_proj import MambaProj
 from .point_generator import PointGenerator
 
 __all__ = [
-           "BackboneWrapper",
-           "DIOULoss",
-           "DecoupledIoUHead",
-           "DyFADet",
-           "DynEProj",
-           "FPNIdentity",
-           "FocalLoss",
-           "GDKLayer",
-           "GIOULoss",
-           "MambaProj",
-           "PointGenerator",
-           "TDynHead",
-           "build_detector"
-           ]
+    "BackboneWrapper",
+    "DIOULoss",
+    "DecoupledIoUHead",
+    "DyFADet",
+    "DynEProj",
+    "FPNIdentity",
+    "FocalLoss",
+    "GDKLayer",
+    "GIOULoss",
+    "MambaProj",
+    "PointGenerator",
+    "TDynHead",
+    "build_detector",
+]

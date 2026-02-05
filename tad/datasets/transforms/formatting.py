@@ -38,17 +38,21 @@ class Collect:
     ):
         self.inputs = inputs
         self.keys = keys if keys is not None else []
-        self.meta_keys = meta_keys if meta_keys is not None else [
-            "video_name",
-            "data_path",
-            "fps",
-            "duration",
-            "snippet_stride",
-            "window_start_frame",
-            "resize_length",
-            "window_size",
-            "offset_frames",
-        ]
+        self.meta_keys = (
+            meta_keys
+            if meta_keys is not None
+            else [
+                "video_name",
+                "data_path",
+                "fps",
+                "duration",
+                "snippet_stride",
+                "window_start_frame",
+                "resize_length",
+                "window_size",
+                "offset_frames",
+            ]
+        )
 
     def __call__(self, results):
         data = {}

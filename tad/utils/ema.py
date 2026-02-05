@@ -7,7 +7,7 @@ class ModelEma(torch.nn.Module):
     def __init__(self, model, decay=0.999):
         super().__init__()
         # make a copy of the model for accumulating moving average of weights
-        if hasattr(model, 'module'):
+        if hasattr(model, "module"):
             model = model.module
 
         self.module = deepcopy(model)
@@ -15,7 +15,7 @@ class ModelEma(torch.nn.Module):
         self.decay = decay
 
     def _update(self, model, update_fn):
-        if hasattr(model, 'module'):
+        if hasattr(model, "module"):
             model = model.module
 
         # Ensure EMA model is on the same device as the model

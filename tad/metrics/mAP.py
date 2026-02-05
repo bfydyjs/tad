@@ -8,7 +8,7 @@ from .builder import EVALUATORS, remove_duplicate_annotations
 
 
 @EVALUATORS.register_module()
-class mAP:
+class MeanAveragePrecision:
     def __init__(
         self,
         ground_truth_file,
@@ -238,16 +238,16 @@ class mAP:
         self.average_mAP = self.mAPs.mean()
 
         metric_dict = dict(average_mAP=self.average_mAP)
-        for tiou, mAP in zip(self.tiou_thresholds, self.mAPs):
-            metric_dict[f"mAP@{tiou}"] = mAP
+        for tiou, map in zip(self.tiou_thresholds, self.mAPs, strict=False):
+            metric_dict[f"mAP@{tiou}"] = map
 
         # if top_k is not None, we will compute top-kx recall
         if self.top_k is not None:
             self.recall = self.multi_thread_compute_topkx_recall()
             self.mRecall = self.recall.mean(axis=2)
 
-            for tiou, mRecall in zip(self.tiou_thresholds, self.mRecall):
-                for k, recall in zip(self.top_k, mRecall):
+            for tiou, mrecall in zip(self.tiou_thresholds, self.mRecall, strict=False):
+                for k, recall in zip(self.top_k, mrecall, strict=False):
                     metric_dict[f"recall@{tiou}@{k}"] = recall
 
         return metric_dict
@@ -263,14 +263,14 @@ class mAP:
         pprint(f"Number of predictions: {len(self.prediction)}")
         pprint(f"Fixed threshold for tiou score: {self.tiou_thresholds}")
         pprint(f"Average-mAP: {self.average_mAP * 100:>4.2f} (%)")
-        for tiou, mAP in zip(self.tiou_thresholds, self.mAPs, strict=True):
-            pprint(f"mAP at tIoU {tiou:.2f} is {mAP * 100:>4.2f}%")
+        for tiou, map in zip(self.tiou_thresholds, self.mAPs, strict=True):
+            pprint(f"mAP at tIoU {tiou:.2f} is {map * 100:>4.2f}%")
 
         # if top_k is not None, print top-kx recall
         if self.top_k is not None:
             pprint(f"Fixed top-kx results: {self.top_k}")
             for tiou, recall in zip(self.tiou_thresholds, self.mRecall, strict=True):
-                recall_string = [f"R{k:d} is {r * 100:>4.2f}%" for k, r in zip(self.top_k, recall,strict=True)]
+                recall_string = [f"R{k:d} is {r * 100:>4.2f}%" for k, r in zip(self.top_k, recall, strict=True)]
                 pprint(f"Recall at tIoU {tiou:.2f}: {', '.join(recall_string)}")
 
 
@@ -450,8 +450,8 @@ def segment_iou(target_segment, candidate_segments):
     )
     # Compute overlap as the ratio of the intersection
     # over union of two segments.
-    tIoU = segments_intersection.astype(float) / segments_union.clip(1e-8)
-    return tIoU
+    tiou = segments_intersection.astype(float) / segments_union.clip(1e-8)
+    return tiou
 
 
 def k_segment_iou(target_segments, candidate_segments):
@@ -470,7 +470,7 @@ def interpolated_prec_rec(prec, rec):
 
 
 @EVALUATORS.register_module()
-class mAP_EPIC:
+class MeanAveragePrecisionEpic:
     def __init__(
         self,
         ground_truth_file,
@@ -675,8 +675,8 @@ class mAP_EPIC:
         self.average_mAP = self.mAPs.mean()
 
         metric_dict = dict(average_mAP=self.average_mAP)
-        for tiou, mAP in zip(self.tiou_thresholds, self.mAPs, strict=True):
-            metric_dict[f"mAP@{tiou}"] = mAP
+        for tiou, map in zip(self.tiou_thresholds, self.mAPs, strict=True):
+            metric_dict[f"mAP@{tiou}"] = map
         return metric_dict
 
     def logging(self, logger=None):
@@ -690,5 +690,5 @@ class mAP_EPIC:
         pprint(f"Number of predictions: {len(self.prediction)}")
         pprint(f"Fixed threshold for tiou score: {self.tiou_thresholds}")
         pprint(f"Average-mAP: {self.average_mAP * 100:>4.2f} (%)")
-        for tiou, mAP in zip(self.tiou_thresholds, self.mAPs, strict=True):
-            pprint(f"mAP at tIoU {tiou:.2f} is {mAP * 100:>4.2f}%")
+        for tiou, map in zip(self.tiou_thresholds, self.mAPs, strict=True):
+            pprint(f"mAP at tIoU {tiou:.2f} is {map * 100:>4.2f}%")

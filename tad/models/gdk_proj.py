@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from torch.nn.functional import interpolate
 
 from .actionformer_proj import get_sinusoid_encoding
 from .bricks import AffineDropPath, ConvModule
@@ -18,14 +18,15 @@ class GDKProj(nn.Module):
         max_seq_len=2304,
         mlp_dim=512,  # the number of dim of mlp
         # encoder_win_size=1,  # size of local window for mha
-        kernel_sizes=[3,11],  # the expanded kernel weight
+        kernel_sizes=None,  # the expanded kernel weight
         init_conv_vars=1.0,  # initialization of gaussian variance for the weight
         path_pdrop=0.0,  # dropout rate for drop path
         input_noise=0.0,
         gate_hidden_ratio=0.25,
         gate_temperature=1.0,
-
     ):
+        if kernel_sizes is None:
+            kernel_sizes = [3, 11]
         super().__init__()
         assert len(arch) == 3
 
@@ -39,7 +40,7 @@ class GDKProj(nn.Module):
         if isinstance(self.in_channels, (list, tuple)):
             assert isinstance(self.out_channels, (list, tuple)) and len(self.in_channels) == len(self.out_channels)
             self.proj_layers = nn.ModuleList([])
-            for n_in, n_out in zip(self.in_channels, self.out_channels):
+            for n_in, n_out in zip(self.in_channels, self.out_channels, strict=False):
                 self.proj_layers.append(
                     ConvModule(
                         n_in,
@@ -75,7 +76,7 @@ class GDKProj(nn.Module):
 
         # stem network using (vanilla) transformer
         self.stem_blocks = nn.ModuleList()
-        kernel_sizes_stem = [1] + kernel_sizes[1:]
+        kernel_sizes_stem = [1, *kernel_sizes[1:]]
         for _ in range(arch[1]):
             self.stem_blocks.append(
                 GDKLayer(
@@ -86,7 +87,7 @@ class GDKProj(nn.Module):
                     init_conv_vars=init_conv_vars,
                     gate_hidden_ratio=gate_hidden_ratio,
                     gate_temperature=gate_temperature,
-                    )
+                )
             )
 
         # main branch using transformer with pooling
@@ -126,7 +127,10 @@ class GDKProj(nn.Module):
 
         # feature projection
         if self.proj_layers is not None:
-            x = torch.cat([proj(s, mask)[0] for proj, s in zip(self.proj_layers, x.split(self.in_channels, dim=1))], dim=1)
+            x = torch.cat(
+                [proj(s, mask)[0] for proj, s in zip(self.proj_layers, x.split(self.in_channels, dim=1), strict=False)],
+                dim=1,
+            )
 
         # embedding network
         for block in self.embed_blocks:
@@ -142,7 +146,7 @@ class GDKProj(nn.Module):
         # inference: re-interpolate position embeddings for over-length sequences
         if self.use_abs_pe and (not self.training):
             if x.shape[-1] >= self.max_seq_len:
-                pe = F.interpolate(self.pos_embed, x.shape[-1], mode="linear", align_corners=False)
+                pe = interpolate(self.pos_embed, x.shape[-1], mode="linear", align_corners=False)
             else:
                 pe = self.pos_embed
             # add pe to x
@@ -167,6 +171,7 @@ class GDKProj(nn.Module):
 
 class GatedMLP(nn.Module):
     """Gated MLP with optional group convolution support."""
+
     def __init__(
         self,
         in_features,
@@ -185,10 +190,10 @@ class GatedMLP(nn.Module):
         self.fc2 = nn.Conv1d(hidden_features, out_features, kernel_size=1, groups=group)
 
     def forward(self, x):
-        x = self.fc1(x)                     # B, 2*H, T
-        x, gate = x.chunk(2, dim=1)         # split into feature and gate
-        x = x * self.act(gate)              # gated activation
-        x = self.fc2(x)                     # project back
+        x = self.fc1(x)  # B, 2*H, T
+        x, gate = x.chunk(2, dim=1)  # split into feature and gate
+        x = x * self.act(gate)  # gated activation
+        x = self.fc2(x)  # project back
         return x
 
 
@@ -196,7 +201,7 @@ class GDKLayer(nn.Module):
     def __init__(
         self,
         embed_dim,
-        kernel_sizes=[3,11],
+        kernel_sizes=None,
         downsample_stride=1,
         group=1,
         output_dim=None,
@@ -207,6 +212,8 @@ class GDKLayer(nn.Module):
         gate_hidden_ratio=0.25,
         gate_temperature=1.0,
     ):
+        if kernel_sizes is None:
+            kernel_sizes = [3, 11]
         super().__init__()
 
         self.kernel_sizes = kernel_sizes
@@ -215,7 +222,6 @@ class GDKLayer(nn.Module):
         if output_dim is None:
             output_dim = embed_dim
 
-        # 归一化层（保持不变）
         self.ln1 = nn.LayerNorm(embed_dim, eps=1e-6)
         self.gn1 = nn.GroupNorm(16, embed_dim, eps=1e-6)
         self.ln2 = nn.LayerNorm(embed_dim, eps=1e-6)
@@ -223,12 +229,16 @@ class GDKLayer(nn.Module):
 
         assert kernel_sizes[0] % 2 == 1
 
-        self.psi_conv = nn.Conv1d(embed_dim, embed_dim, kernel_sizes[0], stride=1, padding=kernel_sizes[0] // 2, groups=embed_dim)
-        self.weight_conv = nn.Conv1d(embed_dim, embed_dim, kernel_sizes[0], stride=1, padding=kernel_sizes[0] // 2, groups=embed_dim)
+        self.psi_conv = nn.Conv1d(
+            embed_dim, embed_dim, kernel_sizes[0], stride=1, padding=kernel_sizes[0] // 2, groups=embed_dim
+        )
+        self.weight_conv = nn.Conv1d(
+            embed_dim, embed_dim, kernel_sizes[0], stride=1, padding=kernel_sizes[0] // 2, groups=embed_dim
+        )
 
         adaptive_kernel_list = []
         for ksz in kernel_sizes:
-            ksz = int(round(ksz))
+            ksz = round(ksz)
             if ksz % 2 == 0:
                 ksz += 1
             adaptive_kernel_list.append(max(3, ksz))
@@ -250,25 +260,28 @@ class GDKLayer(nn.Module):
         )
 
         if downsample_stride > 1:
-            kernel_size_pool, stride_pool, padding_pool = downsample_stride + 1, downsample_stride, (downsample_stride + 1) // 2
+            kernel_size_pool, stride_pool, padding_pool = (
+                downsample_stride + 1,
+                downsample_stride,
+                (downsample_stride + 1) // 2,
+            )
             self.downsample = nn.MaxPool1d(kernel_size_pool, stride=stride_pool, padding=padding_pool)
             self.stride = stride_pool
         else:
             self.downsample = nn.Identity()
             self.stride = 1
 
-        # 🔥 替换：使用 GatedMLP 代替原始两层 Conv1d MLP
+        # 使用 GatedMLP 代替原始两层 Conv1d MLP
         if mlp_hidden_dim is None:
             mlp_hidden_dim = 4 * embed_dim  # default expansion
         self.mlp_block = GatedMLP(
             in_features=embed_dim,
             hidden_features=mlp_hidden_dim,
             out_features=output_dim,
-            act_layer=nn.SiLU,  # 推荐 SiLU，也可用 GELU
+            act_layer=nn.SiLU,
             group=group,
         )
 
-        # drop path（保持不变）
         if path_pdrop > 0.0:
             self.drop_path_main = AffineDropPath(embed_dim, drop_prob=path_pdrop)
             self.drop_path_mlp = AffineDropPath(output_dim, drop_prob=path_pdrop)
@@ -291,7 +304,7 @@ class GDKLayer(nn.Module):
                 torch.nn.init.constant_(module.bias, 0)
 
     def forward(self, x, mask):
-        B, C, T = x.shape
+        b, _, _ = x.shape  # (batch, channel, time)
         x = self.downsample(x)
         out_mask = self.downsample(mask.unsqueeze(1).to(x.dtype)).detach()
         normalized_x = self.ln1(x.transpose(1, 2)).transpose(1, 2)
@@ -310,7 +323,7 @@ class GDKLayer(nn.Module):
         global_context = (normalized_x * mask_float).sum(dim=-1, keepdim=True) / valid_tokens
         gate_logits = self.kernel_gate_net(global_context).squeeze(-1)
         gate_weights = torch.softmax(gate_logits / self.gate_temperature, dim=1)
-        adaptive_fused = (gate_weights.view(B, self.num_kernels, 1, 1) * adaptive_stack).sum(dim=1)
+        adaptive_fused = (gate_weights.view(b, self.num_kernels, 1, 1) * adaptive_stack).sum(dim=1)
 
         main_out = (weight_feat + adaptive_fused) * psi_feat
         main_out = x * out_mask + self.drop_path_main(main_out)

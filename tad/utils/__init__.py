@@ -20,5 +20,5 @@ __all__ = [
     "save_config",
     "set_seed",
     "setup_logger",
-    "update_workdir"
+    "update_workdir",
 ]

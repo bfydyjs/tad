@@ -17,9 +17,7 @@ class PrepareVideoInfo:
 
     def __call__(self, results):
         results["modality"] = self.modality
-        results["filename"] = str(
-            Path(results["data_path"]) / f"{self.prefix}{results['video_name']}.{self.format}"
-        )
+        results["filename"] = str(Path(results["data_path"]) / f"{self.prefix}{results['video_name']}.{self.format}")
         return results
 
 
@@ -261,9 +259,9 @@ class LoadFrames:
 
         elif self.method == "random_trunc":
             assert results["snippet_stride"] >= self.scale_factor, "snippet_stride should be larger than scale_factor"
-            assert (
-                results["snippet_stride"] % self.scale_factor == 0
-            ), "snippet_stride should be divisible by scale_factor"
+            assert results["snippet_stride"] % self.scale_factor == 0, (
+                "snippet_stride should be divisible by scale_factor"
+            )
 
             frame_num = self.trunc_len * self.scale_factor
             frame_stride = results["snippet_stride"] // self.scale_factor
@@ -289,9 +287,9 @@ class LoadFrames:
 
         elif self.method == "sliding_window":
             assert results["snippet_stride"] >= self.scale_factor, "snippet_stride should be larger than scale_factor"
-            assert (
-                results["snippet_stride"] % self.scale_factor == 0
-            ), "snippet_stride should be divisible by scale_factor"
+            assert results["snippet_stride"] % self.scale_factor == 0, (
+                "snippet_stride should be divisible by scale_factor"
+            )
 
             window_size = results["window_size"]
             frame_num = window_size * self.scale_factor

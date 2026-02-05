@@ -1,5 +1,5 @@
 from .builder import build_evaluator
-from .mAP import mAP, mAP_EPIC
+from .mAP import MeanAveragePrecision, MeanAveragePrecisionEpic
 from .recall import Recall
 
-__all__ = ["Recall", "build_evaluator", "mAP", "mAP_EPIC"]
+__all__ = ["MeanAveragePrecision", "MeanAveragePrecisionEpic", "Recall", "build_evaluator"]

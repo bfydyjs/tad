@@ -8,12 +8,9 @@ class DictAction(argparse.Action):
         options = {}
         for kv in values:
             try:
-                key, value = kv.split('=', 1)
+                key, value = kv.split("=", 1)
             except ValueError as err:
-                msg = (
-                    f"Invalid key-value pair: {kv!r}. "
-                    "Expected format 'key=value'."
-                )
+                msg = f"Invalid key-value pair: {kv!r}. Expected format 'key=value'."
                 raise argparse.ArgumentError(self, msg) from err
             try:
                 value = yaml.safe_load(value)
@@ -22,6 +19,7 @@ class DictAction(argparse.Action):
                 raise argparse.ArgumentError(self, f"Failed to parse value for '{key}': {err}") from err
             options[key] = value
         setattr(namespace, self.dest, options)
+
 
 class Config(dict):
     def __getattr__(self, name):
@@ -59,7 +57,7 @@ class Config(dict):
 
     def merge_from_dict(self, options):
         for key, value in options.items():
-            keys = key.split('.')
+            keys = key.split(".")
             current = self
             for k in keys[:-1]:
                 try:
@@ -77,4 +75,5 @@ class Config(dict):
                 return [_to_dict(v) for v in d]
             else:
                 return d
+
         return yaml.dump(_to_dict(self), sort_keys=False, default_flow_style=None)

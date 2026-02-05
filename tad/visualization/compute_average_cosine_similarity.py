@@ -18,11 +18,19 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Calculate and Plot Average Cosine Similarity across Layers")
     parser.add_argument("config", help="Path to config file (e.g., configs/anet_tsp.yaml)")
     parser.add_argument("checkpoint", help="Path to checkpoint file (e.g., work_dirs/best.pt)")
-    parser.add_argument("--index", type=int, default=0, help="Index of the video sample to analyze (only used if --samples is not specified)")
-    parser.add_argument("--samples", type=int, default=None, help="Number of samples to average over. If not set, use all samples.")
+    parser.add_argument(
+        "--index",
+        type=int,
+        default=0,
+        help="Index of the video sample to analyze (only used if --samples is not specified)",
+    )
+    parser.add_argument(
+        "--samples", type=int, default=None, help="Number of samples to average over. If not set, use all samples."
+    )
     parser.add_argument("--output", default="average_cosine_similarity.png", help="Output image filename")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu", help="Device to use")
     return parser.parse_args()
+
 
 def compute_avg_cosine_similarity(feature_tensor):
     """
@@ -50,6 +58,7 @@ def compute_avg_cosine_similarity(feature_tensor):
 
     return avg_sim
 
+
 def main():
     args = parse_args()
     # ----------------------------------------------------------
@@ -67,7 +76,6 @@ def main():
     model.to(args.device)
     model.eval()
     # ----------------------------------------------------------
-
 
     # Determine range of samples
     if args.samples is None:
@@ -88,8 +96,8 @@ def main():
     for i in tqdm(indices):
         data_sample = dataset[i]
 
-        inputs = data_sample['inputs'].to(args.device).unsqueeze(0)
-        masks = data_sample['masks'].to(args.device).unsqueeze(0)
+        inputs = data_sample["inputs"].to(args.device).unsqueeze(0)
+        masks = data_sample["masks"].to(args.device).unsqueeze(0)
 
         # (a) Raw Features
         raw_sim = compute_avg_cosine_similarity(inputs[0])
@@ -101,13 +109,15 @@ def main():
 
         if isinstance(feats, (list, tuple)):
             for lvl, f in enumerate(feats):
-                if lvl not in global_layer_sims: global_layer_sims[lvl] = []
+                if lvl not in global_layer_sims:
+                    global_layer_sims[lvl] = []
                 avg_sim = compute_avg_cosine_similarity(f)
                 global_layer_sims[lvl].append(avg_sim)
         else:
-             if 0 not in global_layer_sims: global_layer_sims[0] = []
-             avg_sim = compute_avg_cosine_similarity(feats)
-             global_layer_sims[0].append(avg_sim)
+            if 0 not in global_layer_sims:
+                global_layer_sims[0] = []
+            avg_sim = compute_avg_cosine_similarity(feats)
+            global_layer_sims[0].append(avg_sim)
 
     # Calculate global averages
     avg_raw_sim = np.mean(global_raw_sim)
@@ -117,10 +127,11 @@ def main():
 
     print("-" * 60)
     print(f"Data for {args.config}:")
-    # Format: [Raw（Level 0）, Level 1, Level 2, ...]
-    data_list = [avg_raw_sim] + avg_layer_sims
+    # Format: [Raw(Level 0), Level 1, Level 2, ...]
+    data_list = [avg_raw_sim, *avg_layer_sims]
     print(f"[{', '.join(f'{x:.4f}' for x in data_list)}]")
     print("-" * 60)
+
 
 if __name__ == "__main__":
     main()

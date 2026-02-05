@@ -5,7 +5,7 @@ import torch
 
 
 class LRFinder:
-    def __init__(self, model, optimizer, device='cuda'):
+    def __init__(self, model, optimizer, device="cuda"):
         self.model = model
         self.optimizer = optimizer
         self.device = device
@@ -74,7 +74,7 @@ class LRFinder:
 
     # --- Helper methods to reduce complexity in range_test ---
     def _save_states(self):
-        if hasattr(self.model, 'module'):
+        if hasattr(self.model, "module"):
             self.model_state = copy.deepcopy(self.model.module.state_dict())
         else:
             self.model_state = copy.deepcopy(self.model.state_dict())
@@ -110,16 +110,16 @@ class LRFinder:
     def _run_step(self, data_dict, scaler, amp):
         if amp and scaler is not None:
             # Prefer the cuda autocast if available
-            autocast = getattr(torch.cuda.amp, 'autocast', None) or getattr(torch, 'amp', None)
+            autocast = getattr(torch.cuda.amp, "autocast", None) or getattr(torch, "amp", None)
             with autocast(enabled=True):
                 losses = self.model(**data_dict, return_loss=True)
-                loss = losses['cost']
+                loss = losses["cost"]
             scaler.scale(loss).backward()
             scaler.step(self.optimizer)
             scaler.update()
         else:
             losses = self.model(**data_dict, return_loss=True)
-            loss = losses['cost']
+            loss = losses["cost"]
             loss.backward()
             self.optimizer.step()
         return loss
@@ -167,9 +167,9 @@ class LRFinder:
         end = n - max(0, real_skip_end)
 
         if start >= end:
-             print("Not enough data points to plot. Plotting all data.")
-             start = 0
-             end = n
+            print("Not enough data points to plot. Plotting all data.")
+            start = 0
+            end = n
 
         lrs = self.history["lr"][start:end]
         losses = self.history["loss"][start:end]
@@ -179,20 +179,18 @@ class LRFinder:
 
         # Calculate gradients to find steepest slope
         if len(losses) > 1:
-            grads = [losses[i] - losses[i-1] for i in range(1, len(losses))]
+            grads = [losses[i] - losses[i - 1] for i in range(1, len(losses))]
             min_grad_idx = grads.index(min(grads))
             suggested_lr = lrs[min_grad_idx]
             suggested_loss = losses[min_grad_idx]
 
-            print(
-                f"Suggested LR (steepest gradient): {suggested_lr:.2e}"
-            )
+            print(f"Suggested LR (steepest gradient): {suggested_lr:.2e}")
             plt.scatter(
                 suggested_lr,
                 suggested_loss,
                 s=75,
-                marker='o',
-                color='red',
+                marker="o",
+                color="red",
                 zorder=10,
                 label=f"Suggested LR: {suggested_lr:.2e}",
             )
@@ -206,8 +204,8 @@ class LRFinder:
                 min_loss_lr,
                 min_loss_val,
                 s=75,
-                marker='o',
-                color='red',
+                marker="o",
+                color="red",
                 zorder=10,
                 label=f"Min Loss LR: {min_loss_lr:.2e}",
             )
@@ -216,9 +214,7 @@ class LRFinder:
             for factor in [0.5, 0.1]:
                 target_lr = min_loss_lr * factor
                 # Find closest available data point
-                closest_idx = min(
-                    range(len(lrs)), key=lambda i: abs(lrs[i] - target_lr)
-                )
+                closest_idx = min(range(len(lrs)), key=lambda i: abs(lrs[i] - target_lr))
                 closest_lr = lrs[closest_idx]
                 closest_loss = losses[closest_idx]
 
@@ -227,8 +223,8 @@ class LRFinder:
                     closest_lr,
                     closest_loss,
                     s=75,
-                    marker='o',
-                    color='red',
+                    marker="o",
+                    color="red",
                     zorder=10,
                     label=f"{factor}x Min Loss LR: {closest_lr:.2e}",
                 )
@@ -251,7 +247,7 @@ class LRFinder:
     def reset(self):
         print("Restoring model and optimizer states...")
         if self.model_state:
-            if hasattr(self.model, 'module'):
+            if hasattr(self.model, "module"):
                 self.model.module.load_state_dict(self.model_state)
             else:
                 self.model.load_state_dict(self.model_state)

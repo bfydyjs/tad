@@ -59,12 +59,7 @@ cbar.ax.tick_params(length=0)
 
 plt.tight_layout()
 
-output_path = (
-    Path(__file__).resolve().parent.parent.parent.parent
-    / "output"
-    / "figures"
-    / "map_heatmap.png"
-)
+output_path = Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "map_heatmap.png"
 print(f"Saving figure to: {output_path}")
 output_path.parent.mkdir(parents=True, exist_ok=True)
 plt.savefig(output_path)

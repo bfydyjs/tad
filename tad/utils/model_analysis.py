@@ -5,11 +5,7 @@ import torch
 
 
 # Calculate Params and GFLOPs
-def calculate_params_gflops(
-    model: torch.nn.Module,
-    cfg = None,
-    device: str = "cpu"
-) -> tuple[int, float | None]:
+def calculate_params_gflops(model: torch.nn.Module, cfg=None, device: str = "cpu") -> tuple[int, float | None]:
     """
     Calculate per-sample FLOPs and total trainable parameters of a model.
 
@@ -26,10 +22,9 @@ def calculate_params_gflops(
 
     params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
+    input_shape = (cfg.model.projection.in_channels, cfg.model.projection.max_seq_len)  # noqa: F841
 
-    input_shape = (cfg.model.projection.in_channels, cfg.model.projection.max_seq_len) # noqa: F841
-
-    dummy_metas = {} # noqa: F841
+    dummy_metas = {}  # noqa: F841
 
     gflops = None
 

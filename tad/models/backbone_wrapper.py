@@ -54,12 +54,12 @@ class BackboneWrapper(nn.Module):
         # 6. whether to use temporal activation checkpointing
         self.use_temporal_checkpointing = getattr(custom_cfg, "temporal_checkpointing", False)
         if self.use_temporal_checkpointing:
-            assert hasattr(
-                custom_cfg, "temporal_checkpointing_chunk_num"
-            ), "temporal_checkpointing_chunk_num should be provided when using temporal checkpointing"
-            assert hasattr(
-                custom_cfg, "temporal_checkpointing_chunk_dim"
-            ), "temporal_checkpointing_chunk_dim should be provided when using temporal checkpointing"
+            assert hasattr(custom_cfg, "temporal_checkpointing_chunk_num"), (
+                "temporal_checkpointing_chunk_num should be provided when using temporal checkpointing"
+            )
+            assert hasattr(custom_cfg, "temporal_checkpointing_chunk_dim"), (
+                "temporal_checkpointing_chunk_dim should be provided when using temporal checkpointing"
+            )
             self.temporal_checkpointing_chunk_num = custom_cfg.temporal_checkpointing_chunk_num
             self.temporal_checkpointing_chunk_dim = custom_cfg.temporal_checkpointing_chunk_dim
 
@@ -147,9 +147,9 @@ class BackboneWrapper(nn.Module):
     def temporal_checkpointing(self, frames, chunk_num, chunk_dim):
         """Temporal Checkpointing for Video Backbone.
 
-        Temporal checkpointing will 1) split the video frames along the temporal dimension and sequentially forward each chunk with
-        no gradients. 2) The backward pass will recompute the intermediate activations and compute each chunk's gradient. 3) Backbone's
-        gradients will be accumulated along different chunks.
+        Temporal checkpointing will 1) split the video frames along the temporal dimension and sequentially forward each
+        chunk with no gradients. 2) The backward pass will recompute the intermediate activations and compute each
+        chunk's gradient. 3) Backbone's gradients will be accumulated along different chunks.
 
         Args:
             frames (Tensor): input frames, [B*N,3,T,H,W]

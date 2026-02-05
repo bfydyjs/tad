@@ -1,7 +1,7 @@
 import copy
 
 import torch.nn as nn
-import torch.nn.functional as F
+from torch.nn.functional import interpolate
 
 from .bricks import ConvModule
 from .builder import NECKS
@@ -51,7 +51,7 @@ class FPN(nn.Module):
 
         # build top-down path
         for i in range(len(laterals) - 1, 0, -1):
-            laterals[i - 1] += F.interpolate(laterals[i], scale_factor=2, mode="nearest")
+            laterals[i - 1] += interpolate(laterals[i], scale_factor=2, mode="nearest")
 
         # build outputs
         fpn_outs = [self.fpn_convs[i](laterals[i], mask_list[i])[0] for i in range(len(laterals))]
@@ -68,8 +68,10 @@ class FPNIdentity(nn.Module):
         scale_factor=2.0,  # downsampling rate between two fpn levels
         start_level=0,  # start fpn level
         end_level=-1,  # end fpn level
-        norm_cfg=dict(type="LN"),  # if no norm, set to none
+        norm_cfg=None,  # if no norm, set to none
     ):
+        if norm_cfg is None:
+            norm_cfg = dict(type="LN")
         super().__init__()
 
         self.in_channels = [in_channels] * num_levels

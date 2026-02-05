@@ -19,7 +19,7 @@ def save_checkpoint(model, model_ema, optimizer, scheduler, epoch, work_dir=None
 
     os.makedirs(save_dir, exist_ok=True)
 
-    checkpoint_path =Path(save_dir) / mode # mode: 'last' or 'best'
+    checkpoint_path = Path(save_dir) / mode  # mode: 'last' or 'best'
     temp_path = Path(str(checkpoint_path) + ".tmp")
     torch.save(save_states, temp_path)
     os.replace(temp_path, checkpoint_path)

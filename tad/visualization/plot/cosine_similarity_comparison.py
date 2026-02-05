@@ -65,10 +65,7 @@ def plot_comparison():
 
     plt.tight_layout()
     output_path = (
-        Path(__file__).resolve().parent.parent.parent.parent
-        / "output"
-        / "figures"
-        / "cosine_similarity_comparison.pdf"
+        Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "cosine_similarity_comparison.pdf"
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path)

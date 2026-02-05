@@ -15,10 +15,12 @@ class Recall:
         prediction_file,
         subset,
         tiou_thresholds,
-        topk=[1, 5, 10, 100],
+        topk=None,
         max_avg_proposals_per_video=100,
         blocked_videos=None,
     ):
+        if topk is None:
+            topk = [1, 5, 10, 100]
         super().__init__()
 
         if not ground_truth_file:
@@ -162,14 +164,14 @@ class Recall:
 
         # Calculate AUC for each tIoU threshold
         self.auc_per_tiou = []
-        for i, tiou in enumerate(self.tiou_thresholds):
+        for i, _ in enumerate(self.tiou_thresholds):
             tiou_area = np.trapz(recall[i, :], proposals_per_video)
             tiou_auc = float(tiou_area) / proposals_per_video[-1]
             self.auc_per_tiou.append(tiou_auc)
 
         metric_dict = dict(average_AUC=self.average_auc)
         # Add per tIoU AUC to metric_dict
-        for i, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou, strict=True)):
+        for _, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou, strict=True)):
             metric_dict[f"AUC@{tiou}"] = auc
         # Add per tIoU AR@k to metric_dict
         for k in self.topk:
@@ -191,7 +193,7 @@ class Recall:
         pprint(f"Fixed threshold for tiou score: {self.tiou_thresholds}")
         pprint(f"average_AUC: {self.average_auc * 100:>4.2f} (%)")
         # Print per tIoU AUC
-        for i, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou, strict=True)):
+        for _, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou, strict=True)):
             pprint(f"AUC@{tiou:.2f} is {auc * 100:>4.2f}%")
         pprint("")
         # Print average AR@k
@@ -248,43 +250,7 @@ def average_recall_vs_avg_nr_proposals(
     proposals_gbvn = proposals.groupby("video-id")
 
     # For each video, computes tiou scores among the retrieved proposals.
-    score_lst = []
-    total_nr_proposals = 0
-    for videoid in video_lst:
-        # Get ground-truth instances associated to this video.
-        ground_truth_videoid = ground_truth_gbvn.get_group(videoid)
-        this_video_ground_truth = ground_truth_videoid.loc[:, ["t-start", "t-end"]].values
-
-        # Get proposals for this video.
-        try:
-            proposals_videoid = proposals_gbvn.get_group(videoid)
-            this_video_proposals = proposals_videoid.loc[:, ["t-start", "t-end"]].values
-
-            # Sort proposals by score.
-            sort_idx = proposals_videoid["score"].argsort()[::-1]
-            this_video_proposals = this_video_proposals[sort_idx, :]
-        except Exception:
-            n = this_video_ground_truth.shape[0]
-            score_lst.append(np.zeros((n, 1)))
-            continue
-
-        if this_video_proposals.shape[0] == 0:
-            n = this_video_ground_truth.shape[0]
-            score_lst.append(np.zeros((n, 1)))
-            continue
-
-        if this_video_proposals.ndim != 2:
-            this_video_proposals = np.expand_dims(this_video_proposals, axis=0)
-        if this_video_ground_truth.ndim != 2:
-            this_video_ground_truth = np.expand_dims(this_video_ground_truth, axis=0)
-
-        nr_proposals = np.minimum(int(this_video_proposals.shape[0] * ratio), this_video_proposals.shape[0])
-        total_nr_proposals += nr_proposals
-        this_video_proposals = this_video_proposals[:nr_proposals, :]
-
-        # Compute tiou scores.
-        tiou = wrapper_segment_iou(this_video_proposals, this_video_ground_truth)
-        score_lst.append(tiou)
+    score_lst, total_nr_proposals = _compute_score_list(video_lst, ground_truth_gbvn, proposals_gbvn, ratio)
 
     # Given that the length of the videos is really varied, we
     # compute the number of proposals in terms of a ratio of the total
@@ -327,6 +293,47 @@ def average_recall_vs_avg_nr_proposals(
     proposals_per_video = pcn_lst * (float(total_nr_proposals) / video_lst.shape[0])
 
     return recall, avg_recall, proposals_per_video
+
+
+def _compute_score_list(video_lst, ground_truth_gbvn, proposals_gbvn, ratio):
+    score_lst = []
+    total_nr_proposals = 0
+    for videoid in video_lst:
+        # Get ground-truth instances associated to this video.
+        ground_truth_videoid = ground_truth_gbvn.get_group(videoid)
+        this_video_ground_truth = ground_truth_videoid.loc[:, ["t-start", "t-end"]].values
+
+        # Get proposals for this video.
+        try:
+            proposals_videoid = proposals_gbvn.get_group(videoid)
+            this_video_proposals = proposals_videoid.loc[:, ["t-start", "t-end"]].values
+
+            # Sort proposals by score.
+            sort_idx = proposals_videoid["score"].argsort()[::-1]
+            this_video_proposals = this_video_proposals[sort_idx, :]
+        except Exception:
+            n = this_video_ground_truth.shape[0]
+            score_lst.append(np.zeros((n, 1)))
+            continue
+
+        if this_video_proposals.shape[0] == 0:
+            n = this_video_ground_truth.shape[0]
+            score_lst.append(np.zeros((n, 1)))
+            continue
+
+        if this_video_proposals.ndim != 2:
+            this_video_proposals = np.expand_dims(this_video_proposals, axis=0)
+        if this_video_ground_truth.ndim != 2:
+            this_video_ground_truth = np.expand_dims(this_video_ground_truth, axis=0)
+
+        nr_proposals = np.minimum(int(this_video_proposals.shape[0] * ratio), this_video_proposals.shape[0])
+        total_nr_proposals += nr_proposals
+        this_video_proposals = this_video_proposals[:nr_proposals, :]
+
+        # Compute tiou scores.
+        tiou = wrapper_segment_iou(this_video_proposals, this_video_ground_truth)
+        score_lst.append(tiou)
+    return score_lst, total_nr_proposals
 
 
 def wrapper_segment_iou(target_segments, candidate_segments):

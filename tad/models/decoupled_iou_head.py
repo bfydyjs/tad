@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from torch.nn.functional import binary_cross_entropy_with_logits, relu
 
 from .anchor_free_head import AnchorFreeHead
 from .bricks import ConvModule, Scale
@@ -78,7 +78,6 @@ class DecoupledIoUHead(AnchorFreeHead):
         # 预测头
         self.cls_head = nn.Conv1d(self.feat_channels, self.num_classes, kernel_size=3, padding=1)
         self.reg_head = nn.Conv1d(self.feat_channels, 2, kernel_size=3, padding=1)
-        # 新增：IoU 预测头 (共享回归特征)
         self.iou_head = nn.Conv1d(self.feat_channels, 1, kernel_size=3, padding=1)
 
         self.scale = nn.ModuleList([Scale() for _ in range(len(self.prior_generator.strides))])
@@ -86,13 +85,14 @@ class DecoupledIoUHead(AnchorFreeHead):
         # 初始化分类偏置
         if self.cls_prior_prob > 0:
             import math
+
             bias_value = -(math.log((1 - self.cls_prior_prob) / self.cls_prior_prob))
             nn.init.constant_(self.cls_head.bias, bias_value)
 
     def forward_train(self, feat_list, mask_list, gt_segments, gt_labels, **kwargs):
         cls_pred, reg_pred, iou_pred = [], [], []
 
-        for l, (feat, mask) in enumerate(zip(feat_list, mask_list)):
+        for level, (feat, mask) in enumerate(zip(feat_list, mask_list, strict=False)):
             cls_feat = feat
             reg_feat = feat
 
@@ -102,8 +102,8 @@ class DecoupledIoUHead(AnchorFreeHead):
                 reg_feat, mask = self.reg_convs[i](reg_feat, mask)
 
             cls_pred.append(self.cls_head(cls_feat))
-            reg_pred.append(F.relu(self.scale[l](self.reg_head(reg_feat))))
-            iou_pred.append(self.iou_head(reg_feat)) # IoU 分支
+            reg_pred.append(relu(self.scale[level](self.reg_head(reg_feat))))
+            iou_pred.append(self.iou_head(reg_feat))  # IoU 分支
 
         points = self.prior_generator(feat_list)
 
@@ -113,7 +113,7 @@ class DecoupledIoUHead(AnchorFreeHead):
     def forward_test(self, feat_list, mask_list, **kwargs):
         cls_pred, reg_pred, iou_pred = [], [], []
 
-        for l, (feat, mask) in enumerate(zip(feat_list, mask_list)):
+        for level, (feat, mask) in enumerate(zip(feat_list, mask_list, strict=False)):
             cls_feat = feat
             reg_feat = feat
 
@@ -122,7 +122,7 @@ class DecoupledIoUHead(AnchorFreeHead):
                 reg_feat, mask = self.reg_convs[i](reg_feat, mask)
 
             cls_pred.append(self.cls_head(cls_feat))
-            reg_pred.append(F.relu(self.scale[l](self.reg_head(reg_feat))))
+            reg_pred.append(relu(self.scale[level](self.reg_head(reg_feat))))
             iou_pred.append(self.iou_head(reg_feat))
 
         points = self.prior_generator(feat_list)
@@ -170,8 +170,8 @@ class DecoupledIoUHead(AnchorFreeHead):
 
         # 处理 IoU 预测
         iou_pred_cat = [x.permute(0, 2, 1) for x in iou_pred]
-        iou_pred_cat = torch.cat(iou_pred_cat, dim=1) # [B, T, 1]
-        iou_pred_pos = iou_pred_cat[pos_mask].squeeze(-1) # [N_pos]
+        iou_pred_cat = torch.cat(iou_pred_cat, dim=1)  # [B, T, 1]
+        iou_pred_pos = iou_pred_cat[pos_mask].squeeze(-1)  # [N_pos]
 
         if num_pos == 0:
             reg_loss = pred_segments.sum() * 0
@@ -188,7 +188,7 @@ class DecoupledIoUHead(AnchorFreeHead):
                 iou_targets = iou_targets.clamp(min=0, max=1.0)
 
             # IoU Loss (Binary Cross Entropy)
-            iou_loss = F.binary_cross_entropy_with_logits(iou_pred_pos, iou_targets, reduction="sum")
+            iou_loss = binary_cross_entropy_with_logits(iou_pred_pos, iou_targets, reduction="sum")
             iou_loss /= loss_normalizer
 
         # 动态调整 Loss Weight
@@ -200,7 +200,7 @@ class DecoupledIoUHead(AnchorFreeHead):
         return {
             "cls_loss": cls_loss,
             "reg_loss": reg_loss * loss_weight,
-            "iou_loss": iou_loss * self.iou_loss_weight # 通常 IoU loss 权重设为 1.0 或 0.5
+            "iou_loss": iou_loss * self.iou_loss_weight,  # 通常 IoU loss 权重设为 1.0 或 0.5
         }
 
     def get_valid_proposals_scores(self, points, reg_pred, cls_pred, iou_pred, mask_list):
@@ -211,9 +211,8 @@ class DecoupledIoUHead(AnchorFreeHead):
         cls_scores = torch.cat(cls_pred, dim=-1).permute(0, 2, 1).sigmoid()  # [B,T,num_classes]
 
         # 获取 IoU 分数
-        iou_scores = torch.cat(iou_pred, dim=-1).permute(0, 2, 1).sigmoid() # [B,T,1]
+        iou_scores = torch.cat(iou_pred, dim=-1).permute(0, 2, 1).sigmoid()  # [B,T,1]
 
-        # 融合分数：Score = Cls * IoU
         if self.iou_loss_weight > 0:
             final_scores = cls_scores * iou_scores
         else:
@@ -222,7 +221,7 @@ class DecoupledIoUHead(AnchorFreeHead):
         # Mask out invalid
         masks = torch.cat(mask_list, dim=1)  # [B,T]
         new_proposals, new_scores = [], []
-        for proposal, score, mask in zip(proposals, final_scores, masks):
+        for proposal, score, mask in zip(proposals, final_scores, masks, strict=False):
             new_proposals.append(proposal[mask])
             new_scores.append(score[mask])
         return new_proposals, new_scores

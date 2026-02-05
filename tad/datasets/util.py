@@ -5,7 +5,7 @@ def filter_same_annotation(annotation):
     gt_segments = []
     gt_labels = []
     gt_both = []
-    for gt_segment, gt_label in zip(annotation["gt_segments"].tolist(), annotation["gt_labels"].tolist(),strict=True):
+    for gt_segment, gt_label in zip(annotation["gt_segments"].tolist(), annotation["gt_labels"].tolist(), strict=True):
         if (gt_segment, gt_label) not in gt_both:
             gt_segments.append(gt_segment)
             gt_labels.append(gt_label)

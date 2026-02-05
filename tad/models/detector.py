@@ -31,7 +31,7 @@ class Detector(torch.nn.Module):
         return_loss=True,
         infer_cfg=None,
         post_cfg=None,
-        **kwargs
+        **kwargs,
     ):
         if return_loss:
             return self.forward_train(inputs, masks, metas, gt_segments=gt_segments, gt_labels=gt_labels, **kwargs)
@@ -175,7 +175,7 @@ class Detector(torch.nn.Module):
                 segments, labels, scores = ext_cls(video_id, segments, scores)
 
             results_per_video = []
-            for segment, label, score in zip(segments, labels, scores):
+            for segment, label, score in zip(segments, labels, scores, strict=False):
                 # convert to python scalars
                 results_per_video.append(
                     dict(
