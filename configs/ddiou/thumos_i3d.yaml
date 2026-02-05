@@ -44,7 +44,7 @@ dataset:
         inputs: feats
         keys: [masks]
   test:
-  <<: *dataset_val
+    <<: *dataset_val
 
 evaluation:
   type: MeanAveragePrecision

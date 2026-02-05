@@ -181,7 +181,7 @@ class Recall:
             # Add per tIoU AR@k
             for i, tiou in enumerate(self.tiou_thresholds):
                 metric_dict[f"Recall@{tiou}@{k}"] = self.recall[i, k - 1]
-        self.plot_recall_curves
+        self.plot_recall_curves()
         return metric_dict
 
     def logging(self, logger=None):
