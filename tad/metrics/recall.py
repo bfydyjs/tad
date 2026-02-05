@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from .builder import EVALUATORS, remove_duplicate_annotations
-from .mAP import segment_iou
+from .map import segment_iou
 
 
 @EVALUATORS.register_module()

@@ -133,9 +133,8 @@ class MeanAveragePrecision:
             for result in v:
                 try:
                     label = self.activity_index[result["label"]]
-                except:
-                    # this is because the predicted label is not in annotation
-                    # such as the some classes only exists in train split, but not in val split
+                except KeyError:
+                    # Predicted label not in ground truth classes → assign new ID
                     label = len(self.activity_index)
                 video_lst.append(video_id)
                 t_start_lst.append(float(result["segment"][0]))
