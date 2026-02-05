@@ -33,8 +33,12 @@ class Collect:
     def __init__(
         self,
         inputs,
-        keys=[],
-        meta_keys=[
+        keys=None,
+        meta_keys=None,
+    ):
+        self.inputs = inputs
+        self.keys = keys if keys is not None else []
+        self.meta_keys = meta_keys if meta_keys is not None else [
             "video_name",
             "data_path",
             "fps",
@@ -44,11 +48,7 @@ class Collect:
             "resize_length",
             "window_size",
             "offset_frames",
-        ],
-    ):
-        self.inputs = inputs
-        self.keys = keys
-        self.meta_keys = meta_keys
+        ]
 
     def __call__(self, results):
         data = {}
