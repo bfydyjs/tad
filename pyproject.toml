@@ -32,3 +32,4 @@ unsafe-fixes = false
 
 [tool.ruff.lint]
 select = ["E", "W", "N", "F", "I", "C90", "B", "RUF", "UP", "YTT"]
+# ignore = ["RUF003"]
