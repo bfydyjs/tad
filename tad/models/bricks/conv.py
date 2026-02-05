@@ -2,7 +2,7 @@ import copy
 import math
 
 import torch.nn as nn
-import torch.nn.functional as F
+from torch.nn.functional import interpolate
 
 from ..builder import MODELS
 
@@ -90,7 +90,7 @@ class ConvModule(nn.Module):
         if mask is not None:  # masking before the norm
             if mask.shape[-1] != x.shape[-1]:
                 mask = (
-                    F.interpolate(mask.unsqueeze(1).to(x.dtype), size=x.size(-1), mode="nearest")
+                    interpolate(mask.unsqueeze(1).to(x.dtype), size=x.size(-1), mode="nearest")
                     .squeeze(1)
                     .to(mask.dtype)
                 )

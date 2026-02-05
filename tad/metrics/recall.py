@@ -169,7 +169,7 @@ class Recall:
 
         metric_dict = dict(average_AUC=self.average_auc)
         # Add per tIoU AUC to metric_dict
-        for i, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou)):
+        for i, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou, strict=True)):
             metric_dict[f"AUC@{tiou}"] = auc
         # Add per tIoU AR@k to metric_dict
         for k in self.topk:
@@ -191,7 +191,7 @@ class Recall:
         pprint(f"Fixed threshold for tiou score: {self.tiou_thresholds}")
         pprint(f"average_AUC: {self.average_auc * 100:>4.2f} (%)")
         # Print per tIoU AUC
-        for i, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou)):
+        for i, (tiou, auc) in enumerate(zip(self.tiou_thresholds, self.auc_per_tiou, strict=True)):
             pprint(f"AUC@{tiou:.2f} is {auc * 100:>4.2f}%")
         pprint("")
         # Print average AR@k
@@ -209,7 +209,7 @@ def average_recall_vs_avg_nr_proposals(
     ground_truth,
     proposals,
     max_avg_nr_proposals=None,
-    tiou_thresholds=np.linspace(0.5, 0.95, 10),
+    tiou_thresholds=None,
 ):
     """Computes the average recall given an average number
         of proposals per video.
@@ -232,6 +232,8 @@ def average_recall_vs_avg_nr_proposals(
     proposals_per_video : 1darray
         average number of proposals per video.
     """
+    if tiou_thresholds is None:
+        tiou_thresholds = np.linspace(0.5, 0.95, 10)
 
     # Get list of videos.
     video_lst = ground_truth["video-id"].unique()
@@ -261,7 +263,7 @@ def average_recall_vs_avg_nr_proposals(
             # Sort proposals by score.
             sort_idx = proposals_videoid["score"].argsort()[::-1]
             this_video_proposals = this_video_proposals[sort_idx, :]
-        except:
+        except Exception:
             n = this_video_ground_truth.shape[0]
             score_lst.append(np.zeros((n, 1)))
             continue

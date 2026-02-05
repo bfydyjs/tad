@@ -263,18 +263,18 @@ class mAP:
         pprint(f"Number of predictions: {len(self.prediction)}")
         pprint(f"Fixed threshold for tiou score: {self.tiou_thresholds}")
         pprint(f"Average-mAP: {self.average_mAP * 100:>4.2f} (%)")
-        for tiou, mAP in zip(self.tiou_thresholds, self.mAPs):
+        for tiou, mAP in zip(self.tiou_thresholds, self.mAPs, strict=True):
             pprint(f"mAP at tIoU {tiou:.2f} is {mAP * 100:>4.2f}%")
 
         # if top_k is not None, print top-kx recall
         if self.top_k is not None:
             pprint(f"Fixed top-kx results: {self.top_k}")
-            for tiou, recall in zip(self.tiou_thresholds, self.mRecall):
-                recall_string = [f"R{k:d} is {r * 100:>4.2f}%" for k, r in zip(self.top_k, recall)]
+            for tiou, recall in zip(self.tiou_thresholds, self.mRecall, strict=True):
+                recall_string = [f"R{k:d} is {r * 100:>4.2f}%" for k, r in zip(self.top_k, recall,strict=True)]
                 pprint(f"Recall at tIoU {tiou:.2f}: {', '.join(recall_string)}")
 
 
-def compute_average_precision_detection(ground_truth, prediction, tiou_thresholds=np.linspace(0.5, 0.95, 10)):
+def compute_average_precision_detection(ground_truth, prediction, tiou_thresholds=None):
     """Compute average precision (detection task) between ground truth and
     predictions data frames. If multiple predictions occurs for the same
     predicted segment, only the one with highest score is matches as
@@ -296,6 +296,9 @@ def compute_average_precision_detection(ground_truth, prediction, tiou_threshold
     ap : float
         Average precision score.
     """
+    if tiou_thresholds is None:
+        tiou_thresholds = np.linspace(0.5, 0.95, 10)
+
     npos = float(len(ground_truth))
     lock_gt = np.ones((len(tiou_thresholds), len(ground_truth))) * -1
     # Sort predictions by decreasing score order.
@@ -352,7 +355,7 @@ def compute_average_precision_detection(ground_truth, prediction, tiou_threshold
 def compute_topkx_recall_detection(
     ground_truth,
     prediction,
-    tiou_thresholds=np.linspace(0.1, 0.5, 5),
+    tiou_thresholds=None,
     top_k=(1, 5),
 ):
     """Compute recall (detection task) between ground truth and
@@ -377,6 +380,9 @@ def compute_topkx_recall_detection(
     recall : float
         Recall score.
     """
+    if tiou_thresholds is None:
+        tiou_thresholds = np.linspace(0.1, 0.5, 5)
+
     if prediction.empty:
         return np.zeros((len(tiou_thresholds), len(top_k)))
 
@@ -669,7 +675,7 @@ class mAP_EPIC:
         self.average_mAP = self.mAPs.mean()
 
         metric_dict = dict(average_mAP=self.average_mAP)
-        for tiou, mAP in zip(self.tiou_thresholds, self.mAPs):
+        for tiou, mAP in zip(self.tiou_thresholds, self.mAPs, strict=True):
             metric_dict[f"mAP@{tiou}"] = mAP
         return metric_dict
 
@@ -684,5 +690,5 @@ class mAP_EPIC:
         pprint(f"Number of predictions: {len(self.prediction)}")
         pprint(f"Fixed threshold for tiou score: {self.tiou_thresholds}")
         pprint(f"Average-mAP: {self.average_mAP * 100:>4.2f} (%)")
-        for tiou, mAP in zip(self.tiou_thresholds, self.mAPs):
+        for tiou, mAP in zip(self.tiou_thresholds, self.mAPs, strict=True):
             pprint(f"mAP at tIoU {tiou:.2f} is {mAP * 100:>4.2f}%")

@@ -2,7 +2,7 @@ import math
 
 import torch
 import torch.nn as nn
-from torch.nn import functional as F
+from torch.nn.functional import one_hot, relu
 
 from .bricks import ConvModule, Scale
 from .builder import HEADS, build_loss
@@ -106,7 +106,7 @@ class AnchorFreeHead(nn.Module):
         cls_pred = []
         reg_pred = []
 
-        for l, (feat, mask) in enumerate(zip(feat_list, mask_list)):
+        for layer_idx, (feat, mask) in enumerate(zip(feat_list, mask_list, strict=True)):
             cls_feat = feat
             reg_feat = feat
 
@@ -115,7 +115,7 @@ class AnchorFreeHead(nn.Module):
                 reg_feat, mask = self.reg_convs[i](reg_feat, mask)
 
             cls_pred.append(self.cls_head(cls_feat))
-            reg_pred.append(F.relu(self.scale[l](self.reg_head(reg_feat))))
+            reg_pred.append(relu(self.scale[layer_idx](self.reg_head(reg_feat))))
 
         points = self.prior_generator(feat_list)
 
@@ -126,7 +126,7 @@ class AnchorFreeHead(nn.Module):
         cls_pred = []
         reg_pred = []
 
-        for l, (feat, mask) in enumerate(zip(feat_list, mask_list)):
+        for layer_idx, (feat, mask) in enumerate(zip(feat_list, mask_list, strict=True)):
             cls_feat = feat
             reg_feat = feat
 
@@ -135,7 +135,7 @@ class AnchorFreeHead(nn.Module):
                 reg_feat, mask = self.reg_convs[i](reg_feat, mask)
 
             cls_pred.append(self.cls_head(cls_feat))
-            reg_pred.append(F.relu(self.scale[l](self.reg_head(reg_feat))))
+            reg_pred.append(relu(self.scale[layer_idx](self.reg_head(reg_feat))))
 
         points = self.prior_generator(feat_list)
 
@@ -161,7 +161,7 @@ class AnchorFreeHead(nn.Module):
         # mask out invalid, and return a list with batch size
         masks = torch.cat(mask_list, dim=1)  # [B,T]
         new_proposals, new_scores = [], []
-        for proposal, score, mask in zip(proposals, scores, masks):
+        for proposal, score, mask in zip(proposals, scores, masks, strict=True):
             new_proposals.append(proposal[mask])  # [T,2]
             new_scores.append(score[mask])  # [T,num_classes]
         return new_proposals, new_scores
@@ -222,7 +222,7 @@ class AnchorFreeHead(nn.Module):
         num_pts = concat_points.shape[0]
         gt_cls, gt_reg = [], []
 
-        for gt_segment, gt_label in zip(gt_segments, gt_labels):
+        for gt_segment, gt_label in zip(gt_segments, gt_labels, strict=True):
             num_gts = gt_segment.shape[0]
 
             # corner case where current sample does not have actions
@@ -286,7 +286,7 @@ class AnchorFreeHead(nn.Module):
             min_len_mask = min_len_mask.to(reg_targets.dtype)
 
             # cls_targets: F T x C; reg_targets F T x 2
-            gt_label_one_hot = F.one_hot(gt_label.long(), self.num_classes).to(reg_targets.dtype)
+            gt_label_one_hot = one_hot(gt_label.long(), self.num_classes).to(reg_targets.dtype)
             cls_targets = min_len_mask @ gt_label_one_hot
             # to prevent multiple GT actions with the same label and boundaries
             cls_targets.clamp_(min=0.0, max=1.0)

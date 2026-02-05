@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from torch.nn.functional import interpolate
 
 from .bricks import ConvModule, TransformerBlock
 from .builder import PROJECTIONS
@@ -50,7 +50,7 @@ class Conv1DTransformerProj(nn.Module):
         if isinstance(self.in_channels, (list, tuple)):
             assert isinstance(self.out_channels, (list, tuple)) and len(self.in_channels) == len(self.out_channels)
             self.proj = nn.ModuleList([])
-            for n_in, n_out in zip(self.in_channels, self.out_channels):
+            for n_in, n_out in zip(self.in_channels, self.out_channels, strict=True):
                 self.proj.append(
                     ConvModule(
                         n_in,
@@ -86,7 +86,7 @@ class Conv1DTransformerProj(nn.Module):
 
         # stem network using (vanilla) transformer
         self.stem = nn.ModuleList()
-        for idx in range(arch[1]):
+        for _ in range(arch[1]):
             self.stem.append(
                 TransformerBlock(
                     out_channels,
@@ -129,7 +129,9 @@ class Conv1DTransformerProj(nn.Module):
 
         # feature projection
         if self.proj is not None:
-            x = torch.cat([proj(s, mask)[0] for proj, s in zip(self.proj, x.split(self.in_channels, dim=1))], dim=1)
+            x = torch.cat(
+                [proj(s, mask)[0] for proj, s in zip(self.proj, x.split(self.in_channels, dim=1), strict=True)], dim=1
+            )
 
         # drop out input if needed
         if self.input_pdrop is not None:
@@ -149,7 +151,7 @@ class Conv1DTransformerProj(nn.Module):
         # inference: re-interpolate position embeddings for over-length sequences
         if self.use_abs_pe and (not self.training):
             if x.shape[-1] >= self.max_seq_len:
-                pe = F.interpolate(self.pos_embed, x.shape[-1], mode="linear", align_corners=False)
+                pe = interpolate(self.pos_embed, x.shape[-1], mode="linear", align_corners=False)
             else:
                 pe = self.pos_embed
             # add pe to x

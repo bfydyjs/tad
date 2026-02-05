@@ -25,118 +25,131 @@ class LRFinder:
         step_mode="exp",
         amp=True,
     ):
-        """
-        Runs the learning rate range test.
-        
-        Args:
-            train_loader (DataLoader): The training data loader.
-            start_lr (float): The starting learning rate.
-            end_lr (float): The ending learning rate.
-            num_iter (int): Number of iterations to run the test.
-            smooth_f (float): Smoothing factor for loss.
-            diverge_th (float): Threshold for loss divergence to stop the test.
-            step_mode (str): 'exp' for exponential increase, 'linear' for linear increase.
-            amp (bool): Whether to use mixed precision training.
+        """Runs the learning rate range test in a simplified, readable flow.
+
+        The implementation delegates complex steps to small helper methods to keep
+        cyclomatic complexity low while preserving original behavior.
         """
         self.history = {"lr": [], "loss": []}
         self.best_loss = None
 
-        # Save states to restore later
-        if hasattr(self.model, 'module'):
-            self.model_state = copy.deepcopy(self.model.module.state_dict())
-        else:
-            self.model_state = copy.deepcopy(self.model.state_dict())
+        self._save_states()
 
-        self.optimizer_state = copy.deepcopy(self.optimizer.state_dict())
-
-        # Calculate step factor
         if step_mode == "exp":
             gamma = (end_lr / start_lr) ** (1 / num_iter)
+            step_size = None
         else:
+            gamma = None
             step_size = (end_lr - start_lr) / num_iter
 
-        # Set initial LR
         for group in self.optimizer.param_groups:
             group["lr"] = start_lr
 
         self.model.train()
-
-        # AMP scaler initialization
-        scaler = None
-        if amp:
-            # Compatible with PyTorch versions
-            if hasattr(torch, 'amp') and hasattr(torch.amp, 'GradScaler'):
-                 scaler = torch.amp.GradScaler('cuda')
-            elif hasattr(torch.cuda, 'amp') and hasattr(torch.cuda.amp, 'GradScaler'):
-                scaler = torch.cuda.amp.GradScaler()
-
+        scaler = self._init_scaler(amp)
         iter_wrapper = iter(train_loader)
 
         print(f"Starting LR Range Test from {start_lr} to {end_lr} with {num_iter} iterations...")
 
         for i in range(num_iter):
-            try:
-                data_dict = next(iter_wrapper)
-            except StopIteration:
-                iter_wrapper = iter(train_loader)
-                data_dict = next(iter_wrapper)
-
-            # Move data to device
-            # Note: Users should ensure data_dict structure matches model input
-            for k, v in data_dict.items():
-                if isinstance(v, torch.Tensor):
-                    data_dict[k] = v.to(self.device)
-                elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], torch.Tensor):
-                     data_dict[k] = [x.to(self.device) for x in v]
+            data_dict, iter_wrapper = self._get_next_batch(iter_wrapper, train_loader)
+            self._move_to_device(data_dict)
 
             self.optimizer.zero_grad()
+            loss = self._run_step(data_dict, scaler, amp)
 
-            # Forward pass
-            if amp and scaler is not None:
-                with torch.amp.autocast('cuda', enabled=True):
-                    losses = self.model(**data_dict, return_loss=True)
-                    loss = losses['cost']
-                scaler.scale(loss).backward()
-                scaler.step(self.optimizer)
-                scaler.update()
-            else:
-                losses = self.model(**data_dict, return_loss=True)
-                loss = losses['cost']
-                loss.backward()
-                self.optimizer.step()
+            current_lr = self._record_lr()
 
-            # Update LR
-            current_lr = self.optimizer.param_groups[0]["lr"]
-            self.history["lr"].append(current_lr)
+            avg_loss = self._update_loss_history(i, loss.item(), smooth_f)
 
-            # Record loss
-            loss_val = loss.item()
-            if i == 0:
-                avg_loss = loss_val
-            else:
-                avg_loss = smooth_f * loss_val + (1 - smooth_f) * self.history["loss"][-1]
-
-            if i == 0 or avg_loss < self.best_loss:
-                self.best_loss = avg_loss
-
-            self.history["loss"].append(avg_loss)
-
-            # Check for divergence
             if i > num_iter // 10 and avg_loss > diverge_th * self.best_loss:
                 print(f"Stopping early, the loss has diverged at iter {i}, loss {avg_loss:.4f}")
                 break
 
-            # Update next LR
-            if step_mode == "exp":
-                new_lr = current_lr * gamma
-            else:
-                new_lr = current_lr + step_size
-
-            for group in self.optimizer.param_groups:
-                group["lr"] = new_lr
+            new_lr = self._compute_next_lr(current_lr, gamma, step_size, step_mode)
+            self._set_lr(new_lr)
 
         print(f"LR Range Test finished. Best smoothed loss: {self.best_loss:.4f}")
         self.reset()
+
+    # --- Helper methods to reduce complexity in range_test ---
+    def _save_states(self):
+        if hasattr(self.model, 'module'):
+            self.model_state = copy.deepcopy(self.model.module.state_dict())
+        else:
+            self.model_state = copy.deepcopy(self.model.state_dict())
+        self.optimizer_state = copy.deepcopy(self.optimizer.state_dict())
+
+    def _init_scaler(self, amp):
+        if not amp:
+            return None
+        # Try the most common APIs for GradScaler depending on PyTorch version
+        try:
+            return torch.cuda.amp.GradScaler()
+        except Exception:
+            try:
+                return torch.amp.GradScaler()
+            except Exception:
+                return None
+
+    def _get_next_batch(self, iter_wrapper, train_loader):
+        try:
+            data_dict = next(iter_wrapper)
+        except StopIteration:
+            iter_wrapper = iter(train_loader)
+            data_dict = next(iter_wrapper)
+        return data_dict, iter_wrapper
+
+    def _move_to_device(self, data_dict):
+        for k, v in list(data_dict.items()):
+            if isinstance(v, torch.Tensor):
+                data_dict[k] = v.to(self.device)
+            elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], torch.Tensor):
+                data_dict[k] = [x.to(self.device) for x in v]
+
+    def _run_step(self, data_dict, scaler, amp):
+        if amp and scaler is not None:
+            # Prefer the cuda autocast if available
+            autocast = getattr(torch.cuda.amp, 'autocast', None) or getattr(torch, 'amp', None)
+            with autocast(enabled=True):
+                losses = self.model(**data_dict, return_loss=True)
+                loss = losses['cost']
+            scaler.scale(loss).backward()
+            scaler.step(self.optimizer)
+            scaler.update()
+        else:
+            losses = self.model(**data_dict, return_loss=True)
+            loss = losses['cost']
+            loss.backward()
+            self.optimizer.step()
+        return loss
+
+    def _record_lr(self):
+        current_lr = self.optimizer.param_groups[0]["lr"]
+        self.history["lr"].append(current_lr)
+        return current_lr
+
+    def _update_loss_history(self, i, loss_val, smooth_f):
+        if i == 0:
+            avg_loss = loss_val
+        else:
+            avg_loss = smooth_f * loss_val + (1 - smooth_f) * self.history["loss"][-1]
+
+        if i == 0 or avg_loss < self.best_loss:
+            self.best_loss = avg_loss
+
+        self.history["loss"].append(avg_loss)
+        return avg_loss
+
+    def _compute_next_lr(self, current_lr, gamma, step_size, step_mode):
+        if step_mode == "exp":
+            return current_lr * gamma
+        else:
+            return current_lr + step_size
+
+    def _set_lr(self, new_lr):
+        for group in self.optimizer.param_groups:
+            group["lr"] = new_lr
 
     def plot(self, skip_start=10, skip_end=5, log_lr=True, save_path=None):
         if not self.history["lr"]:
@@ -171,26 +184,54 @@ class LRFinder:
             suggested_lr = lrs[min_grad_idx]
             suggested_loss = losses[min_grad_idx]
 
-            print(f"Suggested LR (steepest gradient): {suggested_lr:.2e}")
-            plt.scatter(suggested_lr, suggested_loss, s=75, marker='o', color='red', zorder=10, label=f'Suggested LR: {suggested_lr:.2e}')
+            print(
+                f"Suggested LR (steepest gradient): {suggested_lr:.2e}"
+            )
+            plt.scatter(
+                suggested_lr,
+                suggested_loss,
+                s=75,
+                marker='o',
+                color='red',
+                zorder=10,
+                label=f"Suggested LR: {suggested_lr:.2e}",
+            )
 
             # Find minimum loss point
             min_loss_idx = losses.index(min(losses))
             min_loss_lr = lrs[min_loss_idx]
             min_loss_val = losses[min_loss_idx]
             print(f"Min Loss LR: {min_loss_lr:.2e}")
-            plt.scatter(min_loss_lr, min_loss_val, s=75, marker='o', color='red', zorder=10, label=f'Min Loss LR: {min_loss_lr:.2e}')
+            plt.scatter(
+                min_loss_lr,
+                min_loss_val,
+                s=75,
+                marker='o',
+                color='red',
+                zorder=10,
+                label=f"Min Loss LR: {min_loss_lr:.2e}",
+            )
 
             # Mark 0.5x and 0.1x Min Loss LR
             for factor in [0.5, 0.1]:
                 target_lr = min_loss_lr * factor
                 # Find closest available data point
-                closest_idx = min(range(len(lrs)), key=lambda i: abs(lrs[i] - target_lr))
+                closest_idx = min(
+                    range(len(lrs)), key=lambda i: abs(lrs[i] - target_lr)
+                )
                 closest_lr = lrs[closest_idx]
                 closest_loss = losses[closest_idx]
 
                 print(f"{factor}x Min Loss LR: {closest_lr:.2e}")
-                plt.scatter(closest_lr, closest_loss, s=75, marker='o', color='red', zorder=10, label=f'{factor}x Min Loss LR: {closest_lr:.2e}')
+                plt.scatter(
+                    closest_lr,
+                    closest_loss,
+                    s=75,
+                    marker='o',
+                    color='red',
+                    zorder=10,
+                    label=f"{factor}x Min Loss LR: {closest_lr:.2e}",
+                )
 
             plt.legend()
 

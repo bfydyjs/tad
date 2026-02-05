@@ -27,9 +27,9 @@ def calculate_params_gflops(
     params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-    input_shape = (cfg.model.projection.in_channels, cfg.model.projection.max_seq_len)
+    input_shape = (cfg.model.projection.in_channels, cfg.model.projection.max_seq_len) # noqa: F841
 
-    dummy_metas = {}
+    dummy_metas = {} # noqa: F841
 
     gflops = None
 

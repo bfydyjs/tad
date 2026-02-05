@@ -7,11 +7,19 @@ class DictAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         options = {}
         for kv in values:
-            key, value = kv.split('=', 1)
+            try:
+                key, value = kv.split('=', 1)
+            except ValueError as err:
+                msg = (
+                    f"Invalid key-value pair: {kv!r}. "
+                    "Expected format 'key=value'."
+                )
+                raise argparse.ArgumentError(self, msg) from err
             try:
                 value = yaml.safe_load(value)
-            except Exception:
-                pass
+            except yaml.YAMLError as err:
+                # Raise an argparse-specific error with chaining so the original parsing error is visible
+                raise argparse.ArgumentError(self, f"Failed to parse value for '{key}': {err}") from err
             options[key] = value
         setattr(namespace, self.dest, options)
 
@@ -20,15 +28,21 @@ class Config(dict):
         try:
             return self[name]
         except KeyError:
-            raise AttributeError(name)
+            # Suppress the original KeyError from being shown as the __getattr__ error context
+            raise AttributeError(name) from None
 
     def __setattr__(self, name, value):
         self[name] = value
 
     @staticmethod
     def fromfile(filename):
-        with open(filename) as f:
-            cfg_dict = yaml.safe_load(f)
+        try:
+            with open(filename) as f:
+                cfg_dict = yaml.safe_load(f)
+        except FileNotFoundError as err:
+            raise FileNotFoundError(f"Config file not found: {filename}") from err
+        except yaml.YAMLError as err:
+            raise ValueError(f"Failed to parse YAML config file '{filename}': {err}") from err
         return Config._dict_to_config(cfg_dict)
 
     @staticmethod
@@ -48,7 +62,10 @@ class Config(dict):
             keys = key.split('.')
             current = self
             for k in keys[:-1]:
-                current = current[k]
+                try:
+                    current = current[k]
+                except Exception as err:
+                    raise KeyError(f"Invalid config key: {key}") from err
             current[keys[-1]] = value
 
     @property

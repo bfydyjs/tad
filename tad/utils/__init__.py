@@ -11,6 +11,7 @@ __all__ = [
     "AverageMeter",
     "Config",
     "DictAction",
+    "LRFinder",
     "ModelEma",
     "calculate_params_gflops",
     "create_folder",
