@@ -15,6 +15,58 @@ from tad.utils import create_folder
 from tad.utils.misc import AverageMeter, reduce_loss
 
 
+def move_to_device(data_dict, device):
+    """Move data dictionary to device."""
+    for k, v in data_dict.items():
+        if isinstance(v, torch.Tensor):
+            data_dict[k] = v.to(device, non_blocking=True)
+        elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], torch.Tensor):
+            data_dict[k] = [x.to(device, non_blocking=True) for x in v]
+
+
+def _log_training_info(
+    logger,
+    curr_epoch,
+    iter_idx,
+    num_iters,
+    losses_tracker,
+    grad_norm_tracker,
+    curr_det_lr,
+    curr_backbone_lr,
+    interval_data_time,
+    start_time,
+    rank,
+):
+    """Log training information to logger and wandb."""
+    # print to terminal
+    block1 = f"[{curr_epoch:03d}][{iter_idx:05d}/{num_iters - 1:05d}]"
+    block2 = f"Loss={losses_tracker['loss'].avg:.4f}"
+    block3 = [f"{key}={value.avg:.4f}" for key, value in losses_tracker.items() if key != "loss"]
+    block4 = f"flr_det={curr_det_lr:.1e}"
+    if curr_backbone_lr is not None:
+        block4 = f"lr_backbone={curr_backbone_lr:.1e}" + "  " + block4
+    block5 = f"mem={torch.cuda.max_memory_allocated() / 1024.0 / 1024.0:.0f}MB"
+    block7 = f"data_time={interval_data_time:.2f}s"
+    block8 = f"time={time.time() - start_time:.2f}s"
+    logger.info("  ".join([block1, block2, "  ".join(block3), block4, block5, block7, block8]))
+
+    # log to wandb at the same logging granularity (use global step)
+    current_step = int(curr_epoch) * int(num_iters) + int(iter_idx)
+    try:
+        if rank == 0 and wandb.run is not None:
+            log_dict = {
+                "lr": curr_det_lr,
+                "grad_norm": grad_norm_tracker.avg,
+                **{f"train/{key}": value.avg for key, value in losses_tracker.items()},
+            }
+            if curr_backbone_lr is not None:
+                log_dict["train/lr_backbone"] = curr_backbone_lr
+
+            wandb.log(log_dict, step=current_step)
+    except Exception:
+        pass
+
+
 def train_one_epoch(
     train_loader,
     model,
@@ -47,11 +99,7 @@ def train_one_epoch(
         interval_data_time += data_time
 
         # move data to device
-        for k, v in data_dict.items():
-            if isinstance(v, torch.Tensor):
-                data_dict[k] = v.to(device, non_blocking=True)
-            elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], torch.Tensor):
-                data_dict[k] = [x.to(device, non_blocking=True) for x in v]
+        move_to_device(data_dict, device)
 
         optimizer.zero_grad()
 
@@ -65,7 +113,7 @@ def train_one_epoch(
         curr_det_lr = scheduler.get_last_lr()[-1]
 
         # forward pass
-        with torch.amp.autocast('cuda', dtype=torch.float16, enabled=use_amp):
+        with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_amp):
             losses = model(**data_dict, return_loss=True)
 
         # compute the gradients
@@ -77,7 +125,7 @@ def train_one_epoch(
                 scaler.unscale_(optimizer)
             grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad_l2norm)
         else:
-            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), float('inf'))
+            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), float("inf"))
 
         # update parameters
         if use_amp:
@@ -105,39 +153,65 @@ def train_one_epoch(
 
         # printing each logging_interval
         if ((iter_idx != 0) and (iter_idx % logging_interval) == 0) or ((iter_idx + 1) == num_iters):
-            # print to terminal
-            block1 = f"[{curr_epoch:03d}][{iter_idx:05d}/{num_iters - 1:05d}]"
-            block2 = f"Loss={losses_tracker['loss'].avg:.4f}"
-            block3 = [f"{key}={value.avg:.4f}" for key, value in losses_tracker.items() if key != "loss"]
-            block4 = f"flr_det={curr_det_lr:.1e}"
-            if curr_backbone_lr is not None:
-                block4 = f"lr_backbone={curr_backbone_lr:.1e}" + "  " + block4
-            block5 = f"mem={torch.cuda.max_memory_allocated() / 1024.0 / 1024.0:.0f}MB"
-            block7 = f"data_time={interval_data_time:.2f}s"
-            block8 = f"time={time.time() - interval_start_time:.2f}s"
-            logger.info("  ".join([block1, block2, "  ".join(block3), block4, block5, block7, block8]))
+            _log_training_info(
+                logger,
+                curr_epoch,
+                iter_idx,
+                num_iters,
+                losses_tracker,
+                grad_norm_tracker,
+                curr_det_lr,
+                curr_backbone_lr,
+                interval_data_time,
+                interval_start_time,
+                rank,
+            )
             interval_start_time = time.time()
             interval_data_time = 0.0
-            # log to wandb at the same logging granularity (use global step)
-            current_step = int(curr_epoch) * int(num_iters) + int(iter_idx)
-            try:
-                if rank == 0 and wandb.run is not None:
-                    log_dict ={
-                        "lr": curr_det_lr,
-                        "grad_norm": grad_norm_tracker.avg,
-                        **{f"train/{key}": value.avg for key, value in losses_tracker.items()}
-                    }
-                    if curr_backbone_lr is not None:
-                        log_dict["train/lr_backbone"] = curr_backbone_lr
-
-                    wandb.log(log_dict, step=current_step)
-            except Exception:
-                pass
 
         end = time.time()
 
     # Calculate final global step for this epoch to ensure it's defined for all ranks
     return int(curr_epoch) * int(num_iters) + int(num_iters) - 1
+
+
+def _setup_inference_resources(cfg, test_loader):
+    cfg.inference["folder"] = Path(cfg.work_dir) / "outputs"
+    if cfg.inference.save_raw_prediction:
+        create_folder(cfg.inference["folder"])
+
+    # external classifier
+    if "external_cls" in cfg.post_processing:
+        if cfg.post_processing.external_cls is not None:
+            external_cls = build_classifier(cfg.post_processing.external_cls)
+        else:
+            external_cls = test_loader.dataset.class_map
+    else:
+        external_cls = test_loader.dataset.class_map
+
+    # whether the testing dataset is sliding window
+    cfg.post_processing.sliding_window = isinstance(test_loader.dataset, SlidingWindowDataset)
+    return external_cls, cfg
+
+
+def _save_and_evaluate(result_dict, cfg, logger, skip_eval):
+    result_eval = dict(results=result_dict)
+    if cfg.post_processing.save_dict:
+        result_path = Path(cfg.work_dir) / "result_detection.json"
+        with open(result_path, "w") as out:
+            json.dump(result_eval, out)
+
+    if not skip_eval:
+        # build evaluator
+        evaluator = build_evaluator(dict(prediction_file=result_eval, **cfg.evaluation))
+        # evaluate and output
+        logger.info("[Evaluation]:")
+        metrics_dict = evaluator.evaluate()
+        evaluator.logging(logger)
+        if "average_mAP" in metrics_dict:
+            return metrics_dict["average_mAP"]
+    return 0.0
+
 
 def eval_one_epoch(
     test_loader,
@@ -153,26 +227,15 @@ def eval_one_epoch(
     """Inference and Evaluation the model"""
 
     # load the ema dict for evaluation
+    current_dict = None
     if model_ema is not None:
         current_dict = copy.deepcopy(model.state_dict())
-        if hasattr(model, 'module'):
+        if hasattr(model, "module"):
             model.module.load_state_dict(model_ema.module.state_dict())
         else:
             model.load_state_dict(model_ema.module.state_dict())
 
-    cfg.inference["folder"] = Path(cfg.work_dir) / "outputs"
-    if cfg.inference.save_raw_prediction:
-        create_folder(cfg.inference["folder"])
-
-    # external classifier
-    if "external_cls" in cfg.post_processing:
-        if cfg.post_processing.external_cls is not None:
-            external_cls = build_classifier(cfg.post_processing.external_cls)
-    else:
-        external_cls = test_loader.dataset.class_map
-
-    # whether the testing dataset is sliding window
-    cfg.post_processing.sliding_window = isinstance(test_loader.dataset, SlidingWindowDataset)
+    external_cls, cfg = _setup_inference_resources(cfg, test_loader)
 
     # get the device of the model
     device = next(model.parameters()).device
@@ -180,15 +243,11 @@ def eval_one_epoch(
     # model forward
     model.eval()
     result_dict = {}
-    for data_dict in tqdm.tqdm(test_loader, disable=(rank != 0)): # inference + NMS
+    for data_dict in tqdm.tqdm(test_loader, disable=(rank != 0)):  # inference + NMS
         # move data to device
-        for k, v in data_dict.items():
-            if isinstance(v, torch.Tensor):
-                data_dict[k] = v.to(device, non_blocking=True)
-            elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], torch.Tensor):
-                data_dict[k] = [x.to(device, non_blocking=True) for x in v]
+        move_to_device(data_dict, device)
 
-        with torch.amp.autocast('cuda', dtype=torch.float16, enabled=use_amp):
+        with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_amp):
             with torch.no_grad():
                 results = model(
                     **data_dict,
@@ -208,25 +267,11 @@ def eval_one_epoch(
     result_dict = gather_ddp_results(world_size, result_dict, cfg.post_processing)
 
     # load back the normal model dict
-    if model_ema is not None:
+    if model_ema is not None and current_dict is not None:
         model.load_state_dict(current_dict)
 
     if rank == 0:
-        result_eval = dict(results=result_dict)
-        if cfg.post_processing.save_dict:
-            result_path = Path(cfg.work_dir) / "result_detection.json"
-            with open(result_path, "w") as out:
-                json.dump(result_eval, out)
-
-        if not skip_eval:
-            # build evaluator
-            evaluator = build_evaluator(dict(prediction_file=result_eval, **cfg.evaluation))
-            # evaluate and output
-            logger.info("[Evaluation]:")
-            metrics_dict = evaluator.evaluate()
-            evaluator.logging(logger)
-            if "average_mAP" in metrics_dict:
-                return metrics_dict["average_mAP"]
+        return _save_and_evaluate(result_dict, cfg, logger, skip_eval)
     return 0.0
 
 
