@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
 from setup_paper_style import setup_paper_style
+
+
 def main():
     # 1. 数据结构优化：将数据组织在一起，方便管理和修改
     data = [
@@ -16,7 +18,6 @@ def main():
         {"name": "EHMPFN (Ours)","params": 2.0, "mAP": 35.5, "marker": '*', "color": 'red',        's': 300},        # 一般用*标红显示最好的方法（自己的方法）
     ]
 
-
     setup_paper_style()
     # Create a figure
     plt.figure(figsize=(10, 7))
@@ -25,67 +26,88 @@ def main():
     for item in data:
         # 增加 zorder=3 确保点在网格线上面
         plt.scatter(
-            item["params"], item["mAP"],
-            s=item["s"], # 稍微加大点的大小
+            item["params"],
+            item["mAP"],
+            s=item["s"],  # 稍微加大点的大小
             marker=item["marker"],
             color=item["color"],
             label=item["name"],
-            edgecolors='k', # 黑色边框
+            edgecolors="k",  # 黑色边框
             linewidth=0.8,
             alpha=0.9,
-            zorder=3
+            zorder=3,
         )
 
     # 3. 标注最佳模型
     # 自动查找包含 "Ours" 的模型数据，避免硬编码索引
     best_model = next((item for item in data if "Ours" in item["name"]), None)
-    
+
     if best_model:
         plt.annotate(
-            'Best Performance',
-            xy=(best_model["params"] + 0.01, best_model["mAP"] - 0.01), # 箭头指向位置、微调以避免遮挡
-            xytext=(best_model["params"] + 0.2, best_model["mAP"] - 0.2), # 调整文本位置到右下方
+            "Best Performance",
+            xy=(
+                best_model["params"] + 0.01,
+                best_model["mAP"] - 0.01,
+            ),  # 箭头指向位置、微调以避免遮挡
+            xytext=(
+                best_model["params"] + 0.2,
+                best_model["mAP"] - 0.2,
+            ),  # 调整文本位置到右下方
             arrowprops=dict(
-                arrowstyle='->',
-                color='red',
-                lw=2,
-                connectionstyle='arc3,rad=-0.2'
+                arrowstyle="->", color="red", lw=2, connectionstyle="arc3,rad=-0.2"
             ),
             fontsize=12,
-            color='#d62728', # 较深的红色
-            weight='bold',
-            bbox=dict(boxstyle="round,pad=0.4", facecolor="white", edgecolor="#d62728", alpha=0.9)
+            color="#d62728",  # 较深的红色
+            weight="bold",
+            bbox=dict(
+                boxstyle="round,pad=0.4",
+                facecolor="white",
+                edgecolor="#d62728",
+                alpha=0.9,
+            ),
         )
 
     # 4. 图表装饰
-    plt.xlabel("Parameters (M)", fontsize=14, fontweight='bold')
-    plt.ylabel("mAP@0.5 (%)", fontsize=14, fontweight='bold')
+    plt.xlabel("Parameters (M)", fontsize=14, fontweight="bold")
+    plt.ylabel("mAP@0.5 (%)", fontsize=14, fontweight="bold")
     plt.title("Performance vs. Efficiency Comparison", fontsize=16, pad=20)
 
     # 增加网格线，设为虚线
-    plt.grid(True, linestyle='--', zorder=0)
+    plt.grid(True, linestyle="--", zorder=0)
 
     # 自动计算边界并增加一点留白
     all_params = [d["params"] for d in data]
     all_maps = [d["mAP"] for d in data]
     p_margin = (max(all_params) - min(all_params)) * 0.1
     m_margin = (max(all_maps) - min(all_maps)) * 0.1
-    
+
     plt.xlim(min(all_params) - p_margin, max(all_params) + p_margin)
-    plt.ylim(min(all_maps) - m_margin, max(all_maps) + m_margin * 2.0) # 顶部留更多空间给图例
+    plt.ylim(
+        min(all_maps) - m_margin, max(all_maps) + m_margin * 2.0
+    )  # 顶部留更多空间给图例
 
     # Legend (分两列显示，避免太长)
-    plt.legend(loc='upper right', frameon=True, fancybox=True, shadow=True, ncol=2, fontsize=10)
+    plt.legend(
+        loc="upper right", frameon=True, fancybox=True, shadow=True, ncol=2, fontsize=10
+    )
 
     plt.tight_layout()
 
     # 5. 保存文件
-    output_path = (Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "scatter.png").resolve()
-    
+    output_path = (
+        Path(__file__).resolve().parent.parent.parent.parent
+        / "output"
+        / "figures"
+        / "scatter.png"
+    ).resolve()
+
     print(f"Saving figure to: {output_path}")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path, )
+    plt.savefig(
+        output_path,
+    )
     plt.show()
+
 
 if __name__ == "__main__":
     main()

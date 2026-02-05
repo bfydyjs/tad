@@ -7,7 +7,7 @@ name = "ddiou"
 version = "1.0"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "Apache-2.0"}
+license = { text = "Apache-2.0" }
 dependencies = [
     "numpy",
     "pyyaml",
@@ -23,3 +23,12 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 include = ["ddiou*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+fix = true # ruff check --fix
+unsafe-fixes = false
+
+[tool.ruff.lint]
+select = ["E", "W", "N", "F", "I", "C90", "B", "RUF", "UP", "YTT"]
