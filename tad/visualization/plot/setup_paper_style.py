@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 def setup_paper_style():
     """
     Journal Standard: Arial/Helvetica. 
-    
+
     Note: 
     - Draw.io's default Helvetica is effectively Arial.
     - On Linux systems, Arial may not be available.
@@ -25,7 +25,7 @@ def setup_paper_style():
         'ytick.labelsize': 11,
 
         'grid.linestyle': '--',
-        'grid.linewidth': 0.8,     
+        'grid.linewidth': 0.5,     
         'grid.alpha': 0.3,         # Grid line transparency (0 = fully transparent, 1 = opaque)
 
         'lines.linewidth': 2.0,
