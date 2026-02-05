@@ -268,7 +268,8 @@ class SlidingWindowDataset(BaseDataset):
 
 def compute_gt_completeness(gt_boxes, anchors):
     """Compute the completeness of the gt_bboxes.
-       GT will be first truncated by the anchor start/end, then the completeness is defined as the ratio of the truncated_gt_len / original_gt_len.
+       GT will be first truncated by the anchor start/end, then the completeness is defined as the ratio of the
+       truncated_gt_len / original_gt_len.
        If this ratio is too small, it means this gt is not complete enough to be used for training.
     Args:
         gt_boxes: np.array shape [N, 2]

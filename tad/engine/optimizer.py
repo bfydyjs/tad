@@ -46,6 +46,36 @@ def build_optimizer(cfg, model, logger):
     return optimizer
 
 
+def _group_backbone_parameters(raw_model, exclude_name_list, custom_name_list):
+    custom_params_list = [[] for _ in custom_name_list]
+    rest_params_list = []
+    name_list = []
+
+    for name, param in raw_model.backbone.named_parameters():
+        # Check exclusion
+        is_exclude = any(exclude_name in name for exclude_name in exclude_name_list)
+        if is_exclude:
+            continue
+
+        # Check custom groups
+        is_custom = False
+        for i, custom_name in enumerate(custom_name_list):
+            if custom_name in name:
+                custom_params_list[i].append(param)
+                name_list.append(name)
+                is_custom = True
+                break
+
+        if is_custom:
+            continue
+
+        # Rest parameters
+        rest_params_list.append(param)
+        name_list.append(name)
+
+    return rest_params_list, custom_params_list, name_list
+
+
 def get_backbone_optim_groups(cfg, model, logger):
     """Example:
     backbone = dict(
@@ -55,60 +85,20 @@ def get_backbone_optim_groups(cfg, model, logger):
         exclude=[],
     )
     """
-
-    # custom_name_list
-    if "custom" in cfg.keys():
-        custom_name_list = [d["name"] for d in cfg["custom"]]
-        custom_params_list = [[] for _ in custom_name_list]
-    else:
-        custom_name_list = []
-
-    # exclude_name_list
-    if "exclude" in cfg.keys():
-        exclude_name_list = cfg["exclude"]
-    else:
-        exclude_name_list = []
-
-    # rest_params_list
-    rest_params_list = []
+    custom_cfg = cfg.get("custom", [])
+    custom_name_list = [d["name"] for d in custom_cfg]
+    exclude_name_list = cfg.get("exclude", [])
 
     # Compat for both DDP (model.module) and Single GPU (model)
     raw_model = model.module if hasattr(model, "module") else model
 
-    name_list = []
-    # split the backbone parameters into different groups
-    for name, param in raw_model.backbone.named_parameters():
-        # loop the exclude_name_list
-        is_exclude = False
-        if len(exclude_name_list) > 0:
-            for exclude_name in exclude_name_list:
-                if exclude_name in name:
-                    is_exclude = True
-                    break
-
-        # loop through the custom_name_list
-        is_custom = False
-        if len(custom_name_list) > 0:
-            for i, custom_name in enumerate(custom_name_list):
-                if custom_name in name:
-                    custom_params_list[i].append(param)
-                    name_list.append(name)
-                    is_custom = True
-                    break
-
-        # if is_custom, we have already appended the param to the custom_params_list
-        # if is _exclude, we do not need to append the param to the rest_params_list
-        if is_exclude or is_custom:
-            continue
-
-        # this is a rest parameter without special treatment
-        if not is_custom:
-            # this is the rest backbone parameters
-            rest_params_list.append(param)
-            name_list.append(name)
+    rest_params_list, custom_params_list, name_list = _group_backbone_parameters(
+        raw_model, exclude_name_list, custom_name_list
+    )
 
     for name in name_list:
         logger.info(f"Backbone parameter: {name}")
+
     # add params to optim_groups
     backbone_optim_groups = []
 
@@ -121,13 +111,13 @@ def get_backbone_optim_groups(cfg, model, logger):
             )
         )
 
-    if len(custom_name_list) > 0:
-        for i, custom_name in enumerate(custom_name_list):
+    for i, _ in enumerate(custom_name_list):
+        if len(custom_params_list[i]) > 0:
             backbone_optim_groups.append(
                 dict(
                     params=custom_params_list[i],
-                    lr=cfg["custom"][i]["lr"],
-                    weight_decay=cfg["custom"][i]["weight_decay"],
+                    lr=custom_cfg[i]["lr"],
+                    weight_decay=custom_cfg[i]["weight_decay"],
                 )
             )
     return backbone_optim_groups
