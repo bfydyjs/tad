@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 import yaml
 
@@ -73,6 +74,8 @@ class Config(dict):
                 return {k: _to_dict(v) for k, v in d.items()}
             elif isinstance(d, list):
                 return [_to_dict(v) for v in d]
+            elif isinstance(d, Path):
+                return str(d)
             else:
                 return d
 
