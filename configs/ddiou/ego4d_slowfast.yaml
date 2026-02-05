@@ -52,7 +52,7 @@ dataset:
     <<: *dataset_val
 
 evaluation:
-  type: mAP
+  type: MeanAveragePrecision
   subset: val
   tiou_thresholds: [0.1, 0.2, 0.3, 0.4, 0.5]
   ground_truth_file: data/ego4d/annotations/ego4d_v2_220429.json

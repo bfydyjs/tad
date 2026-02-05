@@ -48,7 +48,7 @@ dataset:
     <<: *dataset_val
 
 evaluation:
-  type: mAP
+  type: MeanAveragePrecision
   subset: val
   tiou_thresholds: [0.1, 0.2, 0.3, 0.4, 0.5]
   ground_truth_file: data/epic_kitchens-100/annotations/epic_kitchens_verb.json
