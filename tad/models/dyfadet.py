@@ -25,7 +25,7 @@ class DyFADet(Detector):
 
         # loop over all modules / params
         for mn, m in self.named_modules():
-            for pn, p in m.named_parameters():
+            for pn, _ in m.named_parameters():
                 fpn = f"{mn}.{pn}" if mn else pn  # full param name
 
                 # exclude the backbone parameters
