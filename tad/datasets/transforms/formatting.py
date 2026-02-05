@@ -3,9 +3,9 @@ from collections.abc import Sequence
 import numpy as np
 import scipy
 import torch
-import torch.nn.functional as F
 import torchvision
 from einops import rearrange, reduce
+from torch.nn.functional import interpolate
 
 from ..builder import PIPELINES
 
@@ -54,7 +54,7 @@ class Collect:
         data = {}
 
         # input key
-        data["inputs"] = results[self.inputs]  # [C,T]
+        data["inputs"] = results[self.inputs]  # [c,t]
 
         # AutoAugment key: gt_segments, gt_labels, masks
         for key in self.keys:
@@ -130,10 +130,10 @@ class ResizeFeat:
 
     @torch.no_grad()
     def torchvision_align(self, feat, tscale):
-        # input feat shape [C,T]
-        pseudo_input = feat.unsqueeze(0).unsqueeze(3)  # [1,C,T,1]
+        # input feat shape [c,t]
+        pseudo_input = feat.unsqueeze(0).unsqueeze(3)  # [1,c,t,1]
         pseudo_bbox = torch.Tensor([[0, 0, 0, 1, feat.shape[1]]])
-        # output feat shape [C,tscale]
+        # output feat shape [c,tscale]
         output = torchvision.ops.roi_align(
             pseudo_input.half().double(),
             pseudo_bbox.half().double(),
@@ -145,26 +145,26 @@ class ResizeFeat:
 
     @torch.no_grad()
     def gtad_align(self, feat):
-        raise "not implement yet"
+        raise NotImplementedError("Not implemented yet")
 
     @torch.no_grad()
     def bmn_align(self, feat, tscale, num_bin=1, num_sample_bin=3, pool_type="mean"):
         feat = feat.numpy()
-        C, T = feat.shape
+        c, t = feat.shape
 
         # x is the temporal location corresponding to each location  in feature sequence
-        x = [0.5 + ii for ii in range(T)]
+        x = [0.5 + ii for ii in range(t)]
         f = scipy.interpolate.interp1d(x, feat, axis=1)
 
         video_feature = []
-        zero_sample = np.zeros(num_bin * C)
+        zero_sample = np.zeros(num_bin * c)
         tmp_anchor_xmin = [1.0 / tscale * i for i in range(tscale)]
         tmp_anchor_xmax = [1.0 / tscale * i for i in range(1, tscale + 1)]
 
         num_sample = num_bin * num_sample_bin
         for idx in range(tscale):
-            xmin = max(x[0] + 0.0001, tmp_anchor_xmin[idx] * T)
-            xmax = min(x[-1] - 0.0001, tmp_anchor_xmax[idx] * T)
+            xmin = max(x[0] + 0.0001, tmp_anchor_xmin[idx] * t)
+            xmax = min(x[-1] - 0.0001, tmp_anchor_xmax[idx] * t)
             if xmax < x[0]:
                 video_feature.append(zero_sample)
                 continue
@@ -191,8 +191,8 @@ class ResizeFeat:
 
     @torch.no_grad()
     def torch_interpolate(self, feat, tscale):
-        # input feat shape [C,T]
-        feats = F.interpolate(feat.unsqueeze(0), size=tscale, mode="linear", align_corners=False).squeeze(0)
+        # input feat shape [c,t]
+        feats = interpolate(feat.unsqueeze(0), size=tscale, mode="linear", align_corners=False).squeeze(0)
         return feats
 
     def __call__(self, results):
@@ -200,12 +200,12 @@ class ResizeFeat:
         tscale = results["resize_length"]
 
         if not self.channel_first:
-            feats = results["feats"].permute(1, 0)  # [T,C] -> [C,T]
+            feats = results["feats"].permute(1, 0)  # [t,c] -> [c,t]
         else:
             feats = results["feats"]
 
         assert isinstance(feats, torch.Tensor)
-        assert feats.ndim == 2  # [C,T]
+        assert feats.ndim == 2  # [c,t]
 
         if self.tool == "torchvision_align":
             resized_feat = self.torchvision_align(feats, tscale)
@@ -226,7 +226,7 @@ class ResizeFeat:
 
         results["feats_len_ori"] = results["feats"].shape[1]  # for future usage
         if not self.channel_first:
-            results["feats"] = resized_feat.permute(1, 0)  # [C,T] -> [T,C]
+            results["feats"] = resized_feat.permute(1, 0)  # [c,t] -> [t,c]
         else:
             results["feats"] = resized_feat
         return results
@@ -267,7 +267,7 @@ class Padding:
             print(f"feature length {feat_len} is larger than padding length. Will be resized to {self.length}.")
             results["snippet_stride"] = results["snippet_stride"] * feat_len / self.length
             results["offset_frames"] = results["offset_frames"] * feat_len / self.length
-            new_feats = F.interpolate(
+            new_feats = interpolate(
                 feats.permute(1, 0)[None],  # [b,c,t]
                 size=self.length,
                 mode="linear",
@@ -290,7 +290,7 @@ class ChannelReduction:
 
     def __call__(self, results):
         assert isinstance(results["feats"], torch.Tensor)
-        assert results["feats"].shape[1] == self.in_channels  # [T,C]
+        assert results["feats"].shape[1] == self.in_channels  # [t,c]
 
         # select the features
         results["feats"] = results["feats"][:, self.index[0] : self.index[1]]

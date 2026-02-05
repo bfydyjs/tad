@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from torch.nn import functional as F
+from torch.nn.functional import interpolate
 
 from ..builder import PIPELINES
 
@@ -22,7 +22,7 @@ class LoadFeats:
                 self.check_feat_format(feat_format)
 
     def check_feat_format(self, feat_format):
-        assert feat_format in ["npy", "npz", "pt"], print(f"not support {feat_format}")
+        assert feat_format in ["npy", "npz", "pt"], f"not support {feat_format}"
 
     def read_from_tensor(self, file_path):
         feats = torch.load(file_path).float()
@@ -44,8 +44,8 @@ class LoadFeats:
                 feats = self.read_from_npz(file_path)
             elif feat_format == "pt":
                 feats = self.read_from_tensor(file_path)
-        except:
-            print("Missing data:", file_path)
+        except Exception as e:
+            print(f"Missing data: {file_path}, error: {e}")
             exit()
         return feats
 
@@ -65,7 +65,7 @@ class LoadFeats:
             if isinstance(self.feat_format, str):
                 self.feat_format = [self.feat_format] * len(results["data_path"])
 
-            for data_path, feat_format in zip(results["data_path"], self.feat_format):
+            for data_path, feat_format in zip(results["data_path"], self.feat_format, strict=True):
                 file_path = (
                     Path(data_path) / f"{self.prefix}{video_name}{self.suffix}.{feat_format}"
                 )
@@ -75,7 +75,7 @@ class LoadFeats:
             for i in range(len(feats)):
                 if feats[i].shape[0] != max_len:
                     # assume the first dimension is T
-                    tmp_feat = F.interpolate(
+                    tmp_feat = interpolate(
                         torch.Tensor(feats[i]).permute(1, 0).unsqueeze(0),
                         size=max_len,
                         mode="linear",
@@ -216,7 +216,7 @@ class RandomTrunc:
     def pad_features(self, feats):
         feat_len = feats.shape[0]
         if feat_len < self.trunc_len:
-            feats_pad = torch.ones((self.trunc_len - feat_len,) + feats.shape[1:]) * self.pad_value
+            feats_pad = torch.ones((self.trunc_len - feat_len, *feats.shape[1:])) * self.pad_value
             feats = torch.cat([feats, feats_pad], dim=0)
             masks = torch.cat([torch.ones(feat_len), torch.zeros(self.trunc_len - feat_len)])
             return feats, masks

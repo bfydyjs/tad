@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from torch.nn import functional as F
+from torch.nn.functional import interpolate
 
 from ..builder import PIPELINES
 
@@ -95,7 +95,7 @@ class LoadSnippetFrames:
     def __call__(self, results):
         assert "total_frames" in results.keys(), "should have total_frames as a key"
         total_frames = results["total_frames"]
-        fps = results["avg_fps"]
+        # fps = results["avg_fps"]
 
         if self.method == "resize":
             assert "resize_length" in results.keys(), "should have resize_length as a key"
@@ -240,7 +240,7 @@ class LoadFrames:
     def __call__(self, results):
         assert "total_frames" in results.keys(), "should have total_frames as a key"
         total_frames = results["total_frames"]
-        fps = results["avg_fps"]
+        # fps = results["avg_fps"]
 
         if self.method == "resize":
             assert "resize_length" in results.keys(), "should have resize_length as a key"
@@ -335,7 +335,7 @@ class Interpolate:
     def __call__(self, results):
         for key in self.keys:
             if results[key].shape[2:] != self.size:
-                results[key] = F.interpolate(
+                results[key] = interpolate(
                     results[key],
                     size=self.size,
                     mode=self.mode,
