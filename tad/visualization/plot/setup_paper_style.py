@@ -28,10 +28,12 @@ def get_figsize_from_pt(width_pt, ratio=1.618, fraction=1.0):
     return (width_inch, height_inch)
 
 
-def setup_paper_style(textwidth):
+def setup_paper_style(textwidth, fraction=0.98):  # 0.98 \textwidth
 
     # 自动计算适合当前文档的 figsize
-    figsize = get_figsize_from_pt(textwidth, ratio=1.618, fraction=0.98)  # 0.98 \textwidth
+    figsize = get_figsize_from_pt(
+        textwidth, ratio=1.618, fraction=fraction
+    )  # double-column; single-column → textwidth / 2
     """
     Journal Standard: Arial/Helvetica.
     Note:
@@ -40,7 +42,7 @@ def setup_paper_style(textwidth):
     """
     plt.rcParams.update(
         {
-            "figure.figsize": figsize,  # double-column; single-column → [3.5, 2.6]
+            "figure.figsize": figsize,
             "font.family": "sans-serif",
             "font.sans-serif": [
                 "Arial",
