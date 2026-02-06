@@ -82,6 +82,7 @@ def setup_paper_style(textwidth, fraction=0.98):  # 0.98 \textwidth
             "lines.markersize": 7,
             "legend.fontsize": 9,
             "legend.frameon": True,
+            "legend.fancybox": True,
             "legend.framealpha": 0.8,
             "legend.edgecolor": "black",
             "savefig.dpi": 600,
