@@ -1,10 +1,3 @@
-"""
-Utilities to align Matplotlib figures with LaTeX document dimensions.
-Converts TeX points (1 pt = 1/72.27 inch) to inches for matplotlib.
-
-Author: Yan Houyi <houyi.yan@outlook.com>
-"""
-
 import matplotlib.pyplot as plt
 
 
