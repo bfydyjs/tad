@@ -1,0 +1,218 @@
+# 移动到与库同一目录下
+
+import sys
+import warnings
+from pathlib import Path
+
+import torch
+from fvcore.nn import FlopCountAnalysis
+
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+# 但 fvcore 返回的“FLOPs”实际上是 MACs，在FlopCountAnalysis 类的文档字符串中（第 53 行），
+# 明确说明了计算标准："We count one fused multiply-add as one flop."
+# fvcore 和 thop 都计算 MACs，但推荐使用 fvcore，因为 fvcore 更加全面和准确地处理了各种操作和模块，
+# 通常 fvcore 的计算结果更大一些，更接近实际情况。
+# 本文采用计算机视觉领域的常用定义，将一次乘加运算（MAC）视为一次计算，
+# 因此工具 fvcore 所报告的 “FLOPs” 实际等价于 MACs，而非物理意义上将乘法与加法分别计数的 FLOPs。
+# 科学计算 / HPC 领域：1 FLOP = 1 次浮点运算（加 or 乘），所以 MACs = 2 FLOPs。
+# 深度学习 / CV 领域：1 FLOP ≈ 1 MAC（即 1 次乘加算 1 次操作）。
+# 论文中可以这样写“We report model complexity in terms of multiply-add operations (commonly referred to as FLOPs in the literature).”
+# 在模型复杂度分析中，本文遵循计算机视觉领域的常见惯例，将一次乘加运算（MAC）计为一次浮点运算（FLOP）。
+# 因此，我们使用 fvcore [X] 工具报告的 "FLOPs" 在数值上等价于 MACs 的数量。
+# 这与将乘法与加法分别计数（即 1 MAC = 2 FLOPs）的高性能计算定义有所不同。
+# fvcore [X] （加上引用）
+# 或 fvcore (v0.1.5)
+
+# Please clarify whether the reported FLOPs refer to multiply-add operations or separate floating-point operations.
+# Different definitions in literature make direct comparison difficult.
+
+# Add the parent directory of the 'tad' package to Python path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+def calculate_flops_params(
+    model: torch.nn.Module,
+    input_shape: tuple[int, ...],
+    device: str = "cpu"
+) -> tuple[float, int]:
+    """
+    Calculate per-sample FLOPs and total trainable parameters of a model.
+
+    Args:
+        model: PyTorch model.
+        input_shape: Input shape tuple (e.g., (3, 224, 224) for image, (2048, 100) for video features).
+                     Batch dimension is NOT included.
+        device: Device to run dummy forward pass ('cpu' or 'cuda').
+
+    Returns:
+        flops_per_sample: FLOPs for one sample (float)
+        params: Number of trainable parameters (int)
+    """
+    # Add batch dimension = 1
+    dummy_input = torch.randn(1, *input_shape, device=device)
+
+    # Create dummy masks (all True, assuming no padding)
+    dummy_masks = torch.ones(1, input_shape[-1], device=device).bool()
+
+    # Create dummy metas (empty dict)
+    dummy_metas = {}
+
+    # Set model to evaluation mode and move to device
+    model.eval()
+    model.to(device)
+
+    # Create a simple nn.Module wrapper that directly calls forward_test to ensure all model components are traced
+    # class ModelWrapper(torch.nn.Module):
+    #     def __init__(self, model):
+    #         super().__init__()
+    #         self.model = model
+    #     def forward(self, inputs, masks, metas):
+    #         # Directly call the forward_test method to trace all model components
+    #         return self.model.forward_test(inputs, masks, metas, None)
+    class ModelWrapper(torch.nn.Module):
+        def __init__(self, model):
+            super().__init__()
+            self.model = model
+
+        def forward(self, inputs, masks, metas):
+            # 根据模型类型选择不同的前向传播方法
+            model_name = self.model.__class__.__name__
+
+            # 首先检查是否有 forward_test 方法（如 TAD 模型）
+            if hasattr(self.model, 'forward_test'):
+                return self.model.forward_test(inputs, masks, metas, None)
+
+            # 检查是否是 DyFADet 类型
+            elif model_name == 'DyFADet':
+                # For DyFADet model, use direct forward through all components
+                # This ensures all submodules are called during FLOPs calculation
+                try:
+                    # Ensure mask has the correct shape [B, 1, T] for interpolate
+                    batched_masks = masks.unsqueeze(1)  # Add channel dimension
+
+                    # Forward through backbone and neck
+                    feats, masks = self.model.backbone(inputs, batched_masks)
+                    fpn_feats, fpn_masks = self.model.neck(feats, masks)
+
+                    # Forward through point generator, cls_head and reg_head
+                    points = self.model.point_generator(fpn_feats)
+                    out_cls_logits = self.model.cls_head(fpn_feats, fpn_masks)
+                    out_offsets = self.model.reg_head(fpn_feats, fpn_masks)
+
+                    return out_cls_logits, out_offsets
+                except Exception:
+                    # If any error occurs, fall back to backbone and neck only
+                    batched_masks = masks.unsqueeze(1)
+                    feats, masks = self.model.backbone(inputs, batched_masks)
+                    fpn_feats, fpn_masks = self.model.neck(feats, masks)
+                    return fpn_feats
+
+            # 检查是否是 Detector 类型
+            elif model_name == 'Detector':
+                # For Detector model, use forward with masks and metas
+                return self.model(inputs, masks, metas)
+
+            # 其他模型类型
+            else:
+                # Try default forward method with different parameter combinations
+                try:
+                    # First try with all three parameters
+                    return self.model(inputs, masks, metas)
+                except TypeError:
+                    try:
+                        # Try with just inputs
+                        return self.model(inputs)
+                    except TypeError:
+                        # Try with inputs and masks
+                        return self.model(inputs, masks)
+
+    # Create wrapper instance
+    wrapper = ModelWrapper(model)
+
+    # Calculate FLOPs (total for batch=1 → per-sample)
+    flops = FlopCountAnalysis(wrapper, (dummy_input, dummy_masks, dummy_metas)).total()
+    # Parameter counting requires only the model architecture, not input data.
+    params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    return flops, params
+
+
+if __name__ == "__main__":
+    from tad.tad.models import build_detector
+    from tad.tad.utils import Config
+    config_file = Path(__file__).resolve().parent / "tad" / "configs" / "ddiou" / "thumos_i3d.yaml"
+    print(config_file)
+    cfg = Config.fromfile(config_file)
+    model = build_detector(cfg.model)
+    flops, params = calculate_flops_params(model, input_shape=(2048, 2304))
+    print("DDIOU: thumos_i3d.yaml")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
+
+    config_file = Path(__file__).resolve().parent / "tad" / "configs" / "ddiou" / "thumos_videomaev2_g.yaml"
+    print(config_file)
+    cfg = Config.fromfile(config_file)
+    model = build_detector(cfg.model)
+    flops, params = calculate_flops_params(model, input_shape=(1408, 2304))
+    print("DDIOU: thumos_videomaev2_g.yaml")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
+
+    # pip install opentad/models/roi_heads/roi_extractors/align1d --no-build-isolation
+    # pip install opentad/models/roi_heads/roi_extractors/boundary_pooling --no-build-isolation
+    from mmengine.config import Config
+    from OpenTAD.opentad.models import build_detector
+    config_file = Path(__file__).resolve().parent / "OpenTAD" / "configs" / "dyfadet" / "thumos_videomaev2_g.py"
+    print(config_file)
+    cfg = Config.fromfile(config_file)
+    model = build_detector(cfg.model)
+    flops, params = calculate_flops_params(model, input_shape=(1408, 2304))
+    print("DyFADet: thumos_videomaev2_g.py")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
+    config_file = Path(__file__).resolve().parent / "OpenTAD" / "configs" / "actionformer" / "thumos_i3d.py"
+    print(config_file)
+    cfg = Config.fromfile(config_file)
+    model = build_detector(cfg.model)
+    flops, params = calculate_flops_params(model, input_shape=(2048, 2304))
+    print("ActionFormer: thumos_i3d.py")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
+    config_file = Path(__file__).resolve().parent / "OpenTAD" / "configs" / "gtad" / "thumos_i3d.py"
+    print(config_file)
+    cfg = Config.fromfile(config_file)
+    model = build_detector(cfg.model)
+    # GTAD requires CUDA for its custom Align1D operator
+    flops, params = calculate_flops_params(model, input_shape=(2048, 2304), device="cuda" if torch.cuda.is_available() else "cpu")
+    print("GTAD: thumos_i3d.py")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
+    config_file = Path(__file__).resolve().parent / "OpenTAD" / "configs" / "tadtr" / "thumos_i3d.py"
+    print(config_file)
+    cfg = Config.fromfile(config_file)
+    model = build_detector(cfg.model)
+    # GTAD requires CUDA for its custom Align1D operator
+    flops, params = calculate_flops_params(model, input_shape=(2048, 2304), device="cuda" if torch.cuda.is_available() else "cpu")
+    print("TadTR: thumos_i3d.py")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
+
+    # rename DyFADet_pytorch to DyFADet-pytorch
+    from DyFADet_pytorch.libs.core import load_config
+    from DyFADet_pytorch.libs.modeling import make_meta_arch
+    config_file = Path(__file__).resolve().parent / "DyFADet_pytorch" / "configs" / "thumos_i3d.yaml"
+    print(config_file)
+    cfg = load_config(config_file)
+    model = make_meta_arch(cfg['model_name'], **cfg['model'])
+    flops, params = calculate_flops_params(model, input_shape=(2048, 2304))
+    print("DyFADet-pytorch: thumos_i3d")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
+
+    config_file = Path(__file__).resolve().parent / "DyFADet_pytorch" / "configs" / "thumos_mae.yaml"
+    print(config_file)
+    cfg = load_config(config_file)
+    model = make_meta_arch(cfg['model_name'], **cfg['model'])
+    flops, params = calculate_flops_params(model, input_shape=(1408, 2304))
+    print("DyFADet-pytorch: thumos_mae.yaml")
+    print(f"GFLOPs: {flops / 1e9:.2f}")
+    print(f"Params: {params / 1e6:.2f}M\n")
+
