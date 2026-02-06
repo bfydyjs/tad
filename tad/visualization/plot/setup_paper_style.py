@@ -1,3 +1,10 @@
+"""
+Utilities to align Matplotlib figures with LaTeX document dimensions.
+Converts TeX points (1 pt = 1/72.27 inch) to inches for matplotlib.
+
+Author: Yan Houyi <houyi.yan@outlook.com>
+"""
+
 import matplotlib.pyplot as plt
 
 
@@ -51,15 +58,14 @@ def setup_paper_style(textwidth, fraction=0.98):  # 0.98 \textwidth
     figsize = get_figsize_from_pt(
         textwidth, ratio=1.618, fraction=fraction
     )  # double-column; single-column → textwidth / 2
-    """
-    Journal Standard: Arial/Helvetica.
-    Note:
-    - Draw.io's default Helvetica is effectively Arial.
-    - On Linux systems, Arial may not be available.
-    """
+
     plt.rcParams.update(
         {
             "figure.figsize": figsize,
+            # Journal Standard: Arial/Helvetica.
+            # Note:
+            # - Draw.io's default Helvetica is effectively Arial.
+            # - On Linux systems, Arial may not be available.
             "font.family": "sans-serif",
             "font.sans-serif": [
                 "Arial",
