@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 from setup_paper_style import setup_paper_style
 
 # ==========================================
@@ -24,29 +25,25 @@ baseline_value = (model_a_data[0] + model_b_data[0]) / 2
 
 
 def plot_comparison():
-    setup_paper_style()
+    setup_paper_style(440 / 2, ratio=1.618, fraction=0.98, font_size_tex=5,font_size_main=4.5, line_width_axis=0.5)
     min_len = min(len(model_a_data), len(model_b_data))
     y_a = model_a_data[:min_len]
     y_b = model_b_data[:min_len]
     x = list(range(min_len))
     x_labels = [str(i) for i in x]
 
-    plt.figure(figsize=(10, 6))
-
-    plt.plot(x, y_a, marker="o", linestyle="-", label=model_a_name, color="#1f77b4")
-    plt.plot(x, y_b, marker="o", linestyle="-", label=model_b_name, color="#ff7f0e")
-
+    plt.figure()
     plt.hlines(
         y=baseline_value,
         xmin=min(x),
         xmax=max(x),
         color="gray",
-        linewidth=1.5,
+        linewidth=2.0,
         linestyle="--",
         label="Raw Baseline",
     )
-
-    plt.grid(True, color="#bdbdbd")
+    plt.plot(x, y_a, marker="o", linestyle="-", label=model_a_name, color="#1f77b4")
+    plt.plot(x, y_b, marker="o", linestyle="-", label=model_b_name, color="#ff7f0e")
 
     all_values = y_a + y_b + [baseline_value]
 
@@ -55,14 +52,14 @@ def plot_comparison():
 
     plt.ylim(y_min, y_max)
     plt.xlim(min(x) - 0.2, max(x) + 0.2)
-
     plt.xlabel("Levels")
     plt.ylabel("Cosine Similarity")
-
     plt.xticks(x, labels=x_labels)
-
-    plt.legend(loc="lower right", frameon=True, edgecolor="#bfbfbf", fancybox=False)
-
+    plt.tick_params(length=2,width=0.5)
+    plt.yticks()
+    ax = plt.gca()  # 获取当前坐标轴
+    ax.yaxis.set_major_locator(MultipleLocator(0.05))
+    plt.legend(loc="lower right", edgecolor="#bfbfbf", handlelength=4)
     plt.tight_layout()
     output_path = (
         Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "cosine_similarity_comparison.pdf"

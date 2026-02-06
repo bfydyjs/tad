@@ -4,43 +4,38 @@ import matplotlib.pyplot as plt
 from setup_paper_style import setup_paper_style
 
 
+# Performance vs. Efficiency Comparison
 def main():
-    # 1. 数据结构优化：将数据组织在一起，方便管理和修改
     data = [
-        {"name": "FPN(yolo11n)", "params": 2.1, "mAP": 32.8, "marker": 'o', "color": 'lightblue',  's': 100},
-        {"name": "BIFPN",        "params": 2.3, "mAP": 33.9, "marker": 's', "color": 'lightcoral', 's': 100},
-        {"name": "BIFPN-GLSA",   "params": 2.4, "mAP": 31.5, "marker": 'D', "color": 'gold',       's': 100},
-        {"name": "HSFPN",        "params": 2.6, "mAP": 31.2, "marker": 'p', "color": 'plum',       's': 100},
-        {"name": "AFPN",         "params": 2.8, "mAP": 30.5, "marker": 'v', "color": 'lightgreen', 's': 100}, # 修改 marker 为 'v' 避免重复
-        {"name": "FreqGFPN",     "params": 2.5, "mAP": 30.8, "marker": 'X', "color": 'orange',     's': 100}, # 修改 yellow -> orange 提高对比度
-        {"name": "GFPN",         "params": 3.0, "mAP": 32.0, "marker": '^', "color": 'gray',       's': 100}, # 修改 lightgray -> gray 提高可见性
-        {"name": "CGFPRN",       "params": 3.4, "mAP": 30.2, "marker": '<', "color": 'tan',        's': 100},
-        {"name": "MAFPN",        "params": 3.2, "mAP": 31.8, "marker": '>', "color": 'teal',       's': 100},
-        {"name": "EHMPFN (Ours)","params": 2.0, "mAP": 35.5, "marker": '*', "color": 'red',        's': 300}, # 一般用*标红显示最好的方法（自己的方法）
+        {"name": "FPN(yolo11n)", "params": 2.1, "mAP": 32.8, "marker": 'o', "color": 'lightblue',  's': 30},
+        {"name": "BIFPN",        "params": 2.3, "mAP": 33.9, "marker": 's', "color": 'lightcoral', 's': 30},
+        {"name": "BIFPN-GLSA",   "params": 2.4, "mAP": 31.5, "marker": 'D', "color": 'gold',       's': 20},
+        {"name": "HSFPN",        "params": 2.6, "mAP": 31.2, "marker": 'p', "color": 'plum',       's': 30},
+        {"name": "AFPN",         "params": 2.8, "mAP": 30.5, "marker": 'v', "color": 'lightgreen', 's': 30},
+        {"name": "FreqGFPN",     "params": 2.5, "mAP": 30.8, "marker": 'X', "color": 'orange',     's': 30},
+        {"name": "GFPN",         "params": 3.0, "mAP": 32.0, "marker": '^', "color": 'gray',       's': 30},
+        {"name": "CGFPRN",       "params": 3.4, "mAP": 30.2, "marker": '<', "color": 'tan',        's': 30},
+        {"name": "MAFPN",        "params": 3.2, "mAP": 31.8, "marker": '>', "color": 'teal',       's': 30},
+        {"name": "Ours",         "params": 2.0, "mAP": 35.5, "marker": '*', "color": 'red',        's': 60},
+        # The best method (ours) is highlighted in red with an asterisk (*).
     ]
 
-    setup_paper_style()
-    # Create a figure
-    plt.figure(figsize=(10, 7))
+    setup_paper_style(440 / 2, ratio=1.618, fraction=0.98, font_size_tex=5,font_size_main=4.5, line_width_axis=0.5)
+    plt.figure()
 
-    # 2. 绘制散点图
     for item in data:
-        # 增加 zorder=3 确保点在网格线上面
         plt.scatter(
             item["params"],
             item["mAP"],
-            s=item["s"],  # 稍微加大点的大小
+            s=item["s"],
             marker=item["marker"],
             color=item["color"],
             label=item["name"],
-            edgecolors="k",  # 黑色边框
+            edgecolors="k",
             linewidth=0.8,
             alpha=0.9,
             zorder=3,
         )
-
-    # 3. 标注最佳模型
-    # 自动查找包含 "Ours" 的模型数据，避免硬编码索引
     best_model = next((item for item in data if "Ours" in item["name"]), None)
 
     if best_model:
@@ -49,16 +44,16 @@ def main():
             xy=(
                 best_model["params"] + 0.01,
                 best_model["mAP"] - 0.01,
-            ),  # 箭头指向位置、微调以避免遮挡
+            ),
             xytext=(
                 best_model["params"] + 0.2,
                 best_model["mAP"] - 0.2,
-            ),  # 调整文本位置到右下方
-            arrowprops=dict(
-                arrowstyle="->", color="red", lw=2, connectionstyle="arc3,rad=-0.2"
             ),
-            fontsize=12,
-            color="#d62728",  # 较深的红色
+            arrowprops=dict(
+                arrowstyle="->", color="red", lw=1.2, connectionstyle="arc3,rad=-0.2"
+            ),
+            fontsize=3,
+            color="#d62728",
             weight="bold",
             bbox=dict(
                 boxstyle="round,pad=0.4",
@@ -68,15 +63,11 @@ def main():
             ),
         )
 
-    # 4. 图表装饰
-    plt.xlabel("Parameters (M)", fontsize=14, fontweight="bold")
-    plt.ylabel("mAP@0.5 (%)", fontsize=14, fontweight="bold")
-    plt.title("Performance vs. Efficiency Comparison", fontsize=16, pad=20)
+    plt.xlabel("Parameters (M)")
+    plt.ylabel("mAP@0.5 (%)")
+    plt.tick_params(left=False, bottom=False)
+    plt.grid(zorder=0)
 
-    # 增加网格线，设为虚线
-    plt.grid(True, zorder=0)
-
-    # 自动计算边界并增加一点留白
     all_params = [d["params"] for d in data]
     all_maps = [d["mAP"] for d in data]
     p_margin = (max(all_params) - min(all_params)) * 0.1
@@ -85,28 +76,20 @@ def main():
     plt.xlim(min(all_params) - p_margin, max(all_params) + p_margin)
     plt.ylim(
         min(all_maps) - m_margin, max(all_maps) + m_margin * 2.0
-    )  # 顶部留更多空间给图例
-
-    # Legend (分两列显示，避免太长)
-    plt.legend(
-        loc="upper right", frameon=True, fancybox=True, shadow=True, ncol=2, fontsize=10
     )
-
+    plt.legend(loc="upper right",  ncol=2, handlelength=1)
     plt.tight_layout()
 
-    # 5. 保存文件
     output_path = (
         Path(__file__).resolve().parent.parent.parent.parent
         / "output"
         / "figures"
-        / "scatter.png"
+        / "scatter.pdf"
     ).resolve()
 
     print(f"Saving figure to: {output_path}")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(
-        output_path,
-    )
+    plt.savefig(output_path)
     plt.show()
 
 

@@ -13,9 +13,9 @@ def knn(x, y=None, k=10):
 
 
 def get_neigh_idx_semantic(x, n_neigh):
-    B, _, num_prop_v = x.shape
+    b, _, num_prop_v = x.shape
     neigh_idx = knn(x, k=n_neigh).to(dtype=torch.float32)
-    shift = torch.tensor(range(B), dtype=torch.float32, device=x.device) * num_prop_v
+    shift = torch.tensor(range(b), dtype=torch.float32, device=x.device) * num_prop_v
     shift = shift[:, None, None].repeat(1, num_prop_v, n_neigh)
     neigh_idx = (neigh_idx + shift).view(-1)
     return neigh_idx
@@ -32,10 +32,10 @@ class NeighConv(nn.Module):
         self.mlp = nn.Linear(feat_channels * 2, feat_channels)
 
     def forward(self, x):
-        bs, C, num_frm = x.shape
+        bs, c, num_frm = x.shape
         neigh_idx = get_neigh_idx_semantic(x, self.num_neigh)
 
-        feat_prop = x.permute(0, 2, 1).reshape(-1, C)
+        feat_prop = x.permute(0, 2, 1).reshape(-1, c)
         feat_neigh = feat_prop[neigh_idx.to(torch.long)]
         f_neigh_temp = feat_neigh.view(-1, self.num_neigh, feat_neigh.shape[-1])
 
@@ -69,13 +69,15 @@ class NeighConv(nn.Module):
         return feat_neigh_out.view(bs, num_frm, -1).permute(0, 2, 1)
 
 
-class xGN(nn.Module):
+class XGN(nn.Module):
     def __init__(
         self,
         feat_channels,
         stride,
-        gcn_kwargs=dict(num_neigh=10, nfeat_mode="feat_ctr", agg_type="max", edge_weight="false"),
+        gcn_kwargs=None,
     ):
+        if gcn_kwargs is None:
+            gcn_kwargs = dict(num_neigh=10, nfeat_mode="feat_ctr", agg_type="max", edge_weight="false")
         super().__init__()
 
         self.tconv1 = nn.Conv1d(

@@ -4,18 +4,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from setup_paper_style import setup_paper_style
 
-# 读取 wandb 下载的 CSV 文件
 df = pd.read_csv(r"C:\Users\yanho\Downloads\wandb_export_2026-01-27T15_29_05.168+08_00.csv")
-
-# 提取 Step 和 loss 列
-# 注意：列名中包含引号和空格，pandas 通常会自动去除外层引号，但保留内部
-# 实际列名可能是：'Step', '0125_1101 - train/loss'
 step_col = "Step"
 loss_col = "0125_1101 - train/loss"
 
-# 确保列存在
 if loss_col not in df.columns:
-    # 尝试模糊匹配（以防有空格或格式问题）
     for col in df.columns:
         if "train/loss" in col:
             loss_col = col
@@ -23,8 +16,7 @@ if loss_col not in df.columns:
     else:
         raise KeyError("未能找到包含 'train/loss' 的列")
 
-# 绘图
-setup_paper_style()  # 配置论文风格
+setup_paper_style(440 / 2, ratio=1.618, fraction=0.98, font_size_tex=5, font_size_main=4.5, line_width_axis=0.5)
 plt.figure()
 plt.plot(df[step_col], df[loss_col], label="Training Loss", color="tab:blue")
 plt.xlabel("Step")

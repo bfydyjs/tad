@@ -46,12 +46,12 @@ def softnms_python(segs, scores, iou_threshold, sigma, min_score, method):
     t2 = segs[:, 1]
     area = t2 - t1
 
-    N = segs.shape[0]
-    indexes = torch.arange(N, dtype=torch.long, device=segs.device)
+    n = segs.shape[0]
+    indexes = torch.arange(n, dtype=torch.long, device=segs.device)
 
-    for i in range(N):
+    for i in range(n):
         # Find max score in remaining
-        max_score, max_pos = scores[i:].max(0)
+        _, max_pos = scores[i:].max(0)
         max_pos += i
 
         # Swap
@@ -93,7 +93,7 @@ class NMSop(torch.autograd.Function):
             valid_mask = scores > min_score
             segs, scores = segs[valid_mask], scores[valid_mask]
             cls_idxs = cls_idxs[valid_mask]
-            valid_inds = torch.nonzero(valid_mask, as_tuple=False).squeeze(dim=1)
+            _ = torch.nonzero(valid_mask, as_tuple=False).squeeze(dim=1)
 
         # nms op; return inds that is sorted by descending order
         if nms_1d_cpu is not None:
@@ -175,7 +175,7 @@ def seg_voting(nms_segs, all_segs, all_scores, iou_threshold, score_offset=1.5):
 
     # *_segs : N_i x 2, all_scores: N,
     # apply offset
-    offset_scores = all_scores + score_offset
+    # offset_scores = all_scores + score_offset
 
     # computer overlap between nms and all segs
     # construct the distance matrix of # N_nms x # N_all

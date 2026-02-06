@@ -5,7 +5,7 @@ def convert_gt_to_one_hot(gt_segments, gt_labels, num_classes):
     """convert the gt from class index to one hot encoding. this is for multi class case."""
 
     gt_segments_unique, gt_labels_onehot = [], []
-    for gt_segment, gt_label in zip(gt_segments, gt_labels):
+    for gt_segment, gt_label in zip(gt_segments, gt_labels, strict=False):
         if len(gt_segment) > 0:
             bbox_unique, inverse_indices = torch.unique(gt_segment, dim=0, return_inverse=True)
             label_unique = []

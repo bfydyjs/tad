@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-# 模拟数据（CKA 矩阵）
 cka_a_pre = np.array(
     [
         [1.000, 0.925, 0.832, 0.669, 0.557],
@@ -25,7 +24,6 @@ cka_a_post = np.array(
     ]
 )
 
-# 绘图
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 
 sns.heatmap(cka_a_pre, annot=True, fmt=".3f", cmap="YlOrRd", cbar=False, ax=axes[0, 0])
