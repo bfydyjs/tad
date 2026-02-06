@@ -15,14 +15,32 @@ def get_figsize_from_pt(width_pt, ratio=1.618, fraction=1.0):
         (width_inch, height_inch): Matplotlib figure dimensions in inches
 
     Note:
-        System          Definition of Point (pt)       Definition of Inch
-        -----------     ---------------------------    ---------------------------
-        LaTeX           1 inch = 72.27 pt              1 inch = 25.4 mm (Standard International Inch)
-        MATLAB          1 inch = 72 pt                 1 inch = 25.4 mm (Standard International Inch)
-        Matplotlib      1 inch = 72 pt                 1 inch = 25.4 mm (Standard International Inch)
-        Physical World  -                              1 inch = 25.4 mm (International Standard)
+        1 inch = 25.4 mm
+        = 72.27 pt   (TeX pt)
+        = 72 bp      (PostScript / PDF / Word /matplotlib / MATLAB pt)
+
+        -------------------------------------------------------------------
+        Original comment from matplotlib.backends.backend_pdf:
+
+        It's better to use only one unit for all coordinates, since the
+        arithmetic in latex seems to produce inaccurate conversions.
+
+        latex_pt_to_in = 1. / 72.27
+        latex_in_to_pt = 1. / latex_pt_to_in
+        mpl_pt_to_in = 1. / 72.
+        mpl_in_to_pt = 1. / mpl_pt_to_in
+        -------------------------------------------------------------------
+
+        A4 (210 * 297 mm)
+        = 8.27 * 11.69 inch
+        ≈ 598 * 845 pt (TeX pt)
+
+        Letter (216 * 279 mm)
+        = 8.5 * 11 inch
+        ≈ 615 * 795 pt (TeX pt)
+
     """
-    inches_per_pt = 1 / 72.27  # pt->inch
+    inches_per_pt = 1 / 72.27  # latex_pt_to_in
     width_inch = width_pt * inches_per_pt * fraction
     height_inch = width_inch / ratio
     return (width_inch, height_inch)
@@ -30,7 +48,6 @@ def get_figsize_from_pt(width_pt, ratio=1.618, fraction=1.0):
 
 def setup_paper_style(textwidth, fraction=0.98):  # 0.98 \textwidth
 
-    # 自动计算适合当前文档的 figsize
     figsize = get_figsize_from_pt(
         textwidth, ratio=1.618, fraction=fraction
     )  # double-column; single-column → textwidth / 2
@@ -51,7 +68,7 @@ def setup_paper_style(textwidth, fraction=0.98):  # 0.98 \textwidth
             ],  # Font fallback priority order
             "font.size": 9,
             "axes.labelsize": 10,  # Use the same font size as the main text.
-            "axes.titlesize": 10,  # Not used — figure captions are handled by LaTeX \caption{}
+            "axes.titlesize": 10,  # Not used - figure captions are handled by LaTeX \caption{}
             "axes.linewidth": 1.2,
             "axes.spines.top": False,
             "axes.spines.right": False,
