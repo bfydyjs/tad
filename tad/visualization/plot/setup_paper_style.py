@@ -10,26 +10,29 @@ def setup_paper_style():
     """
     plt.rcParams.update(
         {
+            "figure.figsize": [6.8, 4],  # double-column; single-column → [3.5, 2.6]
             "font.family": "sans-serif",
             "font.sans-serif": [
                 "Arial",
                 "Helvetica",
                 "DejaVu Sans",
             ],  # Font fallback priority order
-            "font.size": 11,
-            "axes.labelsize": 13,
-            "axes.titlesize": 13,
+            "font.size": 9,
+            "axes.labelsize": 10,  # Use the same font size as the main text.
+            "axes.titlesize": 10,  # Not used — figure captions are handled by LaTeX \caption{}
             "axes.linewidth": 1.2,
             "axes.spines.top": False,
             "axes.spines.right": False,
-            "xtick.labelsize": 11,
-            "ytick.labelsize": 11,
+            "axes.grid": True,
+            "xtick.labelsize": 9,
+            "ytick.labelsize": 9,
             "grid.linestyle": "--",
-            "grid.linewidth": 0.5,
-            "grid.alpha": 0.3,  # Grid line transparency (0 = fully transparent, 1 = opaque)
+            "grid.color": "#bdbdbd",
+            "grid.linewidth": 0.7,
+            "grid.alpha": 0.3,  # Transparency
             "lines.linewidth": 2.0,
             "lines.markersize": 7,
-            "legend.fontsize": 11,
+            "legend.fontsize": 9,
             "legend.frameon": True,
             "legend.framealpha": 0.8,
             "legend.edgecolor": "black",
