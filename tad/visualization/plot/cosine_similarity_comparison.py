@@ -25,7 +25,7 @@ baseline_value = (model_a_data[0] + model_b_data[0]) / 2
 
 
 def plot_comparison():
-    setup_paper_style(440 / 2, ratio=1.618, fraction=0.98, font_size_tex=5,font_size_main=4.5, line_width_axis=0.5)
+    setup_paper_style(440 / 2, ratio=1.618, fraction=0.98, font_size_tex=10, font_size_main=9, line_width_axis=0.5)
     min_len = min(len(model_a_data), len(model_b_data))
     y_a = model_a_data[:min_len]
     y_b = model_b_data[:min_len]
@@ -38,7 +38,7 @@ def plot_comparison():
         xmin=min(x),
         xmax=max(x),
         color="gray",
-        linewidth=2.0,
+        linewidth=0.9,  # "lines.linewidth": 1.8 * line_width_axis,
         linestyle="--",
         label="Raw Baseline",
     )
@@ -52,14 +52,14 @@ def plot_comparison():
 
     plt.ylim(y_min, y_max)
     plt.xlim(min(x) - 0.2, max(x) + 0.2)
-    plt.xlabel("Levels")
-    plt.ylabel("Cosine Similarity")
+    plt.xlabel("Levels", labelpad=0)
+    plt.ylabel("Cosine Similarity", labelpad=2.7)  # 2 * "xtick.major.pad": 0.15 * font_size_main
     plt.xticks(x, labels=x_labels)
-    plt.tick_params(length=2,width=0.5)
+    # plt.tick_params(length=2,width=0.5)
     plt.yticks()
     ax = plt.gca()  # 获取当前坐标轴
     ax.yaxis.set_major_locator(MultipleLocator(0.05))
-    plt.legend(loc="lower right", edgecolor="#bfbfbf", handlelength=4)
+    plt.legend(loc="center", edgecolor="#bfbfbf", handlelength=2, fontsize=8,frameon=False)
     plt.tight_layout()
     output_path = (
         Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "cosine_similarity_comparison.pdf"

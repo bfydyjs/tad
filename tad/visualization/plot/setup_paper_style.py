@@ -46,7 +46,7 @@ def get_figsize_from_pt(width_pt, ratio=1.618, fraction=1.0):
     return (width_inch, height_inch)
 
 
-def setup_paper_style(textwidth, ratio, fraction, font_size_tex=10, font_size_main=9, line_width_axis=1):
+def setup_paper_style(textwidth, ratio, fraction, font_size_tex=10, font_size_main=9, line_width_axis=0.5):
     figsize = get_figsize_from_pt(textwidth, ratio, fraction)  # double-column; single-column → textwidth / 2
     plt.rcParams.update(
         {
@@ -60,11 +60,11 @@ def setup_paper_style(textwidth, ratio, fraction, font_size_tex=10, font_size_ma
                 "Arial",
                 "Helvetica",
                 "DejaVu Sans",
-            ],  # Font fallback priority order
+            ],
             "font.size": font_size_main,
             "axes.labelsize": font_size_tex,  # Use the same font size as the main text.
             "axes.titlesize": font_size_tex,  # Not used - figure captions are handled by LaTeX \caption{}
-            "axes.linewidth": line_width_axis,
+            "axes.linewidth": line_width_axis,  # <= 0.8
             "axes.spines.top": False,
             "axes.spines.right": False,
             "axes.grid": True,
@@ -80,8 +80,8 @@ def setup_paper_style(textwidth, ratio, fraction, font_size_tex=10, font_size_ma
             "grid.color": "#bdbdbd",
             "grid.linewidth": 0.35 * line_width_axis,
             "grid.alpha": 0.3,  # Transparency
-            "lines.linewidth": 2 * line_width_axis,
-            "lines.markersize": 3 * 2 * line_width_axis,
+            "lines.linewidth": 1.8 * line_width_axis,
+            "lines.markersize": 3.3 * 1.8 * line_width_axis,  # linear
             "legend.fontsize": font_size_main,
             "legend.frameon": True,
             "legend.fancybox": True,

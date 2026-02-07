@@ -6,17 +6,33 @@ from setup_paper_style import setup_paper_style
 
 # Performance vs. Efficiency Comparison
 def main():
+    metric = "GFLOPs"  # Parameters (M) / GFLOPs
+    # Parameters (M)
+    # data = [
+    #     {"name": "ActionFormer", "metric": 29.25, "mAP": 66.8, "marker": 'o', "color": 'lightblue',  's': 30},
+    #     {"name": "DyFADet",      "metric": 27.53, "mAP": 69.2, "marker": 's', "color": 'lightcoral', 's': 30},
+    #     {"name": "TriDet",       "metric": 15.99, "mAP": 69.3,    "marker": 'D', "color": 'gold',       's': 20},
+    #     # {"name": "HSFPN",        "metric": 2.6, "mAP": 31.2, "marker": 'p', "color": 'plum',       's': 30},
+    #     # {"name": "AFPN",         "metric": 2.8, "mAP": 30.5, "marker": 'v', "color": 'lightgreen', 's': 30},
+    #     # {"name": "FreqGFPN",     "metric": 2.5, "mAP": 30.8, "marker": 'X', "color": 'orange',     's': 30},
+    #     # {"name": "GFPN",         "metric": 3.0, "mAP": 32.0, "marker": '^', "color": 'gray',       's': 30},
+    #     # {"name": "CGFPRN",       "metric": 3.4, "mAP": 30.2, "marker": '<', "color": 'tan',        's': 30},
+    #     # {"name": "MAFPN",        "metric": 3.2, "mAP": 31.8, "marker": '>', "color": 'teal',       's': 30},
+    #     {"name": "Ours",         "metric": 17.56, "mAP": 69.4, "marker": '*', "color": 'red',        's': 60},
+    #     # The best method (ours) is highlighted in red with an asterisk (*).
+    # ]
+    # GFLOPs
     data = [
-        {"name": "FPN(yolo11n)", "params": 2.1, "mAP": 32.8, "marker": 'o', "color": 'lightblue',  's': 30},
-        {"name": "BIFPN",        "params": 2.3, "mAP": 33.9, "marker": 's', "color": 'lightcoral', 's': 30},
-        {"name": "BIFPN-GLSA",   "params": 2.4, "mAP": 31.5, "marker": 'D', "color": 'gold',       's': 20},
-        {"name": "HSFPN",        "params": 2.6, "mAP": 31.2, "marker": 'p', "color": 'plum',       's': 30},
-        {"name": "AFPN",         "params": 2.8, "mAP": 30.5, "marker": 'v', "color": 'lightgreen', 's': 30},
-        {"name": "FreqGFPN",     "params": 2.5, "mAP": 30.8, "marker": 'X', "color": 'orange',     's': 30},
-        {"name": "GFPN",         "params": 3.0, "mAP": 32.0, "marker": '^', "color": 'gray',       's': 30},
-        {"name": "CGFPRN",       "params": 3.4, "mAP": 30.2, "marker": '<', "color": 'tan',        's': 30},
-        {"name": "MAFPN",        "params": 3.2, "mAP": 31.8, "marker": '>', "color": 'teal',       's': 30},
-        {"name": "Ours",         "params": 2.0, "mAP": 35.5, "marker": '*', "color": 'red',        's': 60},
+        {"name": "ActionFormer", "metric": 45.41, "mAP": 66.8, "marker": 'o', "color": 'lightblue',  's': 30},
+        {"name": "DyFADet",      "metric": 90.87, "mAP": 69.2, "marker": 's', "color": 'lightcoral', 's': 30},
+        {"name": "TriDet",       "metric": 43.7,  "mAP": 69.3, "marker": 'D', "color": 'gold',       's': 20},
+        # {"name": "HSFPN",        "metric": 2.6, "mAP": 31.2, "marker": 'p', "color": 'plum',       's': 30},
+        # {"name": "AFPN",         "metric": 2.8, "mAP": 30.5, "marker": 'v', "color": 'lightgreen', 's': 30},
+        # {"name": "FreqGFPN",     "metric": 2.5, "mAP": 30.8, "marker": 'X', "color": 'orange',     's': 30},
+        # {"name": "GFPN",         "metric": 3.0, "mAP": 32.0, "marker": '^', "color": 'gray',       's': 30},
+        # {"name": "CGFPRN",       "metric": 3.4, "mAP": 30.2, "marker": '<', "color": 'tan',        's': 30},
+        # {"name": "MAFPN",        "metric": 3.2, "mAP": 31.8, "marker": '>', "color": 'teal',       's': 30},
+        {"name": "Ours",         "metric": 38.88, "mAP": 69.4, "marker": '*', "color": 'red',        's': 60},
         # The best method (ours) is highlighted in red with an asterisk (*).
     ]
 
@@ -25,7 +41,7 @@ def main():
 
     for item in data:
         plt.scatter(
-            item["params"],
+            item["metric"],
             item["mAP"],
             s=item["s"],
             marker=item["marker"],
@@ -42,11 +58,11 @@ def main():
         plt.annotate(
             "Best Performance",
             xy=(
-                best_model["params"] + 0.01,
+                best_model["metric"] + 0.01,
                 best_model["mAP"] - 0.01,
             ),
             xytext=(
-                best_model["params"] + 0.2,
+                best_model["metric"] + 0.2,
                 best_model["mAP"] - 0.2,
             ),
             arrowprops=dict(
@@ -62,13 +78,12 @@ def main():
                 alpha=0.9,
             ),
         )
-
-    plt.xlabel("Parameters (M)")
+    plt.xlabel(metric)
     plt.ylabel("mAP@0.5 (%)")
     plt.tick_params(left=False, bottom=False)
     plt.grid(zorder=0)
 
-    all_params = [d["params"] for d in data]
+    all_params = [d["metric"] for d in data]
     all_maps = [d["mAP"] for d in data]
     p_margin = (max(all_params) - min(all_params)) * 0.1
     m_margin = (max(all_maps) - min(all_maps)) * 0.1
