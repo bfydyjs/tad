@@ -65,8 +65,6 @@ def setup_paper_style(textwidth, ratio, fraction, font_size_tex=10, font_size_ma
             "axes.labelsize": font_size_tex,  # Use the same font size as the main text.
             "axes.titlesize": font_size_tex,  # Not used - figure captions are handled by LaTeX \caption{}
             "axes.linewidth": line_width_axis,  # <= 0.8
-            "axes.spines.top": False,
-            "axes.spines.right": False,
             "axes.grid": True,
             "xtick.labelsize": font_size_main,
             "xtick.major.size": 5 * 0.45 * line_width_axis,

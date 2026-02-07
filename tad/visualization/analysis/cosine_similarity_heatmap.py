@@ -10,6 +10,8 @@ import seaborn as sns
 import torch
 from matplotlib.patches import Rectangle
 
+from ..plot.setup_paper_style import setup_paper_style
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from tad.datasets import build_dataset
 from tad.models import build_detector
@@ -137,36 +139,15 @@ def main():
     else:
         print("Warning: FPS not found. Assuming 1:1 mapping (Index=Seconds).")
 
-    gt_intervals = gt_segments  # GT 本身就是秒，不需要再乘 scale_factor 了，只需确认 dataset 返回的是秒即可
-    # 注意：如果之前代码 gt_segments 是秒，那就不变。
-    # 之前代码写的是: gt_intervals = gt_segments * scale_factor，但这取决于 scale_factor 定义。
-    # 让我们重新理一下：
-    # dataset 返回的 gt_segments 通常是秒。
-    # 绘图时，我们的底座是 heatmap，它的坐标是 0, 1, 2... T (indices)。
-    # 要把 GT 画在 heatmap 上，我们需要把 GT(秒) 转换成 Index。
-    # Index = Seconds / Seconds_per_step
+    gt_intervals = gt_segments
 
     gt_intervals_indices = gt_segments / seconds_per_step
 
     # 8. 绘图
+    setup_paper_style(440 / 2, ratio=1.1, fraction=0.98, font_size_tex=10, font_size_main=7, line_width_axis=0.5)
     print("Plotting heatmap...")
-
-    # --- PAPER STYLE CONFIG ---
-    # 设置适合论文发表的字体和大小
-    plt.rcParams.update(
-        {
-            "font.family": "serif",  # 使用衬线体 (这是论文标准，接近 Times New Roman)
-            "font.size": 14,  # 全局字体大小
-            "axes.labelsize": 16,  # 坐标轴标签大小
-            "xtick.labelsize": 14,  # 刻度标签大小
-            "ytick.labelsize": 14,  # 刻度标签大小
-            "lines.linewidth": 2,  # 线宽
-        }
-    )
-
     # 使用 GridSpec 将 Colorbar 放在单独的列，确保 ax1 和 ax2 左侧和右侧严格对齐
-    # 调整 figsize 为 (11, 11) 以获得接近正方形的视觉效果 (1:1 比例)，避免热力图变形
-    fig = plt.figure(figsize=(10, 10))  # 稍微调小一点尺寸，字体会显得更大，适合插入文档
+    fig = plt.figure()
     # 调小 hspace (0.1 -> 0.05) 让上下图靠得更近
     gs = fig.add_gridspec(2, 2, width_ratios=[50, 1], height_ratios=[20, 1], wspace=0.02, hspace=0.05)
 
@@ -188,14 +169,14 @@ def main():
     # 2. 隐藏刻度线（Tick Marks）：为了与主图风格统一，保持整洁。
     cbar_ax.tick_params(which="both", length=0)
     # 3. 设置刻度字体大小 (可选，确保和主图一致)
-    cbar_ax.tick_params(labelsize=14)
+    cbar_ax.tick_params()
 
     # --- Fix: Use SECONDS for axis labels ---
     import matplotlib.ticker as ticker
 
     # 定义一个格式化函数：将 index 转换为 seconds
     def index_to_seconds(x, pos):
-        return f"{x * seconds_per_step:.1f}s"
+        return f"{x * seconds_per_step:.1f}"
 
     # 使用 MaxNLocator 自动选择约 10 个漂亮的整数刻度 (基于 index)
     locator = ticker.MaxNLocator(nbins=10, integer=True)
@@ -222,7 +203,7 @@ def main():
     # 强制显示 ax2 的 X 轴标签
     plt.setp(ax2.get_xticklabels(), visible=True)
 
-    ax1.set_ylabel("Time (s)", fontweight="bold")  # 加粗标签
+    ax1.set_ylabel("Time (s)")  # 加粗标签
     # model_type = "Input Features" if args.use_input else "Encoder Output Features"
     # ax1.set_title(f'{model_type} Similarity: {video_name}') # 论文中通常不需要图内标题，移除
 
@@ -232,23 +213,22 @@ def main():
         start = max(0, start)
         end = min(T, end)
         if end > start:
-            # 增加线宽 linewidth=3，颜色加深，使其在热力图上更清晰
             rect = Rectangle(
                 (start, start),
                 end - start,
                 end - start,
-                linewidth=3,
+                linewidth=1,
                 edgecolor="#FF3333",
                 facecolor="none",
                 linestyle="-",
-            )  # 实线可能比虚线更清晰
+            )
             ax1.add_patch(rect)
 
     # (b) Timeline Bar
     ax2.set_xlim(0, T)
     ax2.set_ylim(0, 1)
-    ax2.set_xlabel("Time (s)", fontweight="bold")  # 加粗标签
-    ax2.set_ylabel("GT", rotation=0, labelpad=20, fontweight="bold", va="center")  # 优化 GT 标签位置: 水平放置
+    ax2.set_xlabel("Time (s)")
+    ax2.set_ylabel("GT", rotation=0, labelpad=10, va="center")  # 优化 GT 标签位置: 水平放置
     ax2.set_yticks([])
 
     for start, end in gt_intervals_indices:
@@ -258,12 +238,10 @@ def main():
         ax2.fill_between([start, end], 0, 1, color="#32CD32", alpha=0.8)
 
     # plt.tight_layout() # GridSpec 布局下通常不需要 tight_layout，且可能破坏对齐
-    output_path = Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "heatmap.png"
-
-    print(f"Saving figure to: {output_path}")
+    output_path = Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "heatmap.png"
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path, dpi=300)
-    print(f"Done. Saved visualization to {output_path}")
+    plt.savefig(output_path)
+    print(f"Saving figure to: {output_path}")
 
 
 if __name__ == "__main__":
