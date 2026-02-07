@@ -13,6 +13,8 @@ from tad.models import build_detector
 from tad.utils import Config, DictAction, create_folder, set_seed, setup_logger, update_workdir
 
 sys.dont_write_bytecode = True
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Test a Temporal Action Detector")
     parser.add_argument("config", metavar="FILE", type=str, help="path to config file")
@@ -26,15 +28,8 @@ def parse_args():
     return args
 
 
-def main():  # noqa: C901
-    args = parse_args()
-
-    # load config
-    cfg = Config.fromfile(args.config)
-    if args.cfg_options is not None:
-        cfg.merge_from_dict(args.cfg_options)
-
-    # DDP init
+def init_distributed(args):
+    """Initialize distributed testing environment."""
     if "WORLD_SIZE" in os.environ:
         args.local_rank = int(os.environ["LOCAL_RANK"])
         args.world_size = int(os.environ["WORLD_SIZE"])
@@ -52,7 +47,9 @@ def main():  # noqa: C901
             torch.cuda.set_device(args.local_rank)
         args.distributed = False
 
-    # set random seed, create work_dir
+
+def setup_env(cfg, args):
+    """Setup random seed, work directory and logger."""
     set_seed(args.seed, args.disable_deterministic)
     cfg = update_workdir(cfg, args.id, args.world_size)
     if args.rank == 0:
@@ -62,8 +59,11 @@ def main():  # noqa: C901
     logger = setup_logger("Test", save_dir=cfg.work_dir, distributed_rank=args.rank)
     logger.info(f"Using torch version: {torch.__version__}, CUDA version: {torch.version.cuda}")
     logger.info(f"Config: \n{cfg.pretty_text}")
+    return cfg, logger
 
-    # build dataset
+
+def build_test_loader(cfg, args, logger):
+    """Build test dataset and loader."""
     test_dataset = build_dataset(cfg.dataset.test, default_args=dict(logger=logger))
     test_loader = build_dataloader(
         test_dataset,
@@ -73,48 +73,58 @@ def main():  # noqa: C901
         drop_last=False,
         **cfg.dataloader.test,
     )
+    return test_loader
 
+
+def build_and_wrap_model(cfg, args, logger):
+    """Build model and wrap with DDP."""
     # build model
     model = build_detector(cfg.model)
 
     # DDP
     model = model.to(args.local_rank)
     if args.distributed:
-        model = DistributedDataParallel(
-            model,
-            device_ids=[args.local_rank],
-            output_device=args.local_rank
-        )
+        model = DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
         logger.info(f"Using DDP with total {args.world_size} GPUS...")
     else:
         logger.info("Running on single GPU (No DDP)...")
+    return model
 
+
+def load_weights(cfg, args, logger, model):
+    """Load model weights from checkpoint or skip if using raw predictions."""
     if cfg.inference.load_from_raw_predictions:  # if load with saved predictions, no need to load checkpoint
         logger.info(f"Loading from raw predictions: {cfg.inference.fuse_list}")
-    else:  # load checkpoint: args -> config -> best
-        work_dir = Path(cfg.work_dir)
-        if args.checkpoint != "none":
-            checkpoint_path = args.checkpoint
-        elif "test_epoch" in cfg.inference.keys():
-            checkpoint_path = work_dir / "checkpoint" / f"epoch_{cfg.inference.test_epoch}.pt"
-        else:
-            checkpoint_path = work_dir / "checkpoint" / "best.pt"
-        logger.info(f"Loading checkpoint from: {checkpoint_path}")
-        device = f"cuda:{args.rank % torch.cuda.device_count()}"
-        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
-        logger.info(f"Checkpoint is epoch {checkpoint['epoch']}.")
+        return
 
-        # Model EMA
-        # If model is wrapped by DistributedDataParallel, load into the underlying
-        # module to avoid mismatched `module.` prefixes in state_dict keys.
-        target_model = model.module if isinstance(model, DistributedDataParallel) else model
-        use_ema = getattr(cfg.dataloader, "ema", True)
-        if use_ema:
-            target_model.load_state_dict(checkpoint["state_dict_ema"])
-            logger.info("Using Model EMA...")
-        else:
-            target_model.load_state_dict(checkpoint["state_dict"])
+    # load checkpoint: args -> config -> best
+    work_dir = Path(cfg.work_dir)
+    if args.checkpoint != "none":
+        checkpoint_path = args.checkpoint
+    elif "test_epoch" in cfg.inference.keys():
+        checkpoint_path = work_dir / "checkpoint" / f"epoch_{cfg.inference.test_epoch}.pt"
+    else:
+        checkpoint_path = work_dir / "checkpoint" / "best.pt"
 
+    logger.info(f"Loading checkpoint from: {checkpoint_path}")
+    device = f"cuda:{args.rank % torch.cuda.device_count()}"
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+    logger.info(f"Checkpoint is epoch {checkpoint['epoch']}.")
+
+    # Model EMA
+    # If model is wrapped by DistributedDataParallel, load into the underlying
+    # module to avoid mismatched `module.` prefixes in state_dict keys.
+    target_model = model.module if isinstance(model, DistributedDataParallel) else model
+    use_ema = getattr(cfg.dataloader, "ema", True)
+    if use_ema:
+        target_model.load_state_dict(checkpoint["state_dict_ema"])
+        logger.info("Using Model EMA...")
+    else:
+        target_model.load_state_dict(checkpoint["state_dict"])
+
+
+def run_evaluation(cfg, args, logger, test_loader, model):
+    """Run evaluation for one epoch."""
     # AMP: automatic mixed precision
     use_amp = getattr(cfg.dataloader, "amp", False)
     if use_amp:
@@ -135,10 +145,34 @@ def main():  # noqa: C901
     )
     logger.info("Testing Over...\n")
 
+
+def main():
+    args = parse_args()
+
+    # load config
+    cfg = Config.fromfile(args.config)
+    if args.cfg_options is not None:
+        cfg.merge_from_dict(args.cfg_options)
+
+    # Initialize environment
+    init_distributed(args)
+    cfg, logger = setup_env(cfg, args)
+
+    # Build and setup model using helper functions
+    test_loader = build_test_loader(cfg, args, logger)
+    model = build_and_wrap_model(cfg, args, logger)
+
+    # Load Weights
+    load_weights(cfg, args, logger, model)
+
+    # Run Eval
+    run_evaluation(cfg, args, logger, test_loader, model)
+
     if args.distributed:
         if dist.is_initialized():
             dist.destroy_process_group()
             logger.info("Destroyed process group.")
+
 
 if __name__ == "__main__":
     main()
