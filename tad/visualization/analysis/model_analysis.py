@@ -29,10 +29,10 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 # Add the parent directory of the 'tad' package to Python path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+
 def calculate_flops_params(
-    model: torch.nn.Module,
-    input_shape: tuple[int, ...],
-    device: str = "cpu"
+    model: torch.nn.Module, input_shape: tuple[int, ...], device: str = "cpu"
 ) -> tuple[float, int]:
     """
     Calculate per-sample FLOPs and total trainable parameters of a model.
@@ -78,11 +78,11 @@ def calculate_flops_params(
             model_name = self.model.__class__.__name__
 
             # 首先检查是否有 forward_test 方法（如 TAD 模型）
-            if hasattr(self.model, 'forward_test'):
+            if hasattr(self.model, "forward_test"):
                 return self.model.forward_test(inputs, masks, metas, None)
 
             # 检查是否是 DyFADet 类型
-            elif model_name == 'DyFADet':
+            elif model_name == "DyFADet":
                 # For DyFADet model, use direct forward through all components
                 # This ensures all submodules are called during FLOPs calculation
                 try:
@@ -107,7 +107,7 @@ def calculate_flops_params(
                     return fpn_feats
 
             # 检查是否是 Detector 类型
-            elif model_name == 'Detector':
+            elif model_name == "Detector":
                 # For Detector model, use forward with masks and metas
                 return self.model(inputs, masks, metas)
 
@@ -137,15 +137,15 @@ def calculate_flops_params(
 
 if __name__ == "__main__":
     # Define output file path
-    output_file = Path(__file__).resolve().parent / "tad" / "output" / "analysis"/ "model_complexity.txt"
+    output_file = Path(__file__).resolve().parent / "tad" / "output" / "analysis" / "model_complexity.txt"
     # Overwrite the file at start
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         pass
 
     def log_and_print(msg):
         print(msg)
-        with open(output_file, 'a') as f:
-            f.write(msg + '\n')
+        with open(output_file, "a") as f:
+            f.write(msg + "\n")
 
     from tad.tad.models import build_detector
     from tad.tad.utils import Config
@@ -173,6 +173,7 @@ if __name__ == "__main__":
     # pip install opentad/models/roi_heads/roi_extractors/boundary_pooling --no-build-isolation
     from mmengine.config import Config
     from OpenTAD.opentad.models import build_detector
+
     models_info = [
         ("ActionFormer", "actionformer", "thumos_i3d.py", (2048, 2304)),
         # ("AFSD", "afsd", "thumos_i3d.py", (2048, 2304)),
@@ -206,11 +207,10 @@ if __name__ == "__main__":
         log_and_print(f"GFLOPs: {flops / 1e9:.2f}")
         log_and_print(f"Params: {params / 1e6:.2f}M\n")
 
-
-
     # rename DyFADet_pytorch to DyFADet-pytorch
     from DyFADet_pytorch.libs.core import load_config
     from DyFADet_pytorch.libs.modeling import make_meta_arch
+
     dyfadet_pt_models = [
         ("thumos_i3d.yaml", (2048, 2304)),
         ("thumos_mae.yaml", (1408, 2304)),
@@ -223,7 +223,7 @@ if __name__ == "__main__":
         log_and_print(str(config_file))
 
         cfg = load_config(config_file)
-        model = make_meta_arch(cfg['model_name'], **cfg['model'])
+        model = make_meta_arch(cfg["model_name"], **cfg["model"])
         flops, params = calculate_flops_params(model, input_shape=input_shape)
 
         # 日志显示：去掉 .yaml 后缀更整洁（可选）
@@ -231,4 +231,3 @@ if __name__ == "__main__":
     log_and_print(f"DyFADet-pytorch: {display_name}")
     log_and_print(f"GFLOPs: {flops / 1e9:.2f}")
     log_and_print(f"Params: {params / 1e6:.2f}M\n")
-
