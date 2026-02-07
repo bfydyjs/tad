@@ -55,8 +55,8 @@ def _log_training_info(
     try:
         if rank == 0 and wandb.run is not None:
             log_dict = {
-                "lr": curr_det_lr,
-                "grad_norm": grad_norm_tracker.avg,
+                "train/lr": curr_det_lr,
+                "train/grad_norm": grad_norm_tracker.avg,
                 **{f"train/{key}": value.avg for key, value in losses_tracker.items()},
             }
             if curr_backbone_lr is not None:

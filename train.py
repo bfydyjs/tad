@@ -258,7 +258,7 @@ def run_training_loop(
                     world_size=args.world_size,
                     skip_eval=args.skip_eval,
                 )
-                log_dict["val_mAP (%)"] = round(val_map * 100, 2)
+                log_dict["val/mAP (%)"] = round(val_map * 100, 2)
                 # save the best checkpoint
                 if val_map > val_map_best:
                     logger.info(f"New best mAP {val_map * 100:.2f} % at epoch {epoch}")
@@ -274,7 +274,7 @@ def run_training_loop(
                             mode="best.pt",
                             val_map_best=val_map_best,
                         )
-        log_dict["Epoch"] = epoch
+        log_dict["epoch"] = epoch
         if args.rank == 0:
             wandb.log(log_dict, step=global_step)
 
