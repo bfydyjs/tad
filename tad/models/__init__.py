@@ -8,7 +8,8 @@ from .losses import DIOULoss, FocalLoss, GIOULoss
 from .necks.fpn import FPNIdentity
 from .projections.dyne_proj import DynEProj
 from .projections.gdk_proj import GDKLayer
-from .projections.mamba_proj import MambaProj
+
+# from .projections.mamba_proj import MambaProj
 
 __all__ = [
     "BackboneWrapper",
@@ -20,7 +21,7 @@ __all__ = [
     "FocalLoss",
     "GDKLayer",
     "GIOULoss",
-    "MambaProj",
+    # "MambaProj",
     "PointGenerator",
     "TDynHead",
     "build_detector",

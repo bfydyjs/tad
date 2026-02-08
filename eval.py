@@ -1,6 +1,5 @@
 import argparse
 import os
-import sys
 from pathlib import Path
 
 import torch
@@ -11,8 +10,6 @@ from tad.datasets import build_dataloader, build_dataset
 from tad.engine import eval_one_epoch
 from tad.models import build_detector
 from tad.utils import Config, DictAction, create_folder, set_seed, setup_logger, update_workdir
-
-sys.dont_write_bytecode = True
 
 
 def parse_args():
@@ -42,9 +39,11 @@ def init_distributed(args):
         args.local_rank = 0
         args.world_size = 1
         args.rank = 0
-        print("Non-distributed init: Running on single GPU")
         if torch.cuda.is_available():
+            print("Non-distributed init: Running on single GPU")
             torch.cuda.set_device(args.local_rank)
+        else:
+            print("Non-distributed init: Running on CPU")
         args.distributed = False
 
 
@@ -82,12 +81,15 @@ def build_and_wrap_model(cfg, args, logger):
     model = build_detector(cfg.model)
 
     # DDP
-    model = model.to(args.local_rank)
-    if args.distributed:
-        model = DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
-        logger.info(f"Using DDP with total {args.world_size} GPUS...")
+    if torch.cuda.is_available():
+        model = model.to(args.local_rank)
+        if args.distributed:
+            model = DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
+            logger.info(f"Using DDP with total {args.world_size} GPUS...")
+        else:
+            logger.info("Running on single GPU (No DDP)...")
     else:
-        logger.info("Running on single GPU (No DDP)...")
+        logger.info("Running on CPU...")
     return model
 
 
@@ -107,7 +109,10 @@ def load_weights(cfg, args, logger, model):
         checkpoint_path = work_dir / "checkpoint" / "best.pt"
 
     logger.info(f"Loading checkpoint from: {checkpoint_path}")
-    device = f"cuda:{args.rank % torch.cuda.device_count()}"
+    if torch.cuda.is_available():
+        device = f"cuda:{args.rank % torch.cuda.device_count()}"
+    else:
+        device = "cpu"
     checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     logger.info(f"Checkpoint is epoch {checkpoint['epoch']}.")
 
