@@ -42,8 +42,8 @@ def softnms_python(segs, scores, iou_threshold, sigma, min_score, method):
     segs = segs.clone()
     scores = scores.clone()
 
-    t1 = segs[:, 0]
-    t2 = segs[:, 1]
+    t1 = segs[:, 0].clone()
+    t2 = segs[:, 1].clone()
     area = t2 - t1
 
     n = segs.shape[0]
