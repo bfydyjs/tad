@@ -16,7 +16,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Test a Temporal Action Detector")
     parser.add_argument("config", metavar="FILE", type=str, help="path to config file")
     parser.add_argument("--checkpoint", type=str, default="none", help="the checkpoint path")
-    parser.add_argument("--seed", type=int, default=100, help="random seed")
+    parser.add_argument("--seed", type=int, default=42, help="random seed")
     parser.add_argument("--id", type=int, default=0, help="repeat experiment id")
     parser.add_argument("--skip_eval", action="store_true", help="whether to not to eval, only do inference")
     parser.add_argument("--disable_deterministic", action="store_true", help="disable deterministic for faster speed")

@@ -52,7 +52,7 @@ def softnms_python(segs, scores, iou_threshold, sigma, min_score, method):
     for i in range(n):
         # Find max score in remaining
         _, max_pos = scores[i:].max(0)
-        max_pos += i
+        max_pos = max_pos.item() + i
 
         # Swap
         segs[[i, max_pos]] = segs[[max_pos, i]]
