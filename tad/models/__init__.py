@@ -1,14 +1,14 @@
-from .backbone_wrapper import BackboneWrapper
+from .backbones.backbone_wrapper import BackboneWrapper
 from .builder import build_detector
-from .decoupled_iou_head import DecoupledIoUHead
-from .dyfadet import DyFADet
-from .dyn_head import TDynHead
-from .dyne_proj import DynEProj
-from .fpn import FPNIdentity
-from .gdk_proj import GDKLayer
+from .detectors.dyfadet import DyFADet
+from .heads.decoupled_iou_head import DecoupledIoUHead
+from .heads.dyn_head import TDynHead
+from .heads.point_generator import PointGenerator
 from .losses import DIOULoss, FocalLoss, GIOULoss
-from .mamba_proj import MambaProj
-from .point_generator import PointGenerator
+from .necks.fpn import FPNIdentity
+from .projections.dyne_proj import DynEProj
+from .projections.gdk_proj import GDKLayer
+from .projections.mamba_proj import MambaProj
 
 __all__ = [
     "BackboneWrapper",

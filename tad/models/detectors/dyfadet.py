@@ -1,7 +1,7 @@
 import torch.nn as nn
 
-from .bricks import AffineDropPath, Scale
-from .builder import DETECTORS
+from ..bricks import AffineDropPath, Scale
+from ..builder import DETECTORS
 from .detector import Detector
 
 

@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 from torch.nn.functional import one_hot, relu
 
-from .bricks import ConvModule, Scale
-from .builder import HEADS, build_loss
+from ..bricks import ConvModule, Scale
+from ..builder import HEADS, build_loss
 from .point_generator import PointGenerator
 
 

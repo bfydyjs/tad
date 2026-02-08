@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 from torch.nn.functional import binary_cross_entropy_with_logits, relu
 
+from ..bricks import ConvModule, Scale
+from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
-from .bricks import ConvModule, Scale
-from .builder import HEADS, build_loss
 
 
 @HEADS.register_module()

@@ -3,8 +3,8 @@ import copy
 import torch.nn as nn
 from torch.nn.functional import interpolate
 
-from .bricks import ConvModule
-from .builder import NECKS
+from ..bricks import ConvModule
+from ..builder import NECKS
 
 
 @NECKS.register_module()

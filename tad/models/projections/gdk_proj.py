@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 from torch.nn.functional import interpolate
 
+from ..bricks import AffineDropPath, ConvModule
+from ..builder import PROJECTIONS
 from .actionformer_proj import get_sinusoid_encoding
-from .bricks import AffineDropPath, ConvModule
-from .builder import PROJECTIONS
 
 
 @PROJECTIONS.register_module()

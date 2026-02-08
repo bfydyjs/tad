@@ -1,19 +1,17 @@
 from mmengine.registry import Registry
 
-from .backbone_wrapper import BackboneWrapper
+from .backbones.backbone_wrapper import BackboneWrapper
 
 MODELS = Registry("models")
 
 PROJECTIONS = MODELS
 NECKS = MODELS
 ROI_EXTRACTORS = MODELS
-PRIOR_GENERATORS = MODELS
+
 PROPOSAL_GENERATORS = MODELS
 HEADS = MODELS
-TRANSFORMERS = MODELS
 LOSSES = MODELS
 DETECTORS = MODELS
-MATCHERS = MODELS
 
 
 def build_detector(cfg):
@@ -46,19 +44,9 @@ def build_roi_extractor(cfg):
     return ROI_EXTRACTORS.build(cfg)
 
 
-def build_transformer(cfg):
-    """Build transformer in DETR-like model."""
-    return TRANSFORMERS.build(cfg)
-
-
 def build_head(cfg):
     """Build head."""
     return HEADS.build(cfg)
-
-
-def build_matcher(cfg):
-    """Build external classifier."""
-    return MATCHERS.build(cfg)
 
 
 def build_loss(cfg):
