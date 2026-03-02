@@ -59,7 +59,7 @@ def plot_comparison():
     plt.yticks()
     ax = plt.gca()  # 获取当前坐标轴
     ax.yaxis.set_major_locator(MultipleLocator(0.05))
-    plt.legend(loc="center", edgecolor="#bfbfbf", handlelength=2, fontsize=8,frameon=False)
+    plt.legend(loc="center", edgecolor="#bfbfbf", handlelength=2, fontsize=8, frameon=False)
     plt.tight_layout()
     output_path = (
         Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "cosine_similarity_comparison.pdf"
