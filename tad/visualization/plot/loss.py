@@ -18,7 +18,7 @@ if loss_col not in df.columns:
 
 setup_paper_style(440 / 2, ratio=1.618, fraction=0.98, font_size_tex=5, font_size_main=4.5, line_width_axis=0.5)
 plt.figure()
-plt.plot(df[step_col], df[loss_col], label="Training Loss", color="tab:blue" )# linewidth=2.0
+plt.plot(df[step_col], df[loss_col], label="Training Loss", color="tab:blue")  # linewidth=2.0
 plt.xlabel("Epoch")
 plt.ylabel("Loss")
 plt.title("Training Loss Curve")
