@@ -8,5 +8,4 @@ def get_custom_config(cfg, params=None, gflops=None):
         cfg.GFLOPs = gflops
     return cfg
 
-
-# 2. return optional selected fields
+    # 2. return optional selected fields
