@@ -1,3 +1,4 @@
+# train.py / eval.py → eval_one_epoch → build_evaluator → type=MeanAveragePrecision map.py
 import json
 import multiprocessing as mp
 
