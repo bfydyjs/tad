@@ -155,7 +155,7 @@ class Recall:
             tiou_thresholds=self.tiou_thresholds,
         )
 
-        area_under_curve = np.trapz(avg_recall, proposals_per_video)
+        area_under_curve = np.trapezoid(avg_recall, proposals_per_video)
 
         self.recall = recall
         self.avg_recall = avg_recall
@@ -165,7 +165,7 @@ class Recall:
         # Calculate AUC for each tIoU threshold
         self.auc_per_tiou = []
         for i, _ in enumerate(self.tiou_thresholds):
-            tiou_area = np.trapz(recall[i, :], proposals_per_video)
+            tiou_area = np.trapezoid(recall[i, :], proposals_per_video)
             tiou_auc = float(tiou_area) / proposals_per_video[-1]
             self.auc_per_tiou.append(tiou_auc)
 
@@ -277,7 +277,7 @@ def average_recall_vs_avg_nr_proposals(
             # Find proposals that satisfies minimum tiou threshold.
             true_positives_tiou = score >= tiou
             # Get number of proposals as a percentage of total retrieved.
-            pcn_proposals = np.minimum((score.shape[1] * pcn_lst).astype(np.int), score.shape[1])
+            pcn_proposals = np.minimum((score.shape[1] * pcn_lst).astype(np.int64), score.shape[1])
 
             for j, nr_proposals in enumerate(pcn_proposals):
                 # Compute the number of matches for each percentage of the proposals
