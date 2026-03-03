@@ -1,3 +1,5 @@
+# python eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint
+# exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt --plot-recall
 import argparse
 from pathlib import Path
 
@@ -5,10 +7,7 @@ import matplotlib.pyplot as plt
 
 from tad.metrics.recall import Recall
 
-try:
-    from .setup_paper_style import setup_paper_style
-except ImportError:
-    from setup_paper_style import setup_paper_style
+from .setup_paper_style import setup_paper_style
 
 
 def parse_args():
