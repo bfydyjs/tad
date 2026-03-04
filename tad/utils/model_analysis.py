@@ -13,7 +13,8 @@ def calculate_params_gflops(
 
     Args:
         model: PyTorch model.
-        input_shape: Input shape tuple (e.g., (3, 224, 224) for image, (2048, 100) for video features).
+        input_shape: Input shape tuple (e.g., (3, 224, 224) for image,
+                     (2048, 100) for video features).
                      Batch dimension is NOT included.
         device: Device to run dummy forward pass ('cpu' or 'cuda').
 

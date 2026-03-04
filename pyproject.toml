@@ -25,7 +25,7 @@ dependencies = [
 include = ["ddiou*"]
 
 [tool.ruff]
-line-length = 100
+line-length = 100 # default is 88, but we use 100 to be consistent with black
 target-version = "py311"
 fix = true
 unsafe-fixes = false

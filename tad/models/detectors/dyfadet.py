@@ -59,7 +59,8 @@ class DyFADet(Detector):
             f"parameters {inter_params} made it into both decay/no_decay sets!"
         )
         assert len(param_dict.keys() - union_params) == 0, (
-            f"parameters {param_dict.keys() - union_params} were not separated into either decay/no_decay set!"
+            f"parameters {param_dict.keys() - union_params} "
+            "were not separated into either decay/no_decay set!"
         )
 
         # create the pytorch optimizer object

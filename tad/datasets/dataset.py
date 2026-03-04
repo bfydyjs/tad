@@ -17,7 +17,8 @@ class BaseDataset:
         class_map,  # path of the class map, convert the class id to category name
         filter_gt=False,  # if True, filter out those gt has the scale smaller than 0.01
         class_agnostic=False,  # if True, the class index will be replaced by 0
-        block_list=None,  # some videos might be missed in the features or videos, we need to block them
+        # some videos might be missed in the features or videos, we need to block them
+        block_list=None,
         test_mode=False,  # if True, running on test mode with no annotation
         logger=None,
     ):
@@ -268,7 +269,8 @@ class SlidingWindowDataset(BaseDataset):
 
 def compute_gt_completeness(gt_boxes, anchors):
     """Compute the completeness of the gt_bboxes.
-       GT will be first truncated by the anchor start/end, then the completeness is defined as the ratio of the
+       GT will be first truncated by the anchor start/end,
+       then the completeness is defined as the ratio of the
        truncated_gt_len / original_gt_len.
        If this ratio is too small, it means this gt is not complete enough to be used for training.
     Args:

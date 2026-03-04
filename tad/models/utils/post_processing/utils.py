@@ -23,8 +23,9 @@ def save_predictions(predictions, metas, folder):
 
 
 def load_single_prediction(metas, folder):
-    """Should not be used for sliding window. Since we saved the files with video name, and sliding window will have
-    multiple files with the same name.
+    """Should not be used for sliding window. Since we saved the files with
+    video name, and sliding window will have multiple files with the same
+    name.
     """
     predictions = []
     for idx in range(len(metas)):

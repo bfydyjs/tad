@@ -10,7 +10,8 @@ def build_optimizer(cfg, model, logger):
     if hasattr(raw_model, "backbone"):  # if backbone exists
         if raw_model.backbone.freeze_backbone is False:  # not frozen
             assert "backbone" in cfg.keys(), (
-                "Freeze_backbone is set to False, but backbone parameters is not provided in the optimizer config."
+                "Freeze_backbone is set to False, but backbone "
+                "parameters is not provided in the optimizer config."
             )
             backbone_cfg = cfg["backbone"]
             cfg.pop("backbone")

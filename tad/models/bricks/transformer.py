@@ -404,9 +404,10 @@ class LocalMaskedMHCA(nn.Module):
 
     def _sliding_chunks_query_key_matmul(self, query, key, num_heads, window_overlap):
         """
-        Matrix multiplication of query and key tensors using with a sliding window attention pattern.
-        This implementation splits the input into overlapping chunks of size 2w with an overlap of size w
-        (window_overlap)
+        Matrix multiplication of query and key tensors using a sliding window
+        attention pattern.
+        This implementation splits the input into overlapping chunks of size 2w
+        with an overlap of size w (window_overlap)
         """
         # query / key: B*nh, T, hs
         bnh, seq_len, _ = query.size()
@@ -434,10 +435,13 @@ class LocalMaskedMHCA(nn.Module):
             diagonal_chunked_attention_scores, padding=(0, 0, 0, 1)
         )
 
-        # allocate space for the overall attention matrix where the chunks are combined. The last dimension
-        # has (window_overlap * 2 + 1) columns. The first (window_overlap) columns are the window_overlap
-        # lower triangles (attention from a word to window_overlap previous words). The following column is
-        # attention score from each word to itself, then followed by window_overlap columns for the upper triangle.
+        # allocate space for the overall attention matrix
+        # where the chunks are combined. The last dimension
+        # has (window_overlap * 2 + 1) columns. The first
+        # (window_overlap) columns are the window_overlap
+        # lower triangles (attention from a word to window_overlap previous words).
+        # The following column is attention score from each word to itself,
+        # then followed by window_overlap columns for the upper triangle.
         diagonal_attention_scores = diagonal_chunked_attention_scores.new_empty(
             (batch_size * num_heads, chunks_count + 1, window_overlap, window_overlap * 2 + 1)
         )
@@ -469,15 +473,17 @@ class LocalMaskedMHCA(nn.Module):
 
     def _sliding_chunks_matmul_attn_probs_value(self, attn_probs, value, num_heads, window_overlap):
         """
-        Same as _sliding_chunks_query_key_matmul but for attn_probs and value tensors. Returned tensor will be of the
-        same shape as `attn_probs`
+        Same as _sliding_chunks_query_key_matmul but for attn_probs and
+        value tensors.
+        Returned tensor will be of the same shape as `attn_probs`
         """
         bnh, seq_len, head_dim = value.size()
         batch_size = bnh // num_heads
         assert seq_len % (window_overlap * 2) == 0
         assert attn_probs.size(3) == 2 * window_overlap + 1
         chunks_count = seq_len // window_overlap - 1
-        # group batch_size and num_heads dimensions into one, then chunk seq_len into chunks of size 2 window overlap
+        # group batch_size and num_heads dimensions into one, then chunk seq_len
+        # into chunks of size 2 window_overlap
 
         chunked_attn_probs = attn_probs.transpose(1, 2).reshape(
             batch_size * num_heads,
@@ -489,7 +495,8 @@ class LocalMaskedMHCA(nn.Module):
         # pad seq_len with w at the beginning of the sequence and another window overlap at the end
         padded_value = nn.functional.pad(value, (0, 0, window_overlap, window_overlap), value=-1)
 
-        # chunk padded_value into chunks of size 3 window overlap and an overlap of size window overlap
+        # chunk padded_value into chunks of size 3 window overlap
+        # and an overlap of size window overlap
         chunked_value_size = (
             batch_size * num_heads,
             chunks_count + 1,
@@ -607,8 +614,8 @@ class DropPath(nn.Module):
 
 class AffineDropPath(nn.Module):
     """
-    Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks) with a per channel scaling
-    factor (and zero init)
+    Drop paths (Stochastic Depth) per sample (when applied in main path of
+    residual blocks) with a per channel scaling factor (and zero init)
     See: https://arxiv.org/pdf/2103.17239.pdf
     """
 

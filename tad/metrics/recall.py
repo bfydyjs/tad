@@ -228,7 +228,8 @@ def average_recall_vs_avg_nr_proposals(
     Outputs
     -------
     recall : 2darray
-        recall[i,j] is recall at ith tiou threshold at the jth average number of average number of proposals per video.
+        recall[i,j] is recall at the ith tiou threshold at the jth
+        average number of proposals per video.
     average_recall : 1darray
         recall averaged over a list of tiou threshold. This is equivalent to recall.mean(axis=0).
     proposals_per_video : 1darray
@@ -260,7 +261,9 @@ def average_recall_vs_avg_nr_proposals(
     # retrieved per video.
 
     # Computes average recall.
-    # pcn_lst = np.arange(1, 101) / 100.0 * (max_avg_nr_proposals * float(video_lst.shape[0]) / total_nr_proposals)
+    # pcn_lst = np.arange(1, 101) / 100.0 * (
+    #     max_avg_nr_proposals * float(video_lst.shape[0]) / total_nr_proposals
+    # )
     pcn_lst = (
         np.arange(1, max_avg_nr_proposals + 1)
         / max_avg_nr_proposals
