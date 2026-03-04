@@ -33,3 +33,6 @@ unsafe-fixes = false
 [tool.ruff.lint]
 select = ["E", "W", "N", "F", "I", "C90", "B", "RUF", "UP", "YTT"]
 # ignore = ["RUF003"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10 # default is 10
