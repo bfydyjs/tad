@@ -1,13 +1,17 @@
+"""
+On CPU/GPU
+Usage:
+python -m tad.visualization.analysis.compute_average_cosine_similarity \
+        configs/ddiou/thumos_videomaev2_g.yaml \
+        exps/thumos/videomaev2_g/gpu1_id1/checkpoint/best.pt
+"""
+
 import argparse
-import sys
-from pathlib import Path
+import inspect
 
 import numpy as np
 import torch
 from tqdm import tqdm
-
-# 添加项目根目录到路径，确保能导入 tad 模块
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from tad.datasets import build_dataset
 from tad.models import build_detector
@@ -46,23 +50,16 @@ def compute_avg_cosine_similarity(feature_tensor):
     计算给定特征Tensor的平均余弦相似度。
     feature_tensor: [C, T] or [1, C, T]
     """
-    # 移除 batch 维度 [1, C, T] -> [C, T]
     if feature_tensor.dim() == 3:
         feature_tensor = feature_tensor[0]
 
-    # 转置为 [T, C] 用于计算
     features = feature_tensor.transpose(0, 1).detach().cpu().numpy()
 
-    # 归一化 (L2 Norm)
     norms = np.linalg.norm(features, axis=1, keepdims=True)
     features_norm = features / (norms + 1e-8)
 
-    # 计算余弦相似度矩阵 [T, T]
     similarity_matrix = np.dot(features_norm, features_norm.T)
 
-    # 计算平均值 matrix mean
-    # 注意：通常包含对角线(1.0)能反映整体分布，也可以选择去除对角线只看互相似度
-    # 这里直接采用整体平均值，反映了特征在时间维度上的整体一致性/平滑度
     avg_sim = np.mean(similarity_matrix)
 
     return avg_sim
@@ -75,7 +72,10 @@ def main():
     cfg.dataset.val.test_mode = False
     dataset = build_dataset(cfg.dataset.val)
     model = build_detector(cfg.model)
-    checkpoint = torch.load(args.checkpoint, map_location=args.device)
+    load_kwargs = {"map_location": args.device}
+    if "weights_only" in inspect.signature(torch.load).parameters:
+        load_kwargs["weights_only"] = False
+    checkpoint = torch.load(args.checkpoint, **load_kwargs)
 
     if "state_dict" in checkpoint:
         model.load_state_dict(checkpoint["state_dict"])

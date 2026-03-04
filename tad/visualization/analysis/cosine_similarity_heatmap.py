@@ -1,10 +1,6 @@
 """Visualize cosine similarity heatmaps from temporal features.
 On CPU/GPU
 Usage:
-    python tad/visualization/analysis/cosine_similarity_heatmap.py \
-        configs/ddiou/thumos_videomaev2_g.yaml \
-        exps/thumos/videomaev2_g/gpu1_id1/checkpoint/best.pt
-
     python -m tad.visualization.analysis.cosine_similarity_heatmap \
         configs/ddiou/thumos_videomaev2_g.yaml \
         exps/thumos/videomaev2_g/gpu1_id1/checkpoint/best.pt
@@ -24,10 +20,6 @@ from tad.datasets import build_dataset
 from tad.models import build_detector
 from tad.utils import Config
 from tad.visualization.plot.setup_paper_style import setup_paper_style
-
-# Add project root to sys.path to allow absolute imports
-_project_root = Path(__file__).resolve().parent.parent.parent.parent
-sys.path.insert(0, str(_project_root))
 
 
 def parse_args():
@@ -169,7 +161,9 @@ def plot_heatmap(similarity_matrix, gt_intervals_indices, seconds_per_step, vide
         ax2.fill_between([start, end], 0, 1, color="#32CD32", alpha=0.8)
 
     # Save figure
-    output_path = _project_root / "output" / "figures" / "heatmap.pdf"
+    output_path = (
+        Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "heatmap.pdf"
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path)
     print(f"Saving figure to: {output_path}")
