@@ -81,7 +81,12 @@ def plot_ar_an_curve(evaluator, out_dir):
 
 def plot_recall_k_tiou(evaluator, out_dir):
     setup_paper_style(
-        440, ratio=1.618, fraction=0.98, font_size_tex=5, font_size_main=4.5, line_width_axis=0.5
+        textwidth=440,
+        ratio=1.618,
+        fraction=0.98,
+        font_size_tex=5,
+        font_size_main=4.5,
+        line_width_axis=0.5,
     )
     plt.figure()
 

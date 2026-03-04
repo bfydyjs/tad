@@ -6,7 +6,8 @@ from setup_paper_style import setup_paper_style
 
 # ==========================================
 # 1. Insert the numerical results obtained from running average_cosine_similarity.py here.
-# 2. Arial font is not available on the server; do not run this script on the server to generate figures.
+# 2. Arial font is not available on the server;
+#    do not run this script on the server to generate figures.
 # ==========================================
 
 # Format: [Level 0 (Raw), Level 1, Level 2, ..., Level N]
@@ -24,9 +25,14 @@ baseline_value = (model_a_data[0] + model_b_data[0]) / 2
 # ========================================
 
 
-def plot_comparison():
+def main():
     setup_paper_style(
-        440 / 2, ratio=1.618, fraction=0.98, font_size_tex=10, font_size_main=9, line_width_axis=0.5
+        textwidth=440 / 2,
+        ratio=1.618,
+        fraction=0.98,
+        font_size_tex=10,
+        font_size_main=9,
+        line_width_axis=0.5,
     )
     min_len = min(len(model_a_data), len(model_b_data))
     y_a = model_a_data[:min_len]
@@ -76,4 +82,4 @@ def plot_comparison():
 
 
 if __name__ == "__main__":
-    plot_comparison()
+    main()
