@@ -121,7 +121,9 @@ class NMSop(torch.autograd.Function):
 
 class SoftNMSop(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, segs, scores, cls_idxs, iou_threshold, sigma, min_score, method, max_num, t1, t2):
+    def forward(
+        ctx, segs, scores, cls_idxs, iou_threshold, sigma, min_score, method, max_num, t1, t2
+    ):
         if nms_1d_cpu is not None:
             # pre allocate memory for sorted results
             dets = segs.new_empty((segs.size(0), 3), device="cpu")

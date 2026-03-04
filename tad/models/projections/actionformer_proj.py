@@ -48,7 +48,9 @@ class Conv1DTransformerProj(nn.Module):
             self.mha_win_size = self.n_mha_win_size
 
         if isinstance(self.in_channels, (list, tuple)):
-            assert isinstance(self.out_channels, (list, tuple)) and len(self.in_channels) == len(self.out_channels)
+            assert isinstance(self.out_channels, (list, tuple)) and len(self.in_channels) == len(
+                self.out_channels
+            )
             self.proj = nn.ModuleList([])
             for n_in, n_out in zip(self.in_channels, self.out_channels, strict=True):
                 self.proj.append(
@@ -130,7 +132,11 @@ class Conv1DTransformerProj(nn.Module):
         # feature projection
         if self.proj is not None:
             x = torch.cat(
-                [proj(s, mask)[0] for proj, s in zip(self.proj, x.split(self.in_channels, dim=1), strict=True)], dim=1
+                [
+                    proj(s, mask)[0]
+                    for proj, s in zip(self.proj, x.split(self.in_channels, dim=1), strict=True)
+                ],
+                dim=1,
             )
 
         # drop out input if needed

@@ -230,7 +230,13 @@ class Recall:
             recall_values = self.recall[:, k - 1]
 
             # Plot the curve
-            ax.plot(self.tiou_thresholds, recall_values, "o-", color=colors[k_idx % len(colors)], label=f"Recall@{k}")
+            ax.plot(
+                self.tiou_thresholds,
+                recall_values,
+                "o-",
+                color=colors[k_idx % len(colors)],
+                label=f"Recall@{k}",
+            )
 
             # Set labels and title
             ax.set_xlabel("tIoU Thresholds")
@@ -248,7 +254,12 @@ class Recall:
         plt.tight_layout()
 
         # Set default save path if not provided
-        output_path = Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "recall_curves.png"
+        output_path = (
+            Path(__file__).resolve().parent.parent.parent
+            / "output"
+            / "figures"
+            / "recall_curves.png"
+        )
         output_path.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         print(f"Recall curves saved to: {output_path}")
@@ -330,7 +341,9 @@ def average_recall_vs_avg_nr_proposals(
         if this_video_ground_truth.ndim != 2:
             this_video_ground_truth = np.expand_dims(this_video_ground_truth, axis=0)
 
-        nr_proposals = np.minimum(int(this_video_proposals.shape[0] * ratio), this_video_proposals.shape[0])
+        nr_proposals = np.minimum(
+            int(this_video_proposals.shape[0] * ratio), this_video_proposals.shape[0]
+        )
         total_nr_proposals += nr_proposals
         this_video_proposals = this_video_proposals[:nr_proposals, :]
 
@@ -367,7 +380,9 @@ def average_recall_vs_avg_nr_proposals(
 
             for j, nr_proposals in enumerate(pcn_proposals):
                 # Compute the number of matches for each percentage of the proposals
-                matches[i, j] = np.count_nonzero((true_positives_tiou[:, :nr_proposals]).sum(axis=1))
+                matches[i, j] = np.count_nonzero(
+                    (true_positives_tiou[:, :nr_proposals]).sum(axis=1)
+                )
 
         # Computes recall given the set of matches per video.
         recall[ridx, :] = matches.sum(axis=0) / positives.sum()

@@ -15,7 +15,9 @@ class LiteMamba(nn.Module):
         self.d_conv = d_conv
 
         self.in_proj = nn.Linear(d_model, self.d_inner * 2)
-        self.conv = nn.Conv1d(self.d_inner, self.d_inner, kernel_size=d_conv, padding=d_conv // 2, groups=self.d_inner)
+        self.conv = nn.Conv1d(
+            self.d_inner, self.d_inner, kernel_size=d_conv, padding=d_conv // 2, groups=self.d_inner
+        )
         self.act = nn.SiLU()
         self.out_proj = nn.Linear(self.d_inner, d_model)
 
@@ -82,7 +84,9 @@ class MambaProj(nn.Module):
         self.input_pdrop = nn.Dropout1d(p=input_pdrop) if input_pdrop > 0 else None
 
         if isinstance(self.in_channels, (list, tuple)):
-            assert isinstance(self.out_channels, (list, tuple)) and len(self.in_channels) == len(self.out_channels)
+            assert isinstance(self.out_channels, (list, tuple)) and len(self.in_channels) == len(
+                self.out_channels
+            )
             self.proj = nn.ModuleList([])
             for n_in, n_out in zip(self.in_channels, self.out_channels, strict=False):
                 self.proj.append(
@@ -145,7 +149,11 @@ class MambaProj(nn.Module):
         # feature projection
         if self.proj is not None:
             x = torch.cat(
-                [proj(s, mask)[0] for proj, s in zip(self.proj, x.split(self.in_channels, dim=1), strict=False)], dim=1
+                [
+                    proj(s, mask)[0]
+                    for proj, s in zip(self.proj, x.split(self.in_channels, dim=1), strict=False)
+                ],
+                dim=1,
             )
 
         # drop out input if needed

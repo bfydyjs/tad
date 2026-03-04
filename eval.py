@@ -19,9 +19,17 @@ def parse_args():
     parser.add_argument("--checkpoint", type=str, default="none", help="the checkpoint path")
     parser.add_argument("--seed", type=int, default=42, help="random seed")
     parser.add_argument("--id", type=int, default=0, help="repeat experiment id")
-    parser.add_argument("--skip-eval", action="store_true", help="whether to not to eval, only do inference")
-    parser.add_argument("--disable-deterministic", action="store_true", help="disable deterministic for faster speed")
-    parser.add_argument("--plot-recall", action="store_true", help="plot recall curves after evaluation")
+    parser.add_argument(
+        "--skip-eval", action="store_true", help="whether to not to eval, only do inference"
+    )
+    parser.add_argument(
+        "--disable-deterministic",
+        action="store_true",
+        help="disable deterministic for faster speed",
+    )
+    parser.add_argument(
+        "--plot-recall", action="store_true", help="plot recall curves after evaluation"
+    )
     parser.add_argument(
         "--plot-output-dir",
         type=str,
@@ -39,7 +47,9 @@ def init_distributed(args):
         args.local_rank = int(os.environ["LOCAL_RANK"])
         args.world_size = int(os.environ["WORLD_SIZE"])
         args.rank = int(os.environ["RANK"])
-        print(f"Distributed init (rank {args.rank}/{args.world_size}, local rank {args.local_rank})")
+        print(
+            f"Distributed init (rank {args.rank}/{args.world_size}, local rank {args.local_rank})"
+        )
         dist.init_process_group("nccl", rank=args.rank, world_size=args.world_size)
         torch.cuda.set_device(args.local_rank)
         args.distributed = True
@@ -92,7 +102,9 @@ def build_and_wrap_model(cfg, args, logger):
     if torch.cuda.is_available():
         model = model.to(args.local_rank)
         if args.distributed:
-            model = DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
+            model = DistributedDataParallel(
+                model, device_ids=[args.local_rank], output_device=args.local_rank
+            )
             logger.info(f"Using DDP with total {args.world_size} GPUS...")
         else:
             logger.info("Running on single GPU (No DDP)...")
@@ -103,7 +115,9 @@ def build_and_wrap_model(cfg, args, logger):
 
 def load_weights(cfg, args, logger, model):
     """Load model weights from checkpoint or skip if using raw predictions."""
-    if cfg.inference.load_from_raw_predictions:  # if load with saved predictions, no need to load checkpoint
+    if (
+        cfg.inference.load_from_raw_predictions
+    ):  # if load with saved predictions, no need to load checkpoint
         logger.info(f"Loading from raw predictions: {cfg.inference.fuse_list}")
         return
 

@@ -25,7 +25,9 @@ baseline_value = (model_a_data[0] + model_b_data[0]) / 2
 
 
 def plot_comparison():
-    setup_paper_style(440 / 2, ratio=1.618, fraction=0.98, font_size_tex=10, font_size_main=9, line_width_axis=0.5)
+    setup_paper_style(
+        440 / 2, ratio=1.618, fraction=0.98, font_size_tex=10, font_size_main=9, line_width_axis=0.5
+    )
     min_len = min(len(model_a_data), len(model_b_data))
     y_a = model_a_data[:min_len]
     y_b = model_b_data[:min_len]
@@ -62,7 +64,10 @@ def plot_comparison():
     plt.legend(loc="center", edgecolor="#bfbfbf", handlelength=2, fontsize=8, frameon=False)
     plt.tight_layout()
     output_path = (
-        Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "cosine_similarity_comparison.pdf"
+        Path(__file__).resolve().parent.parent.parent.parent
+        / "output"
+        / "figures"
+        / "cosine_similarity_comparison.pdf"
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path)

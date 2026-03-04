@@ -59,7 +59,11 @@ class TransformerBlock(nn.Module):
 
         # input
         if n_ds_strides[0] > 1:
-            kernel_size, stride, padding = n_ds_strides[0] + 1, n_ds_strides[0], (n_ds_strides[0] + 1) // 2
+            kernel_size, stride, padding = (
+                n_ds_strides[0] + 1,
+                n_ds_strides[0],
+                (n_ds_strides[0] + 1) // 2,
+            )
             self.pool_skip = nn.MaxPool1d(kernel_size, stride=stride, padding=padding)
         else:
             self.pool_skip = nn.Identity()
@@ -357,7 +361,9 @@ class LocalMaskedMHCA(nn.Module):
 
     @staticmethod
     def _mask_invalid_locations(input_tensor, affected_seq_len):
-        beginning_mask_2d = input_tensor.new_ones(affected_seq_len, affected_seq_len + 1).tril().flip(dims=[0])
+        beginning_mask_2d = (
+            input_tensor.new_ones(affected_seq_len, affected_seq_len + 1).tril().flip(dims=[0])
+        )
         beginning_mask = beginning_mask_2d[None, :, None, :]
         ending_mask = beginning_mask.flip(dims=(1, 3))
         beginning_input = input_tensor[:, :affected_seq_len, :, : affected_seq_len + 1]
@@ -418,7 +424,9 @@ class LocalMaskedMHCA(nn.Module):
         # bcxd: batch_size * num_heads x chunks x 2window_overlap x head_dim
         # bcyd: batch_size * num_heads x chunks x 2window_overlap x head_dim
         # bcxy: batch_size * num_heads x chunks x 2window_overlap x 2window_overlap
-        diagonal_chunked_attention_scores = torch.einsum("bcxd,bcyd->bcxy", (chunk_query, chunk_key))
+        diagonal_chunked_attention_scores = torch.einsum(
+            "bcxd,bcyd->bcxy", (chunk_query, chunk_key)
+        )
 
         # convert diagonals into columns
         # B * num_heads, #chunks, 2w, 2w+1
@@ -447,9 +455,9 @@ class LocalMaskedMHCA(nn.Module):
             :, :, -(window_overlap + 1) : -1, window_overlap + 1 :
         ]
 
-        diagonal_attention_scores[:, 0, 1:window_overlap, 1:window_overlap] = diagonal_chunked_attention_scores[
-            :, 0, : window_overlap - 1, 1 - window_overlap :
-        ]
+        diagonal_attention_scores[:, 0, 1:window_overlap, 1:window_overlap] = (
+            diagonal_chunked_attention_scores[:, 0, : window_overlap - 1, 1 - window_overlap :]
+        )
 
         # separate batch_size and num_heads dimensions again
         diagonal_attention_scores = diagonal_attention_scores.view(
@@ -472,14 +480,22 @@ class LocalMaskedMHCA(nn.Module):
         # group batch_size and num_heads dimensions into one, then chunk seq_len into chunks of size 2 window overlap
 
         chunked_attn_probs = attn_probs.transpose(1, 2).reshape(
-            batch_size * num_heads, seq_len // window_overlap, window_overlap, 2 * window_overlap + 1
+            batch_size * num_heads,
+            seq_len // window_overlap,
+            window_overlap,
+            2 * window_overlap + 1,
         )
 
         # pad seq_len with w at the beginning of the sequence and another window overlap at the end
         padded_value = nn.functional.pad(value, (0, 0, window_overlap, window_overlap), value=-1)
 
         # chunk padded_value into chunks of size 3 window overlap and an overlap of size window overlap
-        chunked_value_size = (batch_size * num_heads, chunks_count + 1, 3 * window_overlap, head_dim)
+        chunked_value_size = (
+            batch_size * num_heads,
+            chunks_count + 1,
+            3 * window_overlap,
+            head_dim,
+        )
         chunked_value_stride = padded_value.stride()
         chunked_value_stride = (
             chunked_value_stride[0],
@@ -487,7 +503,9 @@ class LocalMaskedMHCA(nn.Module):
             chunked_value_stride[1],
             chunked_value_stride[2],
         )
-        chunked_value = padded_value.as_strided(size=chunked_value_size, stride=chunked_value_stride)
+        chunked_value = padded_value.as_strided(
+            size=chunked_value_size, stride=chunked_value_stride
+        )
 
         chunked_attn_probs = self._pad_and_diagonalize(chunked_attn_probs)
 
@@ -596,7 +614,9 @@ class AffineDropPath(nn.Module):
 
     def __init__(self, num_dim, drop_prob=0.0, init_scale_value=1e-4, transpose=False):
         super().__init__()
-        self.scale = nn.Parameter(init_scale_value * torch.ones((1, num_dim, 1)), requires_grad=True)
+        self.scale = nn.Parameter(
+            init_scale_value * torch.ones((1, num_dim, 1)), requires_grad=True
+        )
         self.drop_prob = drop_prob
         self.transpose = transpose  # if False, the input is B,C,T, otherwise, the input is B,T,C
 

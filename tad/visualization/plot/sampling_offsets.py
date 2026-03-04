@@ -2,7 +2,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from plot.setup_paper_style import setup_paper_style
+from setup_paper_style import setup_paper_style
 
 # ----------------------------
 # 1. 模拟数据：假设我们有 N=50 个 action queries
@@ -34,70 +34,75 @@ adjacent_std = adjacent_std[sort_idx_a]
 
 # ----------------------------
 setup_paper_style(
-    440 / 2, ratio=1.618, fraction=0.98, font_size_tex=10, font_size_main=9, line_width_axis=0.5
+    440, ratio=1.618, fraction=0.98, font_size_tex=10, font_size_main=9, line_width_axis=0.5
 )
 # 2. 绘图
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+fig, (ax1, ax2) = plt.subplots(2, 1)
+xticks_vals = np.arange(-1.0, 1.01, 0.25)
+xtick_labels = [f"{x:.2f}" for x in xticks_vals]
 
 # (a) TE-TAD
 ax1.errorbar(
-    range(N),
     te_tad_offsets,
-    yerr=te_tad_std,
-    fmt="o",
+    range(N),
+    xerr=te_tad_std,
+    fmt="-o",
     ecolor="blue",
-    capsize=3,
+    capsize=2,
     markersize=4,
     color="blue",
+    linewidth=1,
+    label="Cross-Attention",
 )
-ax1.set_xlim(-1, N)
-ax1.set_ylim(-1.0, 1.0)
-ax1.set_ylabel("Query Index")
-ax1.set_title("(a) TE-TAD [15]")
-ax1.grid(True, alpha=0.3)
-ax1.axvline(x=-0.5, color="gray", linestyle="--", alpha=0.5)  # 可选：辅助线
-ax1.text(
-    -0.7,
-    0.9,
-    "Cross-Attention",
-    fontsize=10,
-    bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgray"),
-)
+ax1.set_xlim(-1.0, 1.0)
+ax1.set_ylim(-2, N + 1)
+ax1.set_xticks(xticks_vals)
+ax1.set_xticklabels(xtick_labels)
+ax1.set_yticks([])  # 隐藏纵轴索引
+ax1.set_xlabel("(a) TE-TAD [15]", fontsize=11)
+ax1.grid(axis="x", linestyle="--")  # 仅开启 X 轴网格
+ax1.legend(loc="upper left")
 
 # (b) DiGIT
 ax2.errorbar(
-    range(N),
     central_offsets,
-    yerr=central_std,
-    fmt="o",
+    range(N),
+    xerr=central_std,
+    fmt="-o",
     ecolor="blue",
-    capsize=3,
+    capsize=2,
     markersize=4,
     color="blue",
+    linewidth=1,
     label="Central-Region Cross-Attention",
 )
 ax2.errorbar(
-    range(N),
     adjacent_offsets,
-    yerr=adjacent_std,
-    fmt="o",
+    range(N),
+    xerr=adjacent_std,
+    fmt="-o",
     ecolor="red",
-    capsize=3,
+    capsize=2,
     markersize=4,
     color="red",
+    linewidth=1,
     label="Adjacent-Region Cross-Attention",
 )
-ax2.set_xlim(-1, N)
-ax2.set_ylim(-1.0, 1.0)
-ax2.set_xlabel("Sampling Offset (normalized)")
-ax2.set_ylabel("Query Index")
-ax2.set_title("(b) DiGIT")
-ax2.grid(True, alpha=0.3)
+ax2.set_xlim(-1.0, 1.0)
+ax2.set_ylim(-2, N + 1)
+ax2.set_xticks(xticks_vals)
+ax2.set_xticklabels(xtick_labels)
+ax2.set_yticks([])  # 隐藏纵轴索引
+ax2.set_xlabel("(b) DiGIT", fontsize=11)
+ax2.grid(axis="x", linestyle="--")  # 仅开启 X 轴网格
 ax2.legend(loc="upper left")
 
 plt.tight_layout()
 output_path = (
-    Path(__file__).resolve().parent.parent.parent / "output" / "figures" / "sampling_offsets.png"
+    Path(__file__).resolve().parent.parent.parent.parent
+    / "output"
+    / "figures"
+    / "sampling_offsets.png"
 )
 print(f"Saving figure to: {output_path}")
 output_path.parent.mkdir(parents=True, exist_ok=True)

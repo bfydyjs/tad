@@ -17,7 +17,9 @@ class PrepareVideoInfo:
 
     def __call__(self, results):
         results["modality"] = self.modality
-        results["filename"] = str(Path(results["data_path"]) / f"{self.prefix}{results['video_name']}.{self.format}")
+        results["filename"] = str(
+            Path(results["data_path"]) / f"{self.prefix}{results['video_name']}.{self.format}"
+        )
         return results
 
 
@@ -109,7 +111,9 @@ class LoadSnippetFrames:
             # don't forget to resize the ground truth segments
             if "gt_segments" in results.keys():
                 # convert gt seconds to feature grid
-                results["gt_segments"] = np.clip(results["gt_segments"] / results["duration"], 0.0, 1.0)
+                results["gt_segments"] = np.clip(
+                    results["gt_segments"] / results["duration"], 0.0, 1.0
+                )
                 results["gt_segments"] *= results["resize_length"]
 
         elif self.method == "random_trunc":
@@ -132,7 +136,9 @@ class LoadSnippetFrames:
             if len(snippet_center) < snippet_num:
                 valid_len = len(snippet_center)
                 snippet_center = np.pad(snippet_center, (0, snippet_num - valid_len), mode="edge")
-                masks = torch.cat([torch.ones(valid_len), torch.zeros(snippet_num - valid_len)]).bool()
+                masks = torch.cat(
+                    [torch.ones(valid_len), torch.zeros(snippet_num - valid_len)]
+                ).bool()
             else:
                 masks = torch.ones(snippet_num).bool()
 
@@ -148,7 +154,9 @@ class LoadSnippetFrames:
             if len(snippet_center) < snippet_num:
                 valid_len = len(snippet_center)
                 snippet_center = np.pad(snippet_center, (0, snippet_num - valid_len), mode="edge")
-                masks = torch.cat([torch.ones(valid_len), torch.zeros(snippet_num - valid_len)]).bool()
+                masks = torch.cat(
+                    [torch.ones(valid_len), torch.zeros(snippet_num - valid_len)]
+                ).bool()
             else:
                 masks = torch.ones(snippet_num).bool()
         elif self.method == "padding":
@@ -156,12 +164,16 @@ class LoadSnippetFrames:
 
         # extend snippet center to a clip
         clip_idxs = np.arange(-(self.clip_len // 2), self.clip_len // 2)
-        frame_idxs = snippet_center[:, None] + self.frame_interval * clip_idxs[None, :]  # [snippet_num, clip_len]
+        frame_idxs = (
+            snippet_center[:, None] + self.frame_interval * clip_idxs[None, :]
+        )  # [snippet_num, clip_len]
 
         # truncate to [0, total_frames-1], and round to int
         frame_idxs = np.clip(frame_idxs, 0, total_frames - 1).round()
 
-        assert frame_idxs.shape[0] == snippet_num, "snippet center number should be equal to snippet number"
+        assert frame_idxs.shape[0] == snippet_num, (
+            "snippet center number should be equal to snippet number"
+        )
         assert frame_idxs.shape[1] == self.clip_len, "snippet length should be equal to clip length"
 
         results["frame_inds"] = frame_idxs.astype(int)
@@ -183,7 +195,9 @@ class LoadFrames:
         crop_ratio=None,
     ):
         self.num_clips = num_clips
-        self.scale_factor = scale_factor  # multiply by the frame number, if backbone has downsampling
+        self.scale_factor = (
+            scale_factor  # multiply by the frame number, if backbone has downsampling
+        )
         self.method = method  # resize or padding or random_trunc or sliding_window
         # random_trunc settings
         self.trunc_len = trunc_len
@@ -249,16 +263,22 @@ class LoadFrames:
                 total_frames + frame_stride / 2 - 0.5,
                 frame_stride,
             )
-            masks = torch.ones(results["resize_length"]).bool()  # should not multiply by scale_factor
+            masks = torch.ones(
+                results["resize_length"]
+            ).bool()  # should not multiply by scale_factor
 
             # don't forget to resize the ground truth segments
             if "gt_segments" in results.keys():
                 # convert gt seconds to feature grid
-                results["gt_segments"] = np.clip(results["gt_segments"] / results["duration"], 0.0, 1.0)
+                results["gt_segments"] = np.clip(
+                    results["gt_segments"] / results["duration"], 0.0, 1.0
+                )
                 results["gt_segments"] *= results["resize_length"]
 
         elif self.method == "random_trunc":
-            assert results["snippet_stride"] >= self.scale_factor, "snippet_stride should be larger than scale_factor"
+            assert results["snippet_stride"] >= self.scale_factor, (
+                "snippet_stride should be larger than scale_factor"
+            )
             assert results["snippet_stride"] % self.scale_factor == 0, (
                 "snippet_stride should be divisible by scale_factor"
             )
@@ -271,22 +291,29 @@ class LoadFrames:
             frame_idxs, gt_segments, gt_labels = self.random_trunc(
                 frame_idxs,
                 trunc_len=frame_num,
-                gt_segments=results["gt_segments"] * self.scale_factor,  # gt segment should be mapped to frame level
+                gt_segments=results["gt_segments"]
+                * self.scale_factor,  # gt segment should be mapped to frame level
                 gt_labels=results["gt_labels"],
             )
-            results["gt_segments"] = gt_segments / self.scale_factor  # convert back to original scale
+            results["gt_segments"] = (
+                gt_segments / self.scale_factor
+            )  # convert back to original scale
             results["gt_labels"] = gt_labels
 
             # pad the frame_idxs
             if len(frame_idxs) < frame_num:
                 valid_len = len(frame_idxs) // self.scale_factor
                 frame_idxs = np.pad(frame_idxs, (0, frame_num - len(frame_idxs)), mode="edge")
-                masks = torch.cat([torch.ones(valid_len), torch.zeros(self.trunc_len - valid_len)]).bool()
+                masks = torch.cat(
+                    [torch.ones(valid_len), torch.zeros(self.trunc_len - valid_len)]
+                ).bool()
             else:
                 masks = torch.ones(self.trunc_len).bool()
 
         elif self.method == "sliding_window":
-            assert results["snippet_stride"] >= self.scale_factor, "snippet_stride should be larger than scale_factor"
+            assert results["snippet_stride"] >= self.scale_factor, (
+                "snippet_stride should be larger than scale_factor"
+            )
             assert results["snippet_stride"] % self.scale_factor == 0, (
                 "snippet_stride should be divisible by scale_factor"
             )
@@ -304,7 +331,9 @@ class LoadFrames:
             if len(frame_idxs) < frame_num:
                 valid_len = len(frame_idxs) // self.scale_factor
                 frame_idxs = np.pad(frame_idxs, (0, frame_num - len(frame_idxs)), mode="edge")
-                masks = torch.cat([torch.ones(valid_len), torch.zeros(window_size - valid_len)]).bool()
+                masks = torch.cat(
+                    [torch.ones(valid_len), torch.zeros(window_size - valid_len)]
+                ).bool()
             else:
                 masks = torch.ones(window_size).bool()
 
@@ -314,7 +343,9 @@ class LoadFrames:
         # truncate to [0, total_frames-1], and round to int
         frame_idxs = np.clip(frame_idxs, 0, total_frames - 1).round()
 
-        assert frame_idxs.shape[0] == frame_num, "snippet center number should be equal to snippet number"
+        assert frame_idxs.shape[0] == frame_num, (
+            "snippet center number should be equal to snippet number"
+        )
 
         results["frame_inds"] = frame_idxs.astype(int)
         results["num_clips"] = self.num_clips

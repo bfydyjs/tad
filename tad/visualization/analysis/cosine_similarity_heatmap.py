@@ -21,12 +21,22 @@ sys.path.insert(0, str(_project_root))
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Visualize Cosine Similarity Heatmap from Real Model Features")
+    parser = argparse.ArgumentParser(
+        description="Visualize Cosine Similarity Heatmap from Real Model Features"
+    )
     parser.add_argument("config", help="Path to config file (e.g., configs/anet_i3d.yaml)")
     parser.add_argument("checkpoint", help="Path to checkpoint file (e.g., work_dirs/xxx/best.pt)")
-    parser.add_argument("--index", type=int, default=0, help="Index of the video sample in validation set to visualize")
     parser.add_argument(
-        "--level", type=int, default=0, help=("0 -> raw input features ; 1..N select FPN levels from model outputs.")
+        "--index",
+        type=int,
+        default=0,
+        help="Index of the video sample in validation set to visualize",
+    )
+    parser.add_argument(
+        "--level",
+        type=int,
+        default=0,
+        help=("0 -> raw input features ; 1..N select FPN levels from model outputs."),
     )
     return parser.parse_args()
 
@@ -65,8 +75,12 @@ def _extract_features(args, model, inputs, masks):
     if isinstance(feats, (list, tuple)):
         level_idx = args.level - 1  # map 1..N -> 0..N-1
         if not (0 <= level_idx < len(feats)):
-            raise ValueError(f"Requested level {args.level} is out of range. Model returned {len(feats)} levels.")
-        print(f"Model returned {len(feats)} feature levels. Selecting level {args.level} (index {level_idx}).")
+            raise ValueError(
+                f"Requested level {args.level} is out of range. Model returned {len(feats)} levels."
+            )
+        print(
+            f"Model returned {len(feats)} feature levels. Selecting level {args.level} (index {level_idx})."
+        )
         feature_tensor = feats[level_idx]
     else:
         if args.level != 1:
@@ -81,10 +95,14 @@ def _extract_features(args, model, inputs, masks):
 def plot_heatmap(similarity_matrix, gt_intervals_indices, seconds_per_step, video_name):
     """Plot and save the heatmap and timeline."""
     T = similarity_matrix.shape[0]
-    setup_paper_style(440 / 2, ratio=1.1, fraction=0.98, font_size_tex=10, font_size_main=7, line_width_axis=0.5)
+    setup_paper_style(
+        440 / 2, ratio=1.1, fraction=0.98, font_size_tex=10, font_size_main=7, line_width_axis=0.5
+    )
     print("Plotting heatmap...")
     fig = plt.figure()
-    gs = fig.add_gridspec(2, 2, width_ratios=[50, 1], height_ratios=[20, 1], wspace=0.02, hspace=0.05)
+    gs = fig.add_gridspec(
+        2, 2, width_ratios=[50, 1], height_ratios=[20, 1], wspace=0.02, hspace=0.05
+    )
 
     ax1 = fig.add_subplot(gs[0, 0])
     ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)
@@ -118,7 +136,14 @@ def plot_heatmap(similarity_matrix, gt_intervals_indices, seconds_per_step, vide
         start, end = max(0, start), min(T, end)
         if end > start:
             ax1.add_patch(
-                Rectangle((start, start), end - start, end - start, linewidth=1, edgecolor="#FF3333", facecolor="none")
+                Rectangle(
+                    (start, start),
+                    end - start,
+                    end - start,
+                    linewidth=1,
+                    edgecolor="#FF3333",
+                    facecolor="none",
+                )
             )
 
     # Timeline bar

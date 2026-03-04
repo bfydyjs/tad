@@ -34,7 +34,9 @@ class DynEProj(nn.Module):
         self.input_noise = input_noise
 
         if isinstance(self.in_channels, (list, tuple)):
-            assert isinstance(self.out_channels, (list, tuple)) and len(self.in_channels) == len(self.out_channels)
+            assert isinstance(self.out_channels, (list, tuple)) and len(self.in_channels) == len(
+                self.out_channels
+            )
             self.proj = nn.ModuleList([])
             for n_in, n_out in zip(self.in_channels, self.out_channels, strict=False):
                 self.proj.append(
@@ -74,7 +76,14 @@ class DynEProj(nn.Module):
         self.stem = nn.ModuleList()
         for _ in range(arch[1]):
             self.stem.append(
-                DynELayer(out_channels, 1, n_ds_stride=1, n_hidden=mlp_dim, k=k, init_conv_vars=init_conv_vars)
+                DynELayer(
+                    out_channels,
+                    1,
+                    n_ds_stride=1,
+                    n_hidden=mlp_dim,
+                    k=k,
+                    init_conv_vars=init_conv_vars,
+                )
             )
 
         # main branch using transformer with pooling
@@ -113,7 +122,11 @@ class DynEProj(nn.Module):
         # feature projection
         if self.proj is not None:
             x = torch.cat(
-                [proj(s, mask)[0] for proj, s in zip(self.proj, x.split(self.in_channels, dim=1), strict=False)], dim=1
+                [
+                    proj(s, mask)[0]
+                    for proj, s in zip(self.proj, x.split(self.in_channels, dim=1), strict=False)
+                ],
+                dim=1,
             )
 
         # embedding network
@@ -182,9 +195,15 @@ class DynELayer(nn.Module):
         up_size = round((kernel_size + 1) * k)
         up_size = up_size + 1 if up_size % 2 == 0 else up_size
 
-        self.psi = nn.Conv1d(n_embd, n_embd, kernel_size, stride=1, padding=kernel_size // 2, groups=n_embd)
-        self.convw = nn.Conv1d(n_embd, n_embd, kernel_size, stride=1, padding=kernel_size // 2, groups=n_embd)
-        self.convkw = nn.Conv1d(n_embd, n_embd, up_size, stride=1, padding=up_size // 2, groups=n_embd)
+        self.psi = nn.Conv1d(
+            n_embd, n_embd, kernel_size, stride=1, padding=kernel_size // 2, groups=n_embd
+        )
+        self.convw = nn.Conv1d(
+            n_embd, n_embd, kernel_size, stride=1, padding=kernel_size // 2, groups=n_embd
+        )
+        self.convkw = nn.Conv1d(
+            n_embd, n_embd, up_size, stride=1, padding=up_size // 2, groups=n_embd
+        )
 
         self.fc = nn.Conv1d(n_embd, n_embd, 1, stride=1, padding=0, groups=n_embd)
         self.global_fc = nn.Conv1d(n_embd, n_embd, 1, stride=1, padding=0, groups=n_embd)

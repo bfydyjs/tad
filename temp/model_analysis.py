@@ -29,10 +29,10 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 # Add the parent directory of the 'tad' package to Python path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+
 def calculate_flops_params(
-    model: torch.nn.Module,
-    input_shape: tuple[int, ...],
-    device: str = "cpu"
+    model: torch.nn.Module, input_shape: tuple[int, ...], device: str = "cpu"
 ) -> tuple[float, int]:
     """
     Calculate per-sample FLOPs and total trainable parameters of a model.
@@ -78,11 +78,11 @@ def calculate_flops_params(
             model_name = self.model.__class__.__name__
 
             # 首先检查是否有 forward_test 方法（如 TAD 模型）
-            if hasattr(self.model, 'forward_test'):
+            if hasattr(self.model, "forward_test"):
                 return self.model.forward_test(inputs, masks, metas, None)
 
             # 检查是否是 DyFADet 类型
-            elif model_name == 'DyFADet':
+            elif model_name == "DyFADet":
                 # For DyFADet model, use direct forward through all components
                 # This ensures all submodules are called during FLOPs calculation
                 try:
@@ -107,7 +107,7 @@ def calculate_flops_params(
                     return fpn_feats
 
             # 检查是否是 Detector 类型
-            elif model_name == 'Detector':
+            elif model_name == "Detector":
                 # For Detector model, use forward with masks and metas
                 return self.model(inputs, masks, metas)
 
@@ -138,6 +138,7 @@ def calculate_flops_params(
 if __name__ == "__main__":
     from tad.tad.models import build_detector
     from tad.tad.utils import Config
+
     config_file = Path(__file__).resolve().parent / "tad" / "configs" / "ddiou" / "thumos_i3d.yaml"
     print(config_file)
     cfg = Config.fromfile(config_file)
@@ -147,7 +148,9 @@ if __name__ == "__main__":
     print(f"GFLOPs: {flops / 1e9:.2f}")
     print(f"Params: {params / 1e6:.2f}M\n")
 
-    config_file = Path(__file__).resolve().parent / "tad" / "configs" / "ddiou" / "thumos_videomaev2_g.yaml"
+    config_file = (
+        Path(__file__).resolve().parent / "tad" / "configs" / "ddiou" / "thumos_videomaev2_g.yaml"
+    )
     print(config_file)
     cfg = Config.fromfile(config_file)
     model = build_detector(cfg.model)
@@ -160,7 +163,14 @@ if __name__ == "__main__":
     # pip install opentad/models/roi_heads/roi_extractors/boundary_pooling --no-build-isolation
     from mmengine.config import Config
     from OpenTAD.opentad.models import build_detector
-    config_file = Path(__file__).resolve().parent / "OpenTAD" / "configs" / "dyfadet" / "thumos_videomaev2_g.py"
+
+    config_file = (
+        Path(__file__).resolve().parent
+        / "OpenTAD"
+        / "configs"
+        / "dyfadet"
+        / "thumos_videomaev2_g.py"
+    )
     print(config_file)
     cfg = Config.fromfile(config_file)
     model = build_detector(cfg.model)
@@ -168,7 +178,9 @@ if __name__ == "__main__":
     print("DyFADet: thumos_videomaev2_g.py")
     print(f"GFLOPs: {flops / 1e9:.2f}")
     print(f"Params: {params / 1e6:.2f}M\n")
-    config_file = Path(__file__).resolve().parent / "OpenTAD" / "configs" / "actionformer" / "thumos_i3d.py"
+    config_file = (
+        Path(__file__).resolve().parent / "OpenTAD" / "configs" / "actionformer" / "thumos_i3d.py"
+    )
     print(config_file)
     cfg = Config.fromfile(config_file)
     model = build_detector(cfg.model)
@@ -181,16 +193,22 @@ if __name__ == "__main__":
     cfg = Config.fromfile(config_file)
     model = build_detector(cfg.model)
     # GTAD requires CUDA for its custom Align1D operator
-    flops, params = calculate_flops_params(model, input_shape=(2048, 2304), device="cuda" if torch.cuda.is_available() else "cpu")
+    flops, params = calculate_flops_params(
+        model, input_shape=(2048, 2304), device="cuda" if torch.cuda.is_available() else "cpu"
+    )
     print("GTAD: thumos_i3d.py")
     print(f"GFLOPs: {flops / 1e9:.2f}")
     print(f"Params: {params / 1e6:.2f}M\n")
-    config_file = Path(__file__).resolve().parent / "OpenTAD" / "configs" / "tadtr" / "thumos_i3d.py"
+    config_file = (
+        Path(__file__).resolve().parent / "OpenTAD" / "configs" / "tadtr" / "thumos_i3d.py"
+    )
     print(config_file)
     cfg = Config.fromfile(config_file)
     model = build_detector(cfg.model)
     # GTAD requires CUDA for its custom Align1D operator
-    flops, params = calculate_flops_params(model, input_shape=(2048, 2304), device="cuda" if torch.cuda.is_available() else "cpu")
+    flops, params = calculate_flops_params(
+        model, input_shape=(2048, 2304), device="cuda" if torch.cuda.is_available() else "cpu"
+    )
     print("TadTR: thumos_i3d.py")
     print(f"GFLOPs: {flops / 1e9:.2f}")
     print(f"Params: {params / 1e6:.2f}M\n")
@@ -198,21 +216,25 @@ if __name__ == "__main__":
     # rename DyFADet_pytorch to DyFADet-pytorch
     from DyFADet_pytorch.libs.core import load_config
     from DyFADet_pytorch.libs.modeling import make_meta_arch
-    config_file = Path(__file__).resolve().parent / "DyFADet_pytorch" / "configs" / "thumos_i3d.yaml"
+
+    config_file = (
+        Path(__file__).resolve().parent / "DyFADet_pytorch" / "configs" / "thumos_i3d.yaml"
+    )
     print(config_file)
     cfg = load_config(config_file)
-    model = make_meta_arch(cfg['model_name'], **cfg['model'])
+    model = make_meta_arch(cfg["model_name"], **cfg["model"])
     flops, params = calculate_flops_params(model, input_shape=(2048, 2304))
     print("DyFADet-pytorch: thumos_i3d")
     print(f"GFLOPs: {flops / 1e9:.2f}")
     print(f"Params: {params / 1e6:.2f}M\n")
 
-    config_file = Path(__file__).resolve().parent / "DyFADet_pytorch" / "configs" / "thumos_mae.yaml"
+    config_file = (
+        Path(__file__).resolve().parent / "DyFADet_pytorch" / "configs" / "thumos_mae.yaml"
+    )
     print(config_file)
     cfg = load_config(config_file)
-    model = make_meta_arch(cfg['model_name'], **cfg['model'])
+    model = make_meta_arch(cfg["model_name"], **cfg["model"])
     flops, params = calculate_flops_params(model, input_shape=(1408, 2304))
     print("DyFADet-pytorch: thumos_mae.yaml")
     print(f"GFLOPs: {flops / 1e9:.2f}")
     print(f"Params: {params / 1e6:.2f}M\n")
-

@@ -13,7 +13,9 @@ class FocalLoss(nn.Module):
         self.alpha = alpha
         self.gamma = gamma
 
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor, reduction: str = "none") -> torch.Tensor:
+    def forward(
+        self, inputs: torch.Tensor, targets: torch.Tensor, reduction: str = "none"
+    ) -> torch.Tensor:
         """
         Loss used in RetinaNet for dense detection: https://arxiv.org/abs/1708.02002.
         Taken from

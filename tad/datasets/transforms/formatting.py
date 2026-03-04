@@ -123,7 +123,9 @@ class Reduce:
         return results
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(keys={self.keys}ops={self.ops})reduction={self.reduction}"
+        return (
+            f"{self.__class__.__name__}(keys={self.keys}ops={self.ops})reduction={self.reduction}"
+        )
 
 
 @PIPELINES.register_module()
@@ -196,7 +198,9 @@ class ResizeFeat:
     @torch.no_grad()
     def torch_interpolate(self, feat, tscale):
         # input feat shape [c,t]
-        feats = interpolate(feat.unsqueeze(0), size=tscale, mode="linear", align_corners=False).squeeze(0)
+        feats = interpolate(
+            feat.unsqueeze(0), size=tscale, mode="linear", align_corners=False
+        ).squeeze(0)
         return feats
 
     def __call__(self, results):
@@ -225,7 +229,9 @@ class ResizeFeat:
 
         if "gt_segments" in results.keys():
             # convert gt seconds to feature grid
-            results["gt_segments"] = (results["gt_segments"] / results["duration"]).clamp(min=0.0, max=1.0)
+            results["gt_segments"] = (results["gt_segments"] / results["duration"]).clamp(
+                min=0.0, max=1.0
+            )
             results["gt_segments"] *= tscale
 
         results["feats_len_ori"] = results["feats"].shape[1]  # for future usage
@@ -268,7 +274,10 @@ class Padding:
             else:
                 results["masks"] = torch.cat((torch.ones(feat_len).bool(), pad_masks), dim=0)
         else:
-            print(f"feature length {feat_len} is larger than padding length. Will be resized to {self.length}.")
+            print(
+                f"feature length {feat_len} is larger than padding length. "
+                f"Will be resized to {self.length}."
+            )
             results["snippet_stride"] = results["snippet_stride"] * feat_len / self.length
             results["offset_frames"] = results["offset_frames"] * feat_len / self.length
             new_feats = interpolate(

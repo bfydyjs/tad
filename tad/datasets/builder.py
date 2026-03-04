@@ -24,7 +24,9 @@ def build_dataset(cfg, default_args=None):
     return dataset
 
 
-def build_dataloader(dataset, batch_size, rank, world_size, shuffle=False, drop_last=False, **kwargs):
+def build_dataloader(
+    dataset, batch_size, rank, world_size, shuffle=False, drop_last=False, **kwargs
+):
     sampler = torch.utils.data.distributed.DistributedSampler(
         dataset,
         num_replicas=world_size,
@@ -33,7 +35,9 @@ def build_dataloader(dataset, batch_size, rank, world_size, shuffle=False, drop_
         drop_last=drop_last,
     )
 
-    assert batch_size % world_size == 0, f"batch size {batch_size} should be divided by world size {world_size}"
+    assert batch_size % world_size == 0, (
+        f"batch size {batch_size} should be divided by world size {world_size}"
+    )
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size // world_size,

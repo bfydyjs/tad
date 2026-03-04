@@ -38,7 +38,9 @@ class ThumosSlidingDataset(SlidingWindowDataset):
             video_anno = deepcopy(video_anno)  # avoid modify the original dict
             # frame divided by snippet stride inside current window
             # this is only valid gt inside this window
-            video_anno["gt_segments"] = video_anno["gt_segments"] - window_snippet_centers[0] - self.offset_frames
+            video_anno["gt_segments"] = (
+                video_anno["gt_segments"] - window_snippet_centers[0] - self.offset_frames
+            )
             video_anno["gt_segments"] = video_anno["gt_segments"] / self.snippet_stride
 
         results = self.pipeline(

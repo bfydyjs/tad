@@ -19,7 +19,9 @@ map_values = np.array(
         [72.6, 72.8, 73.1, 72.6, 72.4, 72.2, 72.0],  # kernel_sizes_1=15
     ]
 )
-setup_paper_style(440 / 2, ratio=1.618, fraction=0.98, font_size_tex=5, font_size_main=4.5, line_width_axis=0.5)
+setup_paper_style(
+    440 / 2, ratio=1.618, fraction=0.98, font_size_tex=5, font_size_main=4.5, line_width_axis=0.5
+)
 plt.figure()
 ax = sns.heatmap(
     map_values,
@@ -42,7 +44,9 @@ ax.tick_params(left=False, bottom=False)
 cbar.ax.tick_params(length=0)
 plt.tight_layout()
 
-output_path = Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "map_heatmap.pdf"
+output_path = (
+    Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "map_heatmap.pdf"
+)
 print(f"Saving figure to: {output_path}")
 output_path.parent.mkdir(parents=True, exist_ok=True)
 plt.savefig(output_path)

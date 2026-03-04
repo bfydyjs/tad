@@ -111,7 +111,9 @@ class BackboneWrapper(nn.Module):
 
         # unflatten and pool the features
         if isinstance(features, (tuple, list)):
-            features = torch.cat([self.unflatten_and_pool_features(f, batches, num_segs) for f in features], dim=1)
+            features = torch.cat(
+                [self.unflatten_and_pool_features(f, batches, num_segs) for f in features], dim=1
+            )
         else:
             features = self.unflatten_and_pool_features(features, batches, num_segs)
 
@@ -171,7 +173,10 @@ class BackboneWrapper(nn.Module):
             video_feat.append(mini_feat)
 
         if isinstance(video_feat[0], (tuple, list)):
-            video_feat = [torch.cat([f[idx] for f in video_feat], dim=chunk_dim) for idx in range(len(video_feat[0]))]
+            video_feat = [
+                torch.cat([f[idx] for f in video_feat], dim=chunk_dim)
+                for idx in range(len(video_feat[0]))
+            ]
         else:
             video_feat = torch.cat(video_feat, dim=chunk_dim)
         return video_feat

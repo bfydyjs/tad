@@ -38,7 +38,9 @@ class GDKProj(nn.Module):
         self.input_noise = input_noise
 
         if isinstance(self.in_channels, (list, tuple)):
-            assert isinstance(self.out_channels, (list, tuple)) and len(self.in_channels) == len(self.out_channels)
+            assert isinstance(self.out_channels, (list, tuple)) and len(self.in_channels) == len(
+                self.out_channels
+            )
             self.proj_layers = nn.ModuleList([])
             for n_in, n_out in zip(self.in_channels, self.out_channels, strict=False):
                 self.proj_layers.append(
@@ -128,7 +130,12 @@ class GDKProj(nn.Module):
         # feature projection
         if self.proj_layers is not None:
             x = torch.cat(
-                [proj(s, mask)[0] for proj, s in zip(self.proj_layers, x.split(self.in_channels, dim=1), strict=False)],
+                [
+                    proj(s, mask)[0]
+                    for proj, s in zip(
+                        self.proj_layers, x.split(self.in_channels, dim=1), strict=False
+                    )
+                ],
                 dim=1,
             )
 
@@ -230,10 +237,20 @@ class GDKLayer(nn.Module):
         assert kernel_sizes[0] % 2 == 1
 
         self.psi_conv = nn.Conv1d(
-            embed_dim, embed_dim, kernel_sizes[0], stride=1, padding=kernel_sizes[0] // 2, groups=embed_dim
+            embed_dim,
+            embed_dim,
+            kernel_sizes[0],
+            stride=1,
+            padding=kernel_sizes[0] // 2,
+            groups=embed_dim,
         )
         self.weight_conv = nn.Conv1d(
-            embed_dim, embed_dim, kernel_sizes[0], stride=1, padding=kernel_sizes[0] // 2, groups=embed_dim
+            embed_dim,
+            embed_dim,
+            kernel_sizes[0],
+            stride=1,
+            padding=kernel_sizes[0] // 2,
+            groups=embed_dim,
         )
 
         adaptive_kernel_list = []
@@ -265,7 +282,9 @@ class GDKLayer(nn.Module):
                 downsample_stride,
                 (downsample_stride + 1) // 2,
             )
-            self.downsample = nn.MaxPool1d(kernel_size_pool, stride=stride_pool, padding=padding_pool)
+            self.downsample = nn.MaxPool1d(
+                kernel_size_pool, stride=stride_pool, padding=padding_pool
+            )
             self.stride = stride_pool
         else:
             self.downsample = nn.Identity()

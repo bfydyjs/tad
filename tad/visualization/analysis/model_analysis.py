@@ -137,7 +137,9 @@ def calculate_flops_params(
 
 if __name__ == "__main__":
     # Define output file path
-    output_file = Path(__file__).resolve().parent / "tad" / "output" / "analysis" / "model_complexity.txt"
+    output_file = (
+        Path(__file__).resolve().parent / "tad" / "output" / "analysis" / "model_complexity.txt"
+    )
     # Overwrite the file at start
     with open(output_file, "w") as f:
         pass

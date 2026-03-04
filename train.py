@@ -36,8 +36,14 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=42, help="random seed")
     parser.add_argument("--id", type=int, default=0, help="repeat experiment id")
     parser.add_argument("--resume", type=str, default=None, help="resume from a checkpoint")
-    parser.add_argument("--skip_eval", action="store_true", help="whether not to eval, only do inference")
-    parser.add_argument("--disable_deterministic", action="store_true", help="disable deterministic for faster speed")
+    parser.add_argument(
+        "--skip_eval", action="store_true", help="whether not to eval, only do inference"
+    )
+    parser.add_argument(
+        "--disable_deterministic",
+        action="store_true",
+        help="disable deterministic for faster speed",
+    )
     parser.add_argument("--lr-range-test", action="store_true", help="run lr range test")
     parser.add_argument("--cfg-options", nargs="+", action=DictAction, help="override settings")
     args = parser.parse_args()
@@ -50,7 +56,9 @@ def init_distributed(args):
         args.local_rank = int(os.environ["LOCAL_RANK"])
         args.world_size = int(os.environ["WORLD_SIZE"])
         args.rank = int(os.environ["RANK"])
-        print(f"Distributed init (rank {args.rank}/{args.world_size}, local rank {args.local_rank})")
+        print(
+            f"Distributed init (rank {args.rank}/{args.world_size}, local rank {args.local_rank})"
+        )
         dist.init_process_group("nccl", rank=args.rank, world_size=args.world_size)
         torch.cuda.set_device(args.local_rank)
         args.distributed = True
@@ -246,7 +254,9 @@ def run_training_loop(
 
         # val_eval
         if epoch >= val_start_epoch:
-            if (cfg.workflow.val_eval_interval > 0) and ((epoch + 1) % cfg.workflow.val_eval_interval == 0):
+            if (cfg.workflow.val_eval_interval > 0) and (
+                (epoch + 1) % cfg.workflow.val_eval_interval == 0
+            ):
                 val_map = eval_one_epoch(
                     val_loader,
                     model,
@@ -316,7 +326,9 @@ def main():
 
         # Prepare for training loop
         max_epoch = cfg.workflow.get("end_epoch", max_epoch)
-        resume_epoch, val_map_best = resume_training(args, logger, model, optimizer, scheduler, model_ema)
+        resume_epoch, val_map_best = resume_training(
+            args, logger, model, optimizer, scheduler, model_ema
+        )
 
         # Run Training
         run_training_loop(

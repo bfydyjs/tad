@@ -46,8 +46,12 @@ def get_figsize_from_pt(width_pt, ratio=1.618, fraction=1.0):
     return (width_inch, height_inch)
 
 
-def setup_paper_style(textwidth, ratio, fraction, font_size_tex=10, font_size_main=9, line_width_axis=0.5):
-    figsize = get_figsize_from_pt(textwidth, ratio, fraction)  # double-column; single-column → textwidth / 2
+def setup_paper_style(
+    textwidth, ratio, fraction, font_size_tex=10, font_size_main=9, line_width_axis=0.5
+):
+    figsize = get_figsize_from_pt(
+        textwidth, ratio, fraction
+    )  # double-column; single-column → textwidth / 2
     plt.rcParams.update(
         {
             "figure.figsize": figsize,

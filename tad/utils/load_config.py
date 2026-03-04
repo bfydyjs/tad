@@ -17,7 +17,9 @@ class DictAction(argparse.Action):
                 value = yaml.safe_load(value)
             except yaml.YAMLError as err:
                 # Raise an argparse-specific error with chaining so the original parsing error is visible
-                raise argparse.ArgumentError(self, f"Failed to parse value for '{key}': {err}") from err
+                raise argparse.ArgumentError(
+                    self, f"Failed to parse value for '{key}': {err}"
+                ) from err
             options[key] = value
         setattr(namespace, self.dest, options)
 

@@ -47,11 +47,12 @@ dataset:
     <<: *dataset_val
 
 evaluation:
-  type: MeanAveragePrecision
+  type: Recall
   subset: validation
   tiou_thresholds: [0.3, 0.4, 0.5, 0.6, 0.7]
   ground_truth_file: data/thumos-14/annotations/thumos_14_anno.json
-
+  topk: [1, 5, 10, 100]
+  max_avg_proposals_per_video: 100
 model:
   type: DyFADet
   projection:

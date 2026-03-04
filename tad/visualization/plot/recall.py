@@ -11,10 +11,16 @@ from .setup_paper_style import setup_paper_style
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Plot recall curves from ground truth and prediction json files")
-    parser.add_argument("--ground-truth-file", type=str, required=True, help="Ground truth json file")
+    parser = argparse.ArgumentParser(
+        description="Plot recall curves from ground truth and prediction json files"
+    )
+    parser.add_argument(
+        "--ground-truth-file", type=str, required=True, help="Ground truth json file"
+    )
     parser.add_argument("--prediction-file", type=str, required=True, help="Prediction json file")
-    parser.add_argument("--subset", type=str, required=True, help="Evaluation subset, e.g. validation/test")
+    parser.add_argument(
+        "--subset", type=str, required=True, help="Evaluation subset, e.g. validation/test"
+    )
     parser.add_argument(
         "--tiou-thresholds",
         type=parse_float_list,
@@ -46,7 +52,14 @@ def resolve_output_dir(output_dir):
 
 
 def plot_ar_an_curve(evaluator, out_dir):
-    setup_paper_style(440 / 2, ratio=1.618, fraction=0.98, font_size_tex=5, font_size_main=4.5, line_width_axis=0.5)
+    setup_paper_style(
+        440 / 2,
+        ratio=1.618,
+        fraction=0.98,
+        font_size_tex=5,
+        font_size_main=4.5,
+        line_width_axis=0.5,
+    )
     plt.figure()
     plt.plot(
         evaluator.proposals_per_video,
@@ -67,7 +80,9 @@ def plot_ar_an_curve(evaluator, out_dir):
 
 
 def plot_recall_k_tiou(evaluator, out_dir):
-    setup_paper_style(440, ratio=1.618, fraction=0.98, font_size_tex=5, font_size_main=4.5, line_width_axis=0.5)
+    setup_paper_style(
+        440, ratio=1.618, fraction=0.98, font_size_tex=5, font_size_main=4.5, line_width_axis=0.5
+    )
     plt.figure()
 
     num_points = evaluator.recall.shape[1]

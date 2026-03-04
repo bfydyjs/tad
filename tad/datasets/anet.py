@@ -58,7 +58,9 @@ class AnetResizeDataset(ResizeDataset):
 class AnetPaddingDataset(PaddingDataset):
     def get_gt(self, video_info, thresh=0.0):
         # if fps is not set, use the original fps
-        fps = self.fps if self.fps > 0 else float(video_info["frame"]) / float(video_info["duration"])
+        fps = (
+            self.fps if self.fps > 0 else float(video_info["frame"]) / float(video_info["duration"])
+        )
 
         gt_segment = []
         gt_label = []
@@ -69,7 +71,9 @@ class AnetPaddingDataset(PaddingDataset):
             valid_gt = (
                 (gt_end - gt_start > thresh)  # duration > thresh (eg. 0.0)
                 and (gt_end - self.offset_frames > 0)  # end > 0
-                and (gt_start - self.offset_frames <= float(video_info["duration"]) * fps)  # start < video_length
+                and (
+                    gt_start - self.offset_frames <= float(video_info["duration"]) * fps
+                )  # start < video_length
             )
             if (not self.filter_gt) or valid_gt:
                 gt_segment.append([gt_start, gt_end])
@@ -102,7 +106,9 @@ class AnetPaddingDataset(PaddingDataset):
                 sample_stride=self.sample_stride,
                 snippet_stride=self.snippet_stride,
                 # if fps is not set, use the original fps
-                fps=self.fps if self.fps > 0 else float(video_info["frame"]) / float(video_info["duration"]),
+                fps=self.fps
+                if self.fps > 0
+                else float(video_info["frame"]) / float(video_info["duration"]),
                 duration=float(video_info["duration"]),
                 offset_frames=self.offset_frames,
                 **video_anno,
@@ -115,7 +121,9 @@ class AnetPaddingDataset(PaddingDataset):
 class AnetSlidingDataset(SlidingWindowDataset):
     def get_gt(self, video_info, thresh=0.0):
         # if fps is not set, use the original fps
-        fps = self.fps if self.fps > 0 else float(video_info["frame"]) / float(video_info["duration"])
+        fps = (
+            self.fps if self.fps > 0 else float(video_info["frame"]) / float(video_info["duration"])
+        )
 
         gt_segment = []
         gt_label = []
@@ -126,7 +134,9 @@ class AnetSlidingDataset(SlidingWindowDataset):
             valid_gt = (
                 (gt_end - gt_start > thresh)  # duration > thresh (eg. 0.0)
                 and (gt_end - self.offset_frames > 0)  # end > 0
-                and (gt_start - self.offset_frames <= float(video_info["duration"]) * fps)  # start < video_length
+                and (
+                    gt_start - self.offset_frames <= float(video_info["duration"]) * fps
+                )  # start < video_length
             )
             if (not self.filter_gt) or valid_gt:
                 gt_segment.append([gt_start, gt_end])
@@ -149,7 +159,9 @@ class AnetSlidingDataset(SlidingWindowDataset):
 
         if video_anno:
             video_anno = deepcopy(video_anno)  # avoid modify the original dict
-            video_anno["gt_segments"] = video_anno["gt_segments"] - window_snippet_centers[0] - self.offset_frames
+            video_anno["gt_segments"] = (
+                video_anno["gt_segments"] - window_snippet_centers[0] - self.offset_frames
+            )
             video_anno["gt_segments"] = video_anno["gt_segments"] / self.snippet_stride
 
         results = self.pipeline(
@@ -162,7 +174,9 @@ class AnetSlidingDataset(SlidingWindowDataset):
                 feature_end_idx=int(window_snippet_centers[-1] / self.snippet_stride),
                 sample_stride=self.sample_stride,
                 # sliding post process setting
-                fps=self.fps if self.fps > 0 else float(video_info["frame"]) / float(video_info["duration"]),
+                fps=self.fps
+                if self.fps > 0
+                else float(video_info["frame"]) / float(video_info["duration"]),
                 snippet_stride=self.snippet_stride,
                 window_start_frame=window_snippet_centers[0],
                 duration=video_info["duration"],

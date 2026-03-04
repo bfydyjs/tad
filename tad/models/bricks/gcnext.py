@@ -92,7 +92,9 @@ def get_graph_feature(x, prev_x=None, k=20, idx_knn=None, r=-1, style=0):
     idx = idx_knn + idx_base
     idx = idx.view(-1)
     _, num_dims, _ = x.size()
-    x = x.transpose(2, 1).contiguous()  # (batch_size, num_points, num_dims)  -> (batch_size*num_points, num_dims)
+    x = x.transpose(
+        2, 1
+    ).contiguous()  # (batch_size, num_points, num_dims)  -> (batch_size*num_points, num_dims)
     feature = x.view(batch_size * num_points, -1)[idx, :]
     feature = feature.view(batch_size, num_points, k, num_dims)
     x = x.view(batch_size, num_points, 1, num_dims).repeat(1, 1, k, 1)
@@ -104,6 +106,8 @@ def get_graph_feature(x, prev_x=None, k=20, idx_knn=None, r=-1, style=0):
         feature = feature.permute(0, 3, 1, 2)
     # downsample if needed
     if r != -1:
-        select_idx = torch.from_numpy(np.random.choice(feature.size(2), feature.size(2) // r, replace=False))
+        select_idx = torch.from_numpy(
+            np.random.choice(feature.size(2), feature.size(2) // r, replace=False)
+        )
         feature = feature[:, :, select_idx.to(device=device), :]
     return feature.contiguous()

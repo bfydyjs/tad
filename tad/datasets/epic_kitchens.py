@@ -79,7 +79,9 @@ class EpicKitchensSlidingDataset(SlidingWindowDataset):
 
         if video_anno:
             video_anno = deepcopy(video_anno)  # avoid modify the original dict
-            video_anno["gt_segments"] = video_anno["gt_segments"] - window_snippet_centers[0] - self.offset_frames
+            video_anno["gt_segments"] = (
+                video_anno["gt_segments"] - window_snippet_centers[0] - self.offset_frames
+            )
             video_anno["gt_segments"] = video_anno["gt_segments"] / self.snippet_stride
 
         results = self.pipeline(

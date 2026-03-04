@@ -58,7 +58,9 @@ class NeighConv(nn.Module):
         if self.edge_weight == "true":
             weight = torch.matmul(f_neigh_temp, feat_prop.unsqueeze(2))
             weight_denom1 = torch.sqrt(torch.sum(f_neigh_temp * f_neigh_temp, dim=2, keepdim=True))
-            weight_denom2 = torch.sqrt(torch.sum(feat_prop.unsqueeze(2) * feat_prop.unsqueeze(2), dim=1, keepdim=True))
+            weight_denom2 = torch.sqrt(
+                torch.sum(feat_prop.unsqueeze(2) * feat_prop.unsqueeze(2), dim=1, keepdim=True)
+            )
             weight = (weight / torch.matmul(weight_denom1, weight_denom2)).squeeze(2)
             feat_neigh_out = feat_neigh_out * weight.unsqueeze(2)
 
@@ -77,7 +79,9 @@ class XGN(nn.Module):
         gcn_kwargs=None,
     ):
         if gcn_kwargs is None:
-            gcn_kwargs = dict(num_neigh=10, nfeat_mode="feat_ctr", agg_type="max", edge_weight="false")
+            gcn_kwargs = dict(
+                num_neigh=10, nfeat_mode="feat_ctr", agg_type="max", edge_weight="false"
+            )
         super().__init__()
 
         self.tconv1 = nn.Conv1d(

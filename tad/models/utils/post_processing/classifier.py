@@ -81,7 +81,9 @@ class UntrimmedNetTHUMOSClassifier:
         assert len(segments) == len(scores)
 
         # sort video classification
-        video_cls = self.cls_data[int(video_id[-4:]) - 1][self.thu_label_id]  # order by video list, output 20
+        video_cls = self.cls_data[int(video_id[-4:]) - 1][
+            self.thu_label_id
+        ]  # order by video list, output 20
         video_cls_rank = sorted((e, i) for i, e in enumerate(video_cls))
         unet_classes = [self.thu_label_id[video_cls_rank[-k - 1][1]] + 1 for k in range(self.topk)]
         unet_scores = [video_cls_rank[-k - 1][0] for k in range(self.topk)]
@@ -143,7 +145,9 @@ class StandardClassifier:
         with open(path) as f:
             cls_data = json.load(f)
         self.cls_data_score = cls_data["results"]
-        self.cls_data_label = np.array(cls_data["class"]) if "class" in cls_data else np.array(cls_data["classes"])
+        self.cls_data_label = (
+            np.array(cls_data["class"]) if "class" in cls_data else np.array(cls_data["classes"])
+        )
         self.apply_softmax = apply_softmax
         self.topk = topk
 

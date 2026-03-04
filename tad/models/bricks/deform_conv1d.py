@@ -20,7 +20,9 @@ def deform_conv1d(
     assert mask is None, "mask is not implemented yet"
 
     input2d = input.unsqueeze(-1)  # [B,in_channels,T_in,1]
-    offset2d = torch.zeros_like(offset).repeat(1, 2, 1).unsqueeze(-1)  # [B,2*kernel_size_t*1,T_out,1]
+    offset2d = (
+        torch.zeros_like(offset).repeat(1, 2, 1).unsqueeze(-1)
+    )  # [B,2*kernel_size_t*1,T_out,1]
     offset2d[:, 0::2, :, 0] += offset  # add offset to H dimension
     weight2d = weight.unsqueeze(-1)  # [out_channels,in_channels,kernel_size_t,1]
 

@@ -107,7 +107,9 @@ class DecoupledIoUHead(AnchorFreeHead):
 
         points = self.prior_generator(feat_list)
 
-        losses = self.losses(cls_pred, reg_pred, iou_pred, mask_list, points, gt_segments, gt_labels)
+        losses = self.losses(
+            cls_pred, reg_pred, iou_pred, mask_list, points, gt_segments, gt_labels
+        )
         return losses
 
     def forward_test(self, feat_list, mask_list, **kwargs):
@@ -184,7 +186,9 @@ class DecoupledIoUHead(AnchorFreeHead):
             # 计算真实的 IoU 作为 Target
             # 使用 iou_calculator 计算 pred 和 gt 之间的 IoU
             with torch.no_grad():
-                iou_targets = self.iou_calculator(pred_segments, gt_segments_decoded, reduction="none")
+                iou_targets = self.iou_calculator(
+                    pred_segments, gt_segments_decoded, reduction="none"
+                )
                 iou_targets = iou_targets.clamp(min=0, max=1.0)
 
             # IoU Loss (Binary Cross Entropy)

@@ -4,7 +4,9 @@ from pathlib import Path
 import torch
 
 
-def save_checkpoint(model, model_ema, optimizer, scheduler, epoch, work_dir=None, mode=None, **kwargs):
+def save_checkpoint(
+    model, model_ema, optimizer, scheduler, epoch, work_dir=None, mode=None, **kwargs
+):
     save_dir = Path(work_dir) / "checkpoint"
     save_states = {
         "epoch": epoch,

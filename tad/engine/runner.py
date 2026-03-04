@@ -152,7 +152,9 @@ def train_one_epoch(
         grad_norm_tracker.update(grad_norm.item())
 
         # printing each logging_interval
-        if ((iter_idx != 0) and (iter_idx % logging_interval) == 0) or ((iter_idx + 1) == num_iters):
+        if ((iter_idx != 0) and (iter_idx % logging_interval) == 0) or (
+            (iter_idx + 1) == num_iters
+        ):
             _log_training_info(
                 logger,
                 curr_epoch,

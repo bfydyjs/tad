@@ -47,7 +47,10 @@ class FPN(nn.Module):
         assert len(input_list) == len(self.lateral_convs)
 
         # build laterals
-        laterals = [self.lateral_convs[i](input_list[i], mask_list[i])[0] for i in range(len(self.lateral_convs))]
+        laterals = [
+            self.lateral_convs[i](input_list[i], mask_list[i])[0]
+            for i in range(len(self.lateral_convs))
+        ]
 
         # build top-down path
         for i in range(len(laterals) - 1, 0, -1):

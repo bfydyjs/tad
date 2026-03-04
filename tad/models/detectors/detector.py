@@ -1,7 +1,12 @@
 import torch
 
 from ..builder import DETECTORS, build_backbone, build_head, build_neck, build_projection
-from ..utils.post_processing import batched_nms, convert_to_seconds, load_predictions, save_predictions
+from ..utils.post_processing import (
+    batched_nms,
+    convert_to_seconds,
+    load_predictions,
+    save_predictions,
+)
 
 
 @DETECTORS.register_module()
@@ -34,13 +39,17 @@ class Detector(torch.nn.Module):
         **kwargs,
     ):
         if return_loss:
-            return self.forward_train(inputs, masks, metas, gt_segments=gt_segments, gt_labels=gt_labels, **kwargs)
+            return self.forward_train(
+                inputs, masks, metas, gt_segments=gt_segments, gt_labels=gt_labels, **kwargs
+            )
         else:
             return self.forward_detection(inputs, masks, metas, infer_cfg, post_cfg, **kwargs)
 
     def forward_detection(self, inputs, masks, metas, infer_cfg, post_cfg, **kwargs):
         # step1: inference the model
-        if infer_cfg.load_from_raw_predictions:  # easier and faster to tune the hyper parameter in postprocessing
+        if (
+            infer_cfg.load_from_raw_predictions
+        ):  # easier and faster to tune the hyper parameter in postprocessing
             predictions = load_predictions(metas, infer_cfg)
         else:
             predictions = self.forward_test(inputs, masks, metas, infer_cfg)

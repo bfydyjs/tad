@@ -250,7 +250,9 @@ def average_recall_vs_avg_nr_proposals(
     proposals_gbvn = proposals.groupby("video-id")
 
     # For each video, computes tiou scores among the retrieved proposals.
-    score_lst, total_nr_proposals = _compute_score_list(video_lst, ground_truth_gbvn, proposals_gbvn, ratio)
+    score_lst, total_nr_proposals = _compute_score_list(
+        video_lst, ground_truth_gbvn, proposals_gbvn, ratio
+    )
 
     # Given that the length of the videos is really varied, we
     # compute the number of proposals in terms of a ratio of the total
@@ -281,7 +283,9 @@ def average_recall_vs_avg_nr_proposals(
 
             for j, nr_proposals in enumerate(pcn_proposals):
                 # Compute the number of matches for each percentage of the proposals
-                matches[i, j] = np.count_nonzero((true_positives_tiou[:, :nr_proposals]).sum(axis=1))
+                matches[i, j] = np.count_nonzero(
+                    (true_positives_tiou[:, :nr_proposals]).sum(axis=1)
+                )
 
         # Computes recall given the set of matches per video.
         recall[ridx, :] = matches.sum(axis=0) / positives.sum()
@@ -326,7 +330,9 @@ def _compute_score_list(video_lst, ground_truth_gbvn, proposals_gbvn, ratio):
         if this_video_ground_truth.ndim != 2:
             this_video_ground_truth = np.expand_dims(this_video_ground_truth, axis=0)
 
-        nr_proposals = np.minimum(int(this_video_proposals.shape[0] * ratio), this_video_proposals.shape[0])
+        nr_proposals = np.minimum(
+            int(this_video_proposals.shape[0] * ratio), this_video_proposals.shape[0]
+        )
         total_nr_proposals += nr_proposals
         this_video_proposals = this_video_proposals[:nr_proposals, :]
 

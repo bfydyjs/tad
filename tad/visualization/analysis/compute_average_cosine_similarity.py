@@ -15,7 +15,9 @@ from tad.utils import Config
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Calculate and Plot Average Cosine Similarity across Layers")
+    parser = argparse.ArgumentParser(
+        description="Calculate and Plot Average Cosine Similarity across Layers"
+    )
     parser.add_argument("config", help="Path to config file (e.g., configs/anet_tsp.yaml)")
     parser.add_argument("checkpoint", help="Path to checkpoint file (e.g., work_dirs/best.pt)")
     parser.add_argument(
@@ -25,10 +27,17 @@ def parse_args():
         help="Index of the video sample to analyze (only used if --samples is not specified)",
     )
     parser.add_argument(
-        "--samples", type=int, default=None, help="Number of samples to average over. If not set, use all samples."
+        "--samples",
+        type=int,
+        default=None,
+        help="Number of samples to average over. If not set, use all samples.",
     )
-    parser.add_argument("--output", default="average_cosine_similarity.png", help="Output image filename")
-    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu", help="Device to use")
+    parser.add_argument(
+        "--output", default="average_cosine_similarity.png", help="Output image filename"
+    )
+    parser.add_argument(
+        "--device", default="cuda" if torch.cuda.is_available() else "cpu", help="Device to use"
+    )
     return parser.parse_args()
 
 

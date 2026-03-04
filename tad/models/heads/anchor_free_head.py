@@ -42,7 +42,9 @@ class AnchorFreeHead(nn.Module):
         self.center_sample = center_sample
         self.center_sample_radius = center_sample_radius
         self.loss_normalizer_momentum = loss_normalizer_momentum
-        self.register_buffer("loss_normalizer", torch.tensor(loss_normalizer))  # save in the state_dict
+        self.register_buffer(
+            "loss_normalizer", torch.tensor(loss_normalizer)
+        )  # save in the state_dict
 
         # point generator
         self.prior_generator = PointGenerator(**prior_generator)
@@ -140,7 +142,9 @@ class AnchorFreeHead(nn.Module):
         points = self.prior_generator(feat_list)
 
         # get refined proposals and scores
-        proposals, scores = self.get_valid_proposals_scores(points, reg_pred, cls_pred, mask_list)  # list [T,2]
+        proposals, scores = self.get_valid_proposals_scores(
+            points, reg_pred, cls_pred, mask_list
+        )  # list [T,2]
         return proposals, scores
 
     def get_refined_proposals(self, points, reg_pred):
@@ -268,7 +272,8 @@ class AnchorFreeHead(nn.Module):
             max_regress_distance = reg_targets.max(-1)[0]
             # F T x N
             inside_regress_range = torch.logical_and(
-                (max_regress_distance >= concat_points[:, 1, None]), (max_regress_distance <= concat_points[:, 2, None])
+                (max_regress_distance >= concat_points[:, 1, None]),
+                (max_regress_distance <= concat_points[:, 2, None]),
             )
 
             # if there are still more than one actions for one moment
@@ -280,7 +285,9 @@ class AnchorFreeHead(nn.Module):
 
             # corner case: multiple actions with very similar durations (e.g., THUMOS14)
             if self.filter_similar_gt:
-                min_len_mask = torch.logical_and((lens <= (min_len[:, None] + 1e-3)), (lens < float("inf")))
+                min_len_mask = torch.logical_and(
+                    (lens <= (min_len[:, None] + 1e-3)), (lens < float("inf"))
+                )
             else:
                 min_len_mask = lens < float("inf")
             min_len_mask = min_len_mask.to(reg_targets.dtype)

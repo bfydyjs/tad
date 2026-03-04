@@ -223,7 +223,9 @@ class MeanAveragePrecision:
         for p in processes:
             p.join()
 
-        recall = np.zeros((len(self.tiou_thresholds), len(self.top_k), len(self.activity_index.items())))
+        recall = np.zeros(
+            (len(self.tiou_thresholds), len(self.top_k), len(self.activity_index.items()))
+        )
         for i, cidx in enumerate(self.activity_index.values()):
             recall[..., cidx] = self.recall_result_dict[i]
         return recall
@@ -270,7 +272,9 @@ class MeanAveragePrecision:
         if self.top_k is not None:
             pprint(f"Fixed top-kx results: {self.top_k}")
             for tiou, recall in zip(self.tiou_thresholds, self.mRecall, strict=True):
-                recall_string = [f"R{k:d} is {r * 100:>4.2f}%" for k, r in zip(self.top_k, recall, strict=True)]
+                recall_string = [
+                    f"R{k:d} is {r * 100:>4.2f}%" for k, r in zip(self.top_k, recall, strict=True)
+                ]
                 pprint(f"Recall at tIoU {tiou:.2f}: {', '.join(recall_string)}")
 
 
@@ -322,7 +326,9 @@ def compute_average_precision_detection(ground_truth, prediction, tiou_threshold
             continue
 
         this_gt = ground_truth_videoid.reset_index()
-        tiou_arr = segment_iou(this_pred[["t-start", "t-end"]].values, this_gt[["t-start", "t-end"]].values)
+        tiou_arr = segment_iou(
+            this_pred[["t-start", "t-end"]].values, this_gt[["t-start", "t-end"]].values
+        )
         # We would like to retrieve the predictions with highest tiou score.
         tiou_sorted_idx = tiou_arr.argsort()[::-1]
         for tidx, tiou_thr in enumerate(tiou_thresholds):
@@ -455,7 +461,9 @@ def segment_iou(target_segment, candidate_segments):
 
 
 def k_segment_iou(target_segments, candidate_segments):
-    return np.stack([segment_iou(target_segment, candidate_segments) for target_segment in target_segments])
+    return np.stack(
+        [segment_iou(target_segment, candidate_segments) for target_segment in target_segments]
+    )
 
 
 def interpolated_prec_rec(prec, rec):
@@ -496,7 +504,9 @@ class MeanAveragePrecisionEpic:
         self.pred_fields = ["results"]
         self.thread = thread  # multi-process workers
 
-        assert task in ["verb", "noun", "action"], f"task should be verb, noun, or action, but got {task}"
+        assert task in ["verb", "noun", "action"], (
+            f"task should be verb, noun, or action, but got {task}"
+        )
         self.task = task
         self.noun_classes = noun_classes
         self.verb_classes = verb_classes
@@ -512,7 +522,9 @@ class MeanAveragePrecisionEpic:
         self.ground_truth = self._import_ground_truth(ground_truth_file)
         self.prediction = self._import_prediction(prediction_file)
 
-        self.activity_index = {j: i for i, j in enumerate(sorted(self.ground_truth["label"].unique()))}
+        self.activity_index = {
+            j: i for i, j in enumerate(sorted(self.ground_truth["label"].unique()))
+        }
         self.ground_truth["label"] = self.ground_truth["label"].replace(self.activity_index)
         self.prediction["label"] = self.prediction["label"].replace(self.activity_index)
 

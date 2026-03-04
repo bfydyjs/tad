@@ -55,14 +55,19 @@ class DyFADet(Detector):
         param_dict = {pn: p for pn, p in self.named_parameters() if not pn.startswith("backbone")}
         inter_params = decay & no_decay
         union_params = decay | no_decay
-        assert len(inter_params) == 0, f"parameters {inter_params} made it into both decay/no_decay sets!"
+        assert len(inter_params) == 0, (
+            f"parameters {inter_params} made it into both decay/no_decay sets!"
+        )
         assert len(param_dict.keys() - union_params) == 0, (
             f"parameters {param_dict.keys() - union_params} were not separated into either decay/no_decay set!"
         )
 
         # create the pytorch optimizer object
         optim_groups = [
-            {"params": [param_dict[pn] for pn in sorted(list(decay))], "weight_decay": cfg["weight_decay"]},
+            {
+                "params": [param_dict[pn] for pn in sorted(list(decay))],
+                "weight_decay": cfg["weight_decay"],
+            },
             {"params": [param_dict[pn] for pn in sorted(list(no_decay))], "weight_decay": 0.0},
         ]
         return optim_groups

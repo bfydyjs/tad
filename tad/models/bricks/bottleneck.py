@@ -63,7 +63,9 @@ class Bottleneck(nn.Module):
         else:
             self.downsample = None
 
-        self.drop_path = AffineDropPath(out_channels, drop_prob=drop_path) if drop_path > 0 else nn.Identity()
+        self.drop_path = (
+            AffineDropPath(out_channels, drop_prob=drop_path) if drop_path > 0 else nn.Identity()
+        )
 
     def forward(self, x, mask=None):
         shortcut, shortcut_mask = x, mask
@@ -99,16 +101,22 @@ class ConvNeXtV1Block(nn.Module):
         self.norm = nn.LayerNorm(dim, eps=1e-6)
 
         # pointwise conv
-        self.pw_conv1 = nn.Linear(dim, expansion_ratio * dim)  # pointwise/1x1 convs, implemented with linear layers
+        self.pw_conv1 = nn.Linear(
+            dim, expansion_ratio * dim
+        )  # pointwise/1x1 convs, implemented with linear layers
         self.act = nn.GELU()
         self.pw_conv2 = nn.Linear(expansion_ratio * dim, dim)
 
         # drop path
-        self.drop_path = AffineDropPath(dim, drop_prob=drop_path) if drop_path > 0 else nn.Identity()
+        self.drop_path = (
+            AffineDropPath(dim, drop_prob=drop_path) if drop_path > 0 else nn.Identity()
+        )
 
         # residual
         if stride > 1:
-            self.shortcut = nn.MaxPool1d(kernel_size=kernel_size, stride=stride, padding=kernel_size // 2)
+            self.shortcut = nn.MaxPool1d(
+                kernel_size=kernel_size, stride=stride, padding=kernel_size // 2
+            )
         else:
             self.shortcut = nn.Identity()
 
@@ -165,17 +173,23 @@ class ConvNeXtV2Block(nn.Module):
         self.norm = nn.LayerNorm(dim, eps=1e-6)
 
         # pointwise conv
-        self.pw_conv1 = nn.Linear(dim, expansion_ratio * dim)  # pointwise/1x1 convs, implemented with linear layers
+        self.pw_conv1 = nn.Linear(
+            dim, expansion_ratio * dim
+        )  # pointwise/1x1 convs, implemented with linear layers
         self.act = nn.GELU()
         self.grn = GRN(4 * dim)  # new in ConvNeXtV2
         self.pw_conv2 = nn.Linear(expansion_ratio * dim, dim)
 
         # drop path
-        self.drop_path = AffineDropPath(dim, drop_prob=drop_path) if drop_path > 0 else nn.Identity()
+        self.drop_path = (
+            AffineDropPath(dim, drop_prob=drop_path) if drop_path > 0 else nn.Identity()
+        )
 
         # residual
         if stride > 1:
-            self.shortcut = nn.MaxPool1d(kernel_size=kernel_size, stride=stride, padding=kernel_size // 2)
+            self.shortcut = nn.MaxPool1d(
+                kernel_size=kernel_size, stride=stride, padding=kernel_size // 2
+            )
         else:
             self.shortcut = nn.Identity()
 
@@ -250,7 +264,9 @@ class ConvFormerBlock(nn.Module):
         )
 
         # drop path
-        self.drop_path = AffineDropPath(dim, drop_prob=drop_path) if drop_path > 0 else nn.Identity()
+        self.drop_path = (
+            AffineDropPath(dim, drop_prob=drop_path) if drop_path > 0 else nn.Identity()
+        )
 
         # init weights
         self.apply(self.__init_weights__)
