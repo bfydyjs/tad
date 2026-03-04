@@ -1,5 +1,5 @@
 """Visualize cosine similarity heatmaps from temporal features.
-
+On CPU/GPU
 Usage:
     python tad/visualization/analysis/cosine_similarity_heatmap.py \
         configs/ddiou/thumos_videomaev2_g.yaml \

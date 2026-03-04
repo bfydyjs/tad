@@ -8,19 +8,33 @@ from setup_paper_style import setup_paper_style
 def main():
     metric = "GFLOPs"  # Parameters (M) / GFLOPs
     # Parameters (M)
-    # data = [
-    #     {"name": "ActionFormer", "metric": 45.41, "mAP": 66.8, "marker": 'o', "color": 'lightblue',  's': 30},
-    #     {"name": "DyFADet",      "metric": 90.87, "mAP": 69.2, "marker": 's', "color": 'lightcoral', 's': 30},
-    #     {"name": "TriDet",       "metric": 43.7,  "mAP": 69.3, "marker": 'D', "color": 'gold',       's': 20},
-    #     # {"name": "HSFPN",        "metric": 2.6, "mAP": 31.2, "marker": 'p', "color": 'plum',       's': 30},
-    #     # {"name": "AFPN",         "metric": 2.8, "mAP": 30.5, "marker": 'v', "color": 'lightgreen', 's': 30},
-    #     # {"name": "FreqGFPN",     "metric": 2.5, "mAP": 30.8, "marker": 'X', "color": 'orange',     's': 30},
-    #     # {"name": "GFPN",         "metric": 3.0, "mAP": 32.0, "marker": '^', "color": 'gray',       's': 30},
-    #     # {"name": "CGFPRN",       "metric": 3.4, "mAP": 30.2, "marker": '<', "color": 'tan',        's': 30},
-    #     # {"name": "MAFPN",        "metric": 3.2, "mAP": 31.8, "marker": '>', "color": 'teal',       's': 30},
-    #     {"name": "Ours",         "metric": 17.56, "mAP": 69.4, "marker": '*', "color": 'red',        's': 60},
-    #     # The best method (ours) is highlighted in red with an asterisk (*).
-    # ]
+    data = [
+        {
+            "name": "ActionFormer",
+            "metric": 45.41,
+            "mAP": 66.8,
+            "marker": "o",
+            "color": "lightblue",
+            "s": 30,
+        },
+        {
+            "name": "DyFADet",
+            "metric": 90.87,
+            "mAP": 69.2,
+            "marker": "s",
+            "color": "lightcoral",
+            "s": 30,
+        },
+        {"name": "TriDet", "metric": 43.7, "mAP": 69.3, "marker": "D", "color": "gold", "s": 20},
+        {"name": "HSFPN", "metric": 2.6, "mAP": 31.2, "marker": "p", "color": "plum", "s": 30},
+        {"name": "AFPN", "metric": 2.8, "mAP": 30.5, "marker": "v", "color": "lightgreen", "s": 30},
+        {"name": "FreqGFPN", "metric": 2.5, "mAP": 30.8, "marker": "X", "color": "orange", "s": 30},
+        {"name": "GFPN", "metric": 3.0, "mAP": 32.0, "marker": "^", "color": "gray", "s": 30},
+        {"name": "CGFPRN", "metric": 3.4, "mAP": 30.2, "marker": "<", "color": "tan", "s": 30},
+        {"name": "MAFPN", "metric": 3.2, "mAP": 31.8, "marker": ">", "color": "teal", "s": 30},
+        {"name": "Ours", "metric": 17.56, "mAP": 69.4, "marker": "*", "color": "red", "s": 60},
+        # The best method (ours) is highlighted in red with an asterisk (*).
+    ]
     # GFLOPs
     data = [
         {
@@ -40,18 +54,18 @@ def main():
             "s": 30,
         },
         {"name": "TriDet", "metric": 43.7, "mAP": 69.3, "marker": "D", "color": "gold", "s": 20},
-        # {"name": "HSFPN",        "metric": 2.6, "mAP": 31.2, "marker": 'p', "color": 'plum',       's': 30},
-        # {"name": "AFPN",         "metric": 2.8, "mAP": 30.5, "marker": 'v', "color": 'lightgreen', 's': 30},
-        # {"name": "FreqGFPN",     "metric": 2.5, "mAP": 30.8, "marker": 'X', "color": 'orange',     's': 30},
-        # {"name": "GFPN",         "metric": 3.0, "mAP": 32.0, "marker": '^', "color": 'gray',       's': 30},
-        # {"name": "CGFPRN",       "metric": 3.4, "mAP": 30.2, "marker": '<', "color": 'tan',        's': 30},
-        # {"name": "MAFPN",        "metric": 3.2, "mAP": 31.8, "marker": '>', "color": 'teal',       's': 30},
+        {"name": "HSFPN", "metric": 2.6, "mAP": 31.2, "marker": "p", "color": "plum", "s": 30},
+        {"name": "AFPN", "metric": 2.8, "mAP": 30.5, "marker": "v", "color": "lightgreen", "s": 30},
+        {"name": "FreqGFPN", "metric": 2.5, "mAP": 30.8, "marker": "X", "color": "orange", "s": 30},
+        {"name": "GFPN", "metric": 3.0, "mAP": 32.0, "marker": "^", "color": "gray", "s": 30},
+        {"name": "CGFPRN", "metric": 3.4, "mAP": 30.2, "marker": "<", "color": "tan", "s": 30},
+        {"name": "MAFPN", "metric": 3.2, "mAP": 31.8, "marker": ">", "color": "teal", "s": 30},
         {"name": "Ours", "metric": 38.88, "mAP": 69.4, "marker": "*", "color": "red", "s": 60},
         # The best method (ours) is highlighted in red with an asterisk (*).
     ]
 
     setup_paper_style(
-        440 / 2,
+        textwidth=440 / 2,
         ratio=1.618,
         fraction=0.98,
         font_size_tex=5,
