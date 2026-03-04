@@ -1,5 +1,15 @@
-# python tad/visualization/cosine_similarity_heatmap.py configs/ddiou/thumos_videomaev2_g.yaml exps/thumos/videomaev2_g/gpu1_id1/checkpoint/best.pt
-# python -m tad.visualization.analysis.cosine_similarity_heatmap configs/ddiou/thumos_videomaev2_g.yaml exps/thumos/videomaev2_g/gpu1_id1/checkpoint/best.pt
+"""Visualize cosine similarity heatmaps from temporal features.
+
+Usage:
+    python tad/visualization/analysis/cosine_similarity_heatmap.py \
+        configs/ddiou/thumos_videomaev2_g.yaml \
+        exps/thumos/videomaev2_g/gpu1_id1/checkpoint/best.pt
+
+    python -m tad.visualization.analysis.cosine_similarity_heatmap \
+        configs/ddiou/thumos_videomaev2_g.yaml \
+        exps/thumos/videomaev2_g/gpu1_id1/checkpoint/best.pt
+"""
+
 import argparse
 import sys
 from pathlib import Path
@@ -79,13 +89,15 @@ def _extract_features(args, model, inputs, masks):
                 f"Requested level {args.level} is out of range. Model returned {len(feats)} levels."
             )
         print(
-            f"Model returned {len(feats)} feature levels. Selecting level {args.level} (index {level_idx})."
+            f"Model returned {len(feats)} feature levels. "
+            f"Selecting level {args.level} (index {level_idx})."
         )
         feature_tensor = feats[level_idx]
     else:
         if args.level != 1:
             raise ValueError(
-                f"Requested level {args.level}, but model is single-scale. Use --level 0 for inputs or --level 1 for output."
+                f"Requested level {args.level}, but model is single-scale. "
+                "Use --level 0 for inputs or --level 1 for output."
             )
         feature_tensor = feats
 
@@ -94,7 +106,7 @@ def _extract_features(args, model, inputs, masks):
 
 def plot_heatmap(similarity_matrix, gt_intervals_indices, seconds_per_step, video_name):
     """Plot and save the heatmap and timeline."""
-    T = similarity_matrix.shape[0]
+    t = similarity_matrix.shape[0]
     setup_paper_style(
         440 / 2, ratio=1.1, fraction=0.98, font_size_tex=10, font_size_main=7, line_width_axis=0.5
     )
@@ -133,7 +145,7 @@ def plot_heatmap(similarity_matrix, gt_intervals_indices, seconds_per_step, vide
 
     # GT rectangles on heatmap
     for start, end in gt_intervals_indices:
-        start, end = max(0, start), min(T, end)
+        start, end = max(0, start), min(t, end)
         if end > start:
             ax1.add_patch(
                 Rectangle(
@@ -147,13 +159,13 @@ def plot_heatmap(similarity_matrix, gt_intervals_indices, seconds_per_step, vide
             )
 
     # Timeline bar
-    ax2.set_xlim(0, T)
+    ax2.set_xlim(0, t)
     ax2.set_ylim(0, 1)
     ax2.set_xlabel("Time (s)")
     ax2.set_ylabel("GT", rotation=0, labelpad=10, va="center")
     ax2.set_yticks([])
     for start, end in gt_intervals_indices:
-        start, end = max(0, start), min(T, end)
+        start, end = max(0, start), min(t, end)
         ax2.fill_between([start, end], 0, 1, color="#32CD32", alpha=0.8)
 
     # Save figure

@@ -9,23 +9,26 @@ from fvcore.nn import FlopCountAnalysis
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-# 但 fvcore 返回的“FLOPs”实际上是 MACs，在FlopCountAnalysis 类的文档字符串中（第 53 行），
-# 明确说明了计算标准："We count one fused multiply-add as one flop."
-# fvcore 和 thop 都计算 MACs，但推荐使用 fvcore，因为 fvcore 更加全面和准确地处理了各种操作和模块，
-# 通常 fvcore 的计算结果更大一些，更接近实际情况。
-# 本文采用计算机视觉领域的常用定义，将一次乘加运算（MAC）视为一次计算，
-# 因此工具 fvcore 所报告的 “FLOPs” 实际等价于 MACs，而非物理意义上将乘法与加法分别计数的 FLOPs。
-# 科学计算 / HPC 领域：1 FLOP = 1 次浮点运算（加 or 乘），所以 MACs = 2 FLOPs。
-# 深度学习 / CV 领域：1 FLOP ≈ 1 MAC（即 1 次乘加算 1 次操作）。
-# 论文中可以这样写“We report model complexity in terms of multiply-add operations (commonly referred to as FLOPs in the literature).”
-# 在模型复杂度分析中，本文遵循计算机视觉领域的常见惯例，将一次乘加运算（MAC）计为一次浮点运算（FLOP）。
-# 因此，我们使用 fvcore [X] 工具报告的 "FLOPs" 在数值上等价于 MACs 的数量。
-# 这与将乘法与加法分别计数（即 1 MAC = 2 FLOPs）的高性能计算定义有所不同。
-# fvcore [X] （加上引用）
-# 或 fvcore (v0.1.5)
+# Note on FLOPs vs. MACs:
+# Although commonly referred to as "FLOPs", the value returned by fvcore's FlopCountAnalysis
+# actually represents MACs (Multiply-Accumulate Operations).
+# As stated in the FlopCountAnalysis docstring (line 53):
+# "We count one fused multiply-add as one flop."
+#
+# Both fvcore and thop report MACs, but fvcore is generally preferred because:
+#   - It supports a broader range of operations and modules.
+#   - It provides more accurate and comprehensive counting.
+#   - Its results tend to be slightly higher and closer to real-world computational cost.
+#
+# Terminology clarification across fields:
+#   - In scientific computing / HPC:
+#       1 FLOP = 1 floating-point operation (either addition or multiplication),
+#       hence 1 MAC (multiply-add) = 2 FLOPs.
+#   - In deep learning / computer vision:
+#       1 FLOP ≈ 1 MAC (i.e., one fused multiply-add is counted as a single operation).
+#
+# Therefore, when comparing FLOPs across domains or tools, always verify the underlying definition.
 
-# Please clarify whether the reported FLOPs refer to multiply-add operations or separate floating-point operations.
-# Different definitions in literature make direct comparison difficult.
 
 # Add the parent directory of the 'tad' package to Python path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -39,7 +42,8 @@ def calculate_flops_params(
 
     Args:
         model: PyTorch model.
-        input_shape: Input shape tuple (e.g., (3, 224, 224) for image, (2048, 100) for video features).
+        input_shape: Input shape tuple (e.g., (3, 224, 224) for image,
+                     (2048, 100) for video features).
                      Batch dimension is NOT included.
         device: Device to run dummy forward pass ('cpu' or 'cuda').
 
@@ -60,7 +64,8 @@ def calculate_flops_params(
     model.eval()
     model.to(device)
 
-    # Create a simple nn.Module wrapper that directly calls forward_test to ensure all model components are traced
+    # Create a simple nn.Module wrapper that directly calls forward_test
+    # to ensure all model components are traced
     # class ModelWrapper(torch.nn.Module):
     #     def __init__(self, model):
     #         super().__init__()
@@ -74,10 +79,8 @@ def calculate_flops_params(
             self.model = model
 
         def forward(self, inputs, masks, metas):
-            # 根据模型类型选择不同的前向传播方法
             model_name = self.model.__class__.__name__
 
-            # 首先检查是否有 forward_test 方法（如 TAD 模型）
             if hasattr(self.model, "forward_test"):
                 return self.model.forward_test(inputs, masks, metas, None)
 
@@ -106,12 +109,10 @@ def calculate_flops_params(
                     fpn_feats, fpn_masks = self.model.neck(feats, masks)
                     return fpn_feats
 
-            # 检查是否是 Detector 类型
             elif model_name == "Detector":
                 # For Detector model, use forward with masks and metas
                 return self.model(inputs, masks, metas)
 
-            # 其他模型类型
             else:
                 # Try default forward method with different parameter combinations
                 try:
@@ -200,7 +201,6 @@ if __name__ == "__main__":
         cfg = Config.fromfile(config_file)
         model = build_detector(cfg.model)
 
-        # 特殊处理需要 CUDA 的模型（如 GTAD）
         device = "cuda" if torch.cuda.is_available() and name == "GTAD" else "cpu"
 
         flops, params = calculate_flops_params(model, input_shape=input_shape, device=device)
@@ -228,7 +228,6 @@ if __name__ == "__main__":
         model = make_meta_arch(cfg["model_name"], **cfg["model"])
         flops, params = calculate_flops_params(model, input_shape=input_shape)
 
-        # 日志显示：去掉 .yaml 后缀更整洁（可选）
         display_name = config_name.replace(".yaml", "")
     log_and_print(f"DyFADet-pytorch: {display_name}")
     log_and_print(f"GFLOPs: {flops / 1e9:.2f}")
