@@ -1,9 +1,16 @@
 """
 On CPU/GPU
 Usage:
+
+1. for Linux/Mac:
 python -m tad.visualization.analysis.compute_average_cosine_similarity \
         configs/ddiou/thumos_videomaev2_g.yaml \
-        exps/thumos/videomaev2_g/gpu1_id1/checkpoint/best.pt
+        exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
+
+2. for Windows PowerShell:
+python -m tad.visualization.analysis.compute_average_cosine_similarity `
+        configs/ddiou/thumos_videomaev2_g.yaml `
+        exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
 """
 
 import argparse

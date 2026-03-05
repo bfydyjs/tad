@@ -1,9 +1,16 @@
 """Visualize cosine similarity heatmaps from temporal features.
 On CPU/GPU
 Usage:
-    python -m tad.visualization.analysis.cosine_similarity_heatmap \
+
+1. for Linux/Mac:
+python -m tad.visualization.analysis.cosine_similarity_heatmap \
         configs/ddiou/thumos_videomaev2_g.yaml \
-        exps/thumos/videomaev2_g/gpu1_id1/checkpoint/best.pt
+        exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
+
+2. for Windows PowerShell:
+python -m tad.visualization.analysis.cosine_similarity_heatmap `
+        configs/ddiou/thumos_videomaev2_g.yaml `
+        exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
 """
 
 import argparse
@@ -161,12 +168,16 @@ def plot_heatmap(similarity_matrix, gt_intervals_indices, seconds_per_step, vide
         ax2.fill_between([start, end], 0, 1, color="#32CD32", alpha=0.8)
 
     # Save figure
-    output_path = (
-        Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "heatmap.pdf"
-    )
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path)
-    print(f"Saving figure to: {output_path}")
+
+    base_output_dir = Path(__file__).resolve().parents[3] / "output" / "figures"
+
+    for ext in ["pdf", "png"]:
+        output_dir = base_output_dir / ext
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / f"cosine_similarity_heatmap.{ext}"
+        print(f"Saving figure to: {output_path}")
+        plt.savefig(output_path)
+    plt.show()
 
 
 def main():
