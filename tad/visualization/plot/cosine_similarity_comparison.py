@@ -69,15 +69,15 @@ def main():
     ax.yaxis.set_major_locator(MultipleLocator(0.05))
     plt.legend(loc="center", edgecolor="#bfbfbf", handlelength=2, fontsize=8, frameon=False)
     plt.tight_layout()
-    output_path = (
-        Path(__file__).resolve().parent.parent.parent.parent
-        / "output"
-        / "figures"
-        / "cosine_similarity_comparison.pdf"
-    )
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path)
-    print(f"Plot saved to {output_path}")
+
+    base_output_dir = Path(__file__).resolve().parents[3] / "output" / "figures"
+
+    for ext in ["pdf", "png"]:
+        output_dir = base_output_dir / ext
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / f"cosine_similarity_comparison.{ext}"
+        print(f"Saving figure to: {output_path}")
+        plt.savefig(output_path)
     plt.show()
 
 

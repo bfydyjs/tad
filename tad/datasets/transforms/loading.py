@@ -65,12 +65,9 @@ class LoadFeats:
             if isinstance(self.feat_format, str):
                 self.feat_format = [self.feat_format] * len(results["data_path"])
 
-            for data_path, feat_format in zip(
-                results["data_path"], self.feat_format, strict=True
-            ):
+            for data_path, feat_format in zip(results["data_path"], self.feat_format, strict=True):
                 file_path = (
-                    Path(data_path)
-                    / f"{self.prefix}{video_name}{self.suffix}.{feat_format}"
+                    Path(data_path) / f"{self.prefix}{video_name}{self.suffix}.{feat_format}"
                 )
                 feats.append(self.load_single_feat(file_path, feat_format))
 
@@ -129,9 +126,7 @@ class SlidingWindowTrunc:
         # if we need padding mask (valid is 1, pad is 0)
         if self.with_mask:
             if valid_len < window_size:
-                masks = torch.cat(
-                    [torch.ones(valid_len), torch.zeros(window_size - valid_len)]
-                )
+                masks = torch.cat([torch.ones(valid_len), torch.zeros(window_size - valid_len)])
             else:
                 masks = torch.ones(window_size)
             results["masks"] = masks.bool()
@@ -214,9 +209,7 @@ class RandomTrunc:
                 break
 
         feats = feats[st:ed, :]  # [T,C]
-        gt_segments = torch.stack(
-            (left[seg_idx], right[seg_idx]), dim=1
-        )  # [N,2] in feature grids
+        gt_segments = torch.stack((left[seg_idx], right[seg_idx]), dim=1)  # [N,2] in feature grids
         gt_segments = gt_segments - st  # shift the time stamps due to truncation
         gt_labels = gt_labels[seg_idx]  # [N]
         return feats, gt_segments, gt_labels
@@ -224,14 +217,9 @@ class RandomTrunc:
     def pad_features(self, feats):
         feat_len = feats.shape[0]
         if feat_len < self.trunc_len:
-            feats_pad = (
-                torch.ones((self.trunc_len - feat_len, *feats.shape[1:]))
-                * self.pad_value
-            )
+            feats_pad = torch.ones((self.trunc_len - feat_len, *feats.shape[1:])) * self.pad_value
             feats = torch.cat([feats, feats_pad], dim=0)
-            masks = torch.cat(
-                [torch.ones(feat_len), torch.zeros(self.trunc_len - feat_len)]
-            )
+            masks = torch.cat([torch.ones(feat_len), torch.zeros(self.trunc_len - feat_len)])
             return feats, masks
         else:
             return feats, torch.ones(feat_len)

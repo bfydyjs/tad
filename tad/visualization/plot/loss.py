@@ -35,16 +35,14 @@ def main():
     plt.legend()
     plt.tight_layout()
 
-    output_path = (
-        Path(__file__).resolve().parent.parent.parent.parent
-        / "output"
-        / "figures"
-        / "training_loss_curve.pdf"
-    )
-    print(f"Saving figure to: {output_path}")
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path)
+    base_output_dir = Path(__file__).resolve().parents[3] / "output" / "figures"
 
+    for ext in ["pdf", "png"]:
+        output_dir = base_output_dir / ext
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / f"training_loss_curve.{ext}"
+        print(f"Saving figure to: {output_path}")
+        plt.savefig(output_path)
     plt.show()
 
 

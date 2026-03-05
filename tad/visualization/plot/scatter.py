@@ -126,13 +126,15 @@ def main():
     plt.legend(loc="upper right", ncol=2, handlelength=1)
     plt.tight_layout()
 
-    output_path = (
-        Path(__file__).resolve().parent.parent.parent.parent / "output" / "figures" / "scatter.pdf"
-    ).resolve()
+    base_output_dir = Path(__file__).resolve().parents[3] / "output" / "figures"
 
-    print(f"Saving figure to: {output_path}")
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path)
+    for ext in ["pdf", "png"]:
+        output_dir = base_output_dir / ext
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / f"scatter.{ext}"
+        print(f"Saving figure to: {output_path}")
+        plt.savefig(output_path)
+
     plt.show()
 
 

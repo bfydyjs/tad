@@ -31,7 +31,7 @@ fix = true
 unsafe-fixes = false
 
 [tool.ruff.lint]
-select = ["E", "W", "N", "F", "I", "C90", "B", "RUF", "UP", "YTT"]
+select = ["E", "W", "N", "T10", "F", "I", "C90", "B", "RUF", "UP", "YTT"]
 # ignore = ["RUF003"]
 
 [tool.ruff.lint.mccabe]
