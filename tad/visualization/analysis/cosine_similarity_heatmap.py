@@ -1,16 +1,17 @@
 """Visualize cosine similarity heatmaps from temporal features.
 On CPU/GPU
+
 Usage:
 
 1. for Linux/Mac:
 python -m tad.visualization.analysis.cosine_similarity_heatmap \
-        configs/ddiou/thumos_videomaev2_g.yaml \
-        exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
+    configs/ddiou/thumos_videomaev2_g.yaml \
+    exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
 
 2. for Windows PowerShell:
 python -m tad.visualization.analysis.cosine_similarity_heatmap `
-        configs/ddiou/thumos_videomaev2_g.yaml `
-        exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
+    configs/ddiou/thumos_videomaev2_g.yaml `
+    exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
 """
 
 import argparse

@@ -1,5 +1,17 @@
-# python eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint
-# exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt --plot-recall
+"""Visualize cosine similarity heatmaps from temporal features.
+Only on GPU
+
+Usage:
+
+1. for Linux/Mac:
+python eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint \
+    exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt --plot-recall
+
+2. for Windows PowerShell:
+python eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint `
+    exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt --plot-recall
+"""
+
 import argparse
 from pathlib import Path
 
