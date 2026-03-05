@@ -40,7 +40,7 @@ def main():
     for ext in ["pdf", "png"]:
         output_dir = base_output_dir / ext
         output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / f"training_loss_curve.{ext}"
+        output_path = output_dir / f"loss.{ext}"
         print(f"Saving figure to: {output_path}")
         plt.savefig(output_path)
     plt.show()
