@@ -35,7 +35,7 @@ def main():
         font_size_main=4.5,
         line_width_axis=0.5,
     )
-    fig, axes = plt.subplots(2, 2)
+    _, axes = plt.subplots(2, 2)
 
     sns.heatmap(cka_a_pre, annot=True, fmt=".3f", cmap="YlOrRd", cbar=False, ax=axes[0, 0])
     axes[0, 0].set_title("(a) Pre-Encoder")

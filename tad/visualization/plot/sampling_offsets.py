@@ -40,7 +40,7 @@ def main():
         line_width_axis=0.5,
     )
 
-    fig, (ax1, ax2) = plt.subplots(2, 1)
+    _, (ax1, ax2) = plt.subplots(2, 1)
     xticks_vals = np.arange(-1.0, 1.01, 0.25)
     xtick_labels = [f"{x:.2f}" for x in xticks_vals]
 

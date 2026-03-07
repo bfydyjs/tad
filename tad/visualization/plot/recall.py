@@ -54,9 +54,18 @@ def parse_float_list(value):
 
 
 def resolve_output_dir(output_dir):
+    """Resolve output directory for saving recall plots.
+
+    Args:
+        output_dir: User-specified output directory, or None to use default.
+
+    Returns:
+        Path: Output directory path.
+    """
     if output_dir is not None:
         out_dir = Path(output_dir)
     else:
+        # Default: <project_root>/output/figures
         project_root = Path(__file__).resolve().parents[3]
         out_dir = project_root / "output" / "figures"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -64,6 +73,11 @@ def resolve_output_dir(output_dir):
 
 
 def plot_ar_an_curve(evaluator, out_dir):
+    """Plot Average Recall vs Average Number of proposals curve.
+
+    The curve shows average recall over all tIoU thresholds as a function
+    of the average number of proposals per video.
+    """
     setup_paper_style(
         440 / 2,
         ratio=1.618,
@@ -86,12 +100,20 @@ def plot_ar_an_curve(evaluator, out_dir):
     plt.legend()
     plt.tight_layout()
 
-    output_path = out_dir / "recall_ar_an_curve.pdf"
-    plt.savefig(output_path)
-    print(f"Saved: {output_path}")
+    base_output_dir = out_dir
+    for ext in ["pdf", "png"]:
+        output_dir = base_output_dir / ext
+        output_path = output_dir / f"recall_ar_an_curve.{ext}"
+        print(f"Saving figure to: {output_path}")
+        plt.savefig(output_path)
 
 
 def plot_recall_k_tiou(evaluator, out_dir):
+    """Plot Recall@K vs tIoU thresholds for different K values.
+
+    Each curve shows recall at a specific K (number of top proposals)
+    across different tIoU thresholds.
+    """
     setup_paper_style(
         textwidth=440,
         ratio=1.618,
@@ -107,6 +129,8 @@ def plot_recall_k_tiou(evaluator, out_dir):
         if k < 1 or k > num_points:
             print(f"Skip Recall@{k}: valid range is [1, {num_points}]")
             continue
+        # recall[i, j] is recall at ith tiou threshold and jth proposal count
+        # k-1 index corresponds to the k-th proposal count (0-indexed)
         recall_values = evaluator.recall[:, k - 1]
         plt.plot(evaluator.tiou_thresholds, recall_values, marker="o", label=f"Recall@{k}")
 
@@ -117,9 +141,13 @@ def plot_recall_k_tiou(evaluator, out_dir):
     plt.legend()
     plt.tight_layout()
 
-    output_path = out_dir / "recall_k_tiou_curve.pdf"
-    plt.savefig(output_path)
-    print(f"Saved: {output_path}")
+    base_output_dir = out_dir
+    for ext in ["pdf", "png"]:
+        output_dir = base_output_dir / ext
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / f"recall_k_tiou_curve.{ext}"
+        print(f"Saving figure to: {output_path}")
+        plt.savefig(output_path)
 
 
 def plot_recall_from_files(
