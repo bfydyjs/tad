@@ -16,7 +16,7 @@
 /exps/
 /output/
 
-# # Temporary files
+# Temporary files
 /wandb/
 *.log
 
