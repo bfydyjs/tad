@@ -1,14 +1,18 @@
-from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy as np
-from setup_paper_style import setup_paper_style
+
+from ..utils import save_figure, setup_paper_style
 
 
-def main():
-    # ----------------------------
-    n = 50
+def generate_sampling_data(n=50):
+    """生成采样偏移数据。
 
+    Args:
+        n: 采样点数量
+
+    Returns:
+        dict: 包含 TE-TAD 和 DiGIT 数据的字典
+    """
     te_tad_offsets = np.random.normal(0.2, 0.1, n)
     te_tad_std = np.random.uniform(0.05, 0.15, n)
 
@@ -30,21 +34,38 @@ def main():
     adjacent_offsets = adjacent_offsets[sort_idx_a]
     adjacent_std = adjacent_std[sort_idx_a]
 
-    # ----------------------------
-    setup_paper_style(
-        textwidth=440,
-        ratio=1.618,
-        fraction=0.98,
-        font_size_tex=10,
-        font_size_main=9,
-        line_width_axis=0.5,
-    )
+    return {
+        "te_tad": {"offsets": te_tad_offsets, "std": te_tad_std},
+        "digit": {
+            "central_offsets": central_offsets,
+            "central_std": central_std,
+            "adjacent_offsets": adjacent_offsets,
+            "adjacent_std": adjacent_std,
+        },
+    }
 
-    _, (ax1, ax2) = plt.subplots(2, 1)
+
+def plot_sampling_offsets(data, n=50):
+    """绘制采样偏移对比图。
+
+    Args:
+        data: generate_sampling_data() 返回的数据字典
+        n: 采样点数量
+
+    Returns:
+        matplotlib.figure.Figure: 绘制的图形对象
+    """
+    te_tad_offsets = data["te_tad"]["offsets"]
+    te_tad_std = data["te_tad"]["std"]
+    central_offsets = data["digit"]["central_offsets"]
+    central_std = data["digit"]["central_std"]
+    adjacent_offsets = data["digit"]["adjacent_offsets"]
+    adjacent_std = data["digit"]["adjacent_std"]
+
+    fig, (ax1, ax2) = plt.subplots(2, 1)
     xticks_vals = np.arange(-1.0, 1.01, 0.25)
     xtick_labels = [f"{x:.2f}" for x in xticks_vals]
 
-    # (a) TE-TAD
     ax1.errorbar(
         te_tad_offsets,
         range(n),
@@ -61,12 +82,11 @@ def main():
     ax1.set_ylim(-2, n + 1)
     ax1.set_xticks(xticks_vals)
     ax1.set_xticklabels(xtick_labels)
-    ax1.set_yticks([])  # 隐藏纵轴索引
+    ax1.set_yticks([])
     ax1.set_xlabel("(a) TE-TAD [15]", fontsize=11)
-    ax1.grid(axis="x", linestyle="--")  # 仅开启 X 轴网格
+    ax1.grid(axis="x", linestyle="--")
     ax1.legend(loc="upper left")
 
-    # (b) DiGIT
     ax2.errorbar(
         central_offsets,
         range(n),
@@ -95,21 +115,34 @@ def main():
     ax2.set_ylim(-2, n + 1)
     ax2.set_xticks(xticks_vals)
     ax2.set_xticklabels(xtick_labels)
-    ax2.set_yticks([])  # 隐藏纵轴索引
+    ax2.set_yticks([])
     ax2.set_xlabel("(b) DiGIT", fontsize=11)
-    ax2.grid(axis="x", linestyle="--")  # 仅开启 X 轴网格
+    ax2.grid(axis="x", linestyle="--")
     ax2.legend(loc="upper left")
 
     plt.tight_layout()
 
-    base_output_dir = Path(__file__).resolve().parents[3] / "output" / "figures"
+    return fig
 
-    for ext in ["pdf", "png"]:
-        output_dir = base_output_dir / ext
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / f"sampling_offsets.{ext}"
-        print(f"Saving figure to: {output_path}")
-        plt.savefig(output_path)
+
+def setup_plot_style():
+    """设置论文风格的绘图样式。"""
+    setup_paper_style(
+        textwidth=440,
+        ratio=1.618,
+        fraction=0.98,
+        font_size_tex=10,
+        font_size_main=9,
+        line_width_axis=0.5,
+    )
+
+
+def main():
+    n = 50
+    setup_plot_style()
+    data = generate_sampling_data(n=n)
+    fig = plot_sampling_offsets(data, n=n)
+    save_figure("sampling_offsets", fig=fig)
     plt.show()
 
 

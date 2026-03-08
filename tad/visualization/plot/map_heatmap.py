@@ -1,12 +1,11 @@
-from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from setup_paper_style import setup_paper_style
+
+from ..utils import save_figure, setup_paper_style
 
 
-def main():
+def load_map_data() -> tuple[list[int], list[int], np.ndarray]:
     kernel_sizes_1 = [3, 5, 7, 9, 11, 13, 15]
     kernel_sizes_2 = [3, 5, 7, 9, 11, 13, 15]
 
@@ -21,6 +20,15 @@ def main():
             [72.6, 72.8, 73.1, 72.6, 72.4, 72.2, 72.0],  # kernel_sizes_1=15
         ]
     )
+
+    return kernel_sizes_1, kernel_sizes_2, map_values
+
+
+def plot_map_heatmap(
+    kernel_sizes_1: list[int],
+    kernel_sizes_2: list[int],
+    map_values: np.ndarray,
+) -> None:
     setup_paper_style(
         textwidth=440 / 2,
         ratio=1.618,
@@ -51,16 +59,11 @@ def main():
     cbar.ax.tick_params(length=0)
     plt.tight_layout()
 
-    base_output_dir = Path(__file__).resolve().parents[3] / "output" / "figures"
 
-    for ext in ["pdf", "png"]:
-        output_dir = base_output_dir / ext
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / f"map_heatmap.{ext}"
-        print(f"Saving figure to: {output_path}")
-        plt.savefig(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path)
+def main():
+    kernel_sizes_1, kernel_sizes_2, map_values = load_map_data()
+    plot_map_heatmap(kernel_sizes_1, kernel_sizes_2, map_values)
+    save_figure("map_heatmap")
     plt.show()
 
 

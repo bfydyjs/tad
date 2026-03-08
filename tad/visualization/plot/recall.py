@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 from tad.metrics.recall import Recall
 
-from .setup_paper_style import setup_paper_style
+from ..utils import setup_paper_style
 
 
 def parse_args():

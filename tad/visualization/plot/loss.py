@@ -1,22 +1,39 @@
-from pathlib import Path
-
 import matplotlib.pyplot as plt
 import pandas as pd
-from setup_paper_style import setup_paper_style
+
+from ..utils import save_figure, setup_paper_style
 
 
-def main():
-    df = pd.read_csv(r"C:\Users\yanho\Downloads\wandb_export_2026-02-03T22_06_26.613+08_00.csv")
-    step_col = "epoch"
-    loss_col = "0125_1101 - train/loss"
+def load_loss_data(
+    file_path: str,
+    step_col: str,
+    loss_col: str | None = None,
+) -> pd.DataFrame | None:
 
-    if loss_col not in df.columns:
+    df = pd.read_csv(file_path)
+
+    if loss_col is None:
         for col in df.columns:
             if "train/loss" in col:
                 loss_col = col
                 break
         else:
-            raise KeyError("未能找到包含 'train/loss' 的列")
+            print(f"Warning: No 'train/loss' column found in {file_path}")
+            return None
+
+    if loss_col not in df.columns:
+        print(f"Warning: Column '{loss_col}' not found in {file_path}")
+        return None
+
+    return df[[step_col, loss_col]].rename(columns={loss_col: "loss"})
+
+
+def plot_training_loss(
+    data_list: list[dict],
+    xlabel: str = "Epoch",
+    ylabel: str = "Loss",
+    title: str = "Training Loss Comparison",
+):
 
     setup_paper_style(
         textwidth=440 / 2,
@@ -27,23 +44,80 @@ def main():
         line_width_axis=0.5,
     )
     plt.figure()
-    plt.plot(df[step_col], df[loss_col], label="Training Loss", color="tab:blue")  # linewidth=2.0
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.title("Training Loss Curve")
-    plt.grid(True, linestyle="--")
-    plt.legend()
+
+    for data_config in data_list:
+        plt.plot(
+            data_config["data"][data_config["step_col"]],
+            data_config["data"]["loss"],
+            label=data_config["label"],
+            color=data_config["color"],
+            linestyle=data_config["linestyle"],
+            linewidth=1.5,
+        )
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.grid(True, linestyle="--", alpha=0.7)
+    plt.legend(loc="upper right")
     plt.tight_layout()
 
-    base_output_dir = Path(__file__).resolve().parents[3] / "output" / "figures"
 
-    for ext in ["pdf", "png"]:
-        output_dir = base_output_dir / ext
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / f"loss.{ext}"
-        print(f"Saving figure to: {output_path}")
-        plt.savefig(output_path)
+def process_and_save(data_list: list[dict]) -> None:
+    """处理数据并保存图表。
+
+    Args:
+        data_list: 包含数据和配置的列表
+    """
+    if not data_list:
+        print("Error: No valid data to plot")
+        return
+
+    plot_training_loss(data_list)
+    save_figure("loss")
     plt.show()
+
+
+def main():
+    loss_configs = [
+        {
+            "file": r"C:\Users\yanho\Downloads\wandb_export_2026-02-03T22_06_26.613+08_00.csv",
+            "step_col": "epoch",
+            "loss_col": "0125_1101 - train/loss",
+            "label": "Model A",
+            "color": "tab:blue",
+            "linestyle": "-",
+        },
+        {
+            "file": r"path/to/second_experiment.csv",
+            "step_col": "epoch",
+            "loss_col": None,
+            "label": "Model B",
+            "color": "tab:orange",
+            "linestyle": "--",
+        },
+        # ...
+    ]
+
+    data_list = []
+    for config in loss_configs:
+        df = load_loss_data(
+            config["file"],
+            config["step_col"],
+            config.get("loss_col"),
+        )
+        if df is not None:
+            data_list.append(
+                {
+                    "data": df,
+                    "label": config["label"],
+                    "color": config["color"],
+                    "linestyle": config["linestyle"],
+                    "step_col": config["step_col"],
+                }
+            )
+
+    process_and_save(data_list)
 
 
 if __name__ == "__main__":
