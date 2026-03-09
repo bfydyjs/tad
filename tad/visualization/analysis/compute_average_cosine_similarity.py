@@ -1,6 +1,4 @@
 """
-On CPU/GPU
-
 Usage:
 
 1. for Linux/Mac:

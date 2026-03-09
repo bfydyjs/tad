@@ -1,15 +1,13 @@
 """Visualize cosine similarity heatmaps from temporal features.
-On CPU/GPU
-
 Usage:
 
 1. for Linux/Mac:
-python -m tad.visualization.analysis.cosine_similarity_heatmap \
+python -m tad.visualization.plot.cosine_similarity_heatmap \
     configs/ddiou/thumos_videomaev2_g.yaml \
     exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
 
 2. for Windows PowerShell:
-python -m tad.visualization.analysis.cosine_similarity_heatmap `
+python -m tad.visualization.plot.cosine_similarity_heatmap `
     configs/ddiou/thumos_videomaev2_g.yaml `
     exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
 """
@@ -27,7 +25,7 @@ from matplotlib.patches import Rectangle
 from tad.datasets import build_dataset
 from tad.models import build_detector
 from tad.utils import Config
-from tad.visualization.utils import setup_paper_style
+from tad.visualization.utils import save_figure, setup_paper_style
 
 
 def parse_args():
@@ -84,15 +82,11 @@ def _extract_features(args, model, inputs, masks):
 
     if isinstance(feats, (list, tuple)):
         level_idx = args.level - 1  # map 1..N -> 0..N-1
-        if not (0 <= level_idx < len(feats)):
-            raise ValueError(
-                f"Requested level {args.level} is out of range. Model returned {len(feats)} levels."
-            )
+        feature_tensor = feats[level_idx]
         print(
             f"Model returned {len(feats)} feature levels. "
             f"Selecting level {args.level} (index {level_idx})."
         )
-        feature_tensor = feats[level_idx]
     else:
         if args.level != 1:
             raise ValueError(
@@ -104,7 +98,7 @@ def _extract_features(args, model, inputs, masks):
     return feature_tensor[0] if feature_tensor.dim() == 3 else feature_tensor
 
 
-def plot_heatmap(similarity_matrix, gt_intervals_indices, seconds_per_step, video_name):
+def plot_heatmap(args, similarity_matrix, gt_intervals_indices, seconds_per_step, video_name):
     """Plot and save the heatmap and timeline."""
     t = similarity_matrix.shape[0]
     setup_paper_style(
@@ -145,7 +139,7 @@ def plot_heatmap(similarity_matrix, gt_intervals_indices, seconds_per_step, vide
 
     # GT rectangles on heatmap
     for start, end in gt_intervals_indices:
-        start, end = max(0, start), min(t, end)
+        start, end = int(max(0, start)), int(min(t, end))
         if end > start:
             ax1.add_patch(
                 Rectangle(
@@ -165,19 +159,10 @@ def plot_heatmap(similarity_matrix, gt_intervals_indices, seconds_per_step, vide
     ax2.set_ylabel("GT", rotation=0, labelpad=10, va="center")
     ax2.set_yticks([])
     for start, end in gt_intervals_indices:
-        start, end = max(0, start), min(t, end)
+        start, end = int(max(0, start)), int(min(t, end))
         ax2.fill_between([start, end], 0, 1, color="#32CD32", alpha=0.8)
 
-    # Save figure
-
-    base_output_dir = Path(__file__).resolve().parents[3] / "output" / "figures"
-
-    for ext in ["pdf", "png"]:
-        output_dir = base_output_dir / ext
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / f"cosine_similarity_heatmap.{ext}"
-        print(f"Saving figure to: {output_path}")
-        plt.savefig(output_path)
+    save_figure(f"cosine_similarity_heatmap_{args.index}_{args.level}")
     plt.show()
 
 
@@ -206,7 +191,6 @@ def main():
             print("Tip: provide a valid path or set --level 0 to use raw inputs.")
             sys.exit(1)
         model = build_detector(cfg.model)
-        print("Loading checkpoint with weights_only=False (UNSAFE)...")
         checkpoint = torch.load(str(checkpoint_path), map_location=device, weights_only=False)
         state_dict = checkpoint.get("state_dict", checkpoint)
         model.load_state_dict(state_dict)
@@ -244,7 +228,7 @@ def main():
     print(f"Video: {video_name}, FPS: {fps}, Stride: {feature_stride}")
 
     # 8. 绘图
-    plot_heatmap(similarity_matrix, gt_intervals_indices, seconds_per_step, video_name)
+    plot_heatmap(args, similarity_matrix, gt_intervals_indices, seconds_per_step, video_name)
 
 
 if __name__ == "__main__":
