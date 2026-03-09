@@ -10,7 +10,6 @@ from tad.datasets import build_dataloader, build_dataset
 from tad.engine import eval_one_epoch
 from tad.models import build_detector
 from tad.utils import Config, DictAction, create_folder, set_seed, setup_logger, update_workdir
-from tad.visualization.plot.recall import maybe_plot_recall
 
 
 def parse_args():
@@ -26,15 +25,6 @@ def parse_args():
         "--disable-deterministic",
         action="store_true",
         help="disable deterministic for faster speed",
-    )
-    parser.add_argument(
-        "--plot-recall", action="store_true", help="plot recall curves after evaluation"
-    )
-    parser.add_argument(
-        "--plot-output-dir",
-        type=str,
-        default=None,
-        help="optional output dir for recall plots; default is <project_root>/output/figures",
     )
     parser.add_argument("--cfg-options", nargs="+", action=DictAction, help="override settings")
     args = parser.parse_args()
@@ -193,12 +183,7 @@ def main():
     load_weights(cfg, args, logger, model)
 
     # Run Eval
-    if args.plot_recall:
-        cfg.post_processing.save_dict = True
     run_evaluation(cfg, args, logger, test_loader, model)
-
-    if args.rank == 0:
-        maybe_plot_recall(cfg, args, logger)
 
     if args.distributed:
         if dist.is_initialized():
