@@ -8,15 +8,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 
-def get_default_output_dir() -> Path:
-    """Get the default output directory.
-
-    Returns:
-        Path object pointing to the output/figures directory
-    """
-    return Path(__file__).resolve().parents[2] / "output" / "figures"
-
-
 def get_figsize_from_pt(
     width_pt: float, ratio: float = 1.618, fraction: float = 1.0
 ) -> tuple[float, float]:
@@ -126,6 +117,15 @@ def setup_paper_style(
             "savefig.pad_inches": 0,
         }
     )
+
+
+def get_default_output_dir() -> Path:
+    """Get the default output directory.
+
+    Returns:
+        Path object pointing to the output/figures directory
+    """
+    return Path(__file__).resolve().parents[2] / "output" / "figures"
 
 
 def save_figure(
