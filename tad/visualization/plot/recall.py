@@ -1,25 +1,32 @@
 """Visualize cosine similarity heatmaps from temporal features.
-Only on GPU
+
+Requires setting save_dict to true in YAML config, then running eval.py
+to generate result_detection.json file.
 
 Usage:
 
 1. for Linux/Mac:
-python eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint \
-    exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt --plot-recall
+python -m tad.visualization.plot.recall \
+    --ground-truth-file data/thumos-14/annotations/thumos_14_anno.json \
+    --prediction-file exps/thumos/videomaev2_g/gpu1_id0/result_detection.json \
+    --subset validation \
+    --tiou-thresholds 0.3,0.4,0.5,0.6,0.7
 
 2. for Windows PowerShell:
-python eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint `
-    exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt --plot-recall
+python -m tad.visualization.plot.recall `
+    --ground-truth-file data/thumos-14/annotations/thumos_14_anno.json `
+    --prediction-file exps/thumos/videomaev2_g/gpu1_id0/result_detection.json `
+    --subset validation `
+    --tiou-thresholds 0.3,0.4,0.5,0.6,0.7
 """
 
 import argparse
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 
 from tad.metrics.recall import Recall
 
-from ..utils import setup_paper_style
+from ..utils import save_figure, setup_paper_style
 
 
 def parse_args():
@@ -53,26 +60,7 @@ def parse_float_list(value):
     return [float(item.strip()) for item in value.split(",") if item.strip()]
 
 
-def resolve_output_dir(output_dir):
-    """Resolve output directory for saving recall plots.
-
-    Args:
-        output_dir: User-specified output directory, or None to use default.
-
-    Returns:
-        Path: Output directory path.
-    """
-    if output_dir is not None:
-        out_dir = Path(output_dir)
-    else:
-        # Default: <project_root>/output/figures
-        project_root = Path(__file__).resolve().parents[3]
-        out_dir = project_root / "output" / "figures"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    return out_dir
-
-
-def plot_ar_an_curve(evaluator, out_dir):
+def plot_ar_an_curve(evaluator, output_dir):
     """Plot Average Recall vs Average Number of proposals curve.
 
     The curve shows average recall over all tIoU thresholds as a function
@@ -100,15 +88,10 @@ def plot_ar_an_curve(evaluator, out_dir):
     plt.legend()
     plt.tight_layout()
 
-    base_output_dir = out_dir
-    for ext in ["pdf", "png"]:
-        output_dir = base_output_dir / ext
-        output_path = output_dir / f"recall_ar_an_curve.{ext}"
-        print(f"Saving figure to: {output_path}")
-        plt.savefig(output_path)
+    save_figure("recall_ar_an_curve", output_dir=output_dir)
 
 
-def plot_recall_k_tiou(evaluator, out_dir):
+def plot_recall_k_tiou(evaluator, output_dir):
     """Plot Recall@K vs tIoU thresholds for different K values.
 
     Each curve shows recall at a specific K (number of top proposals)
@@ -141,13 +124,29 @@ def plot_recall_k_tiou(evaluator, out_dir):
     plt.legend()
     plt.tight_layout()
 
-    base_output_dir = out_dir
-    for ext in ["pdf", "png"]:
-        output_dir = base_output_dir / ext
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / f"recall_k_tiou_curve.{ext}"
-        print(f"Saving figure to: {output_path}")
-        plt.savefig(output_path)
+    save_figure("recall_k_tiou_curve", output_dir=output_dir)
+
+
+def load_recall_data(ground_truth_file, prediction_file, subset, tiou_thresholds):
+    """Load and evaluate recall data from files.
+
+    Args:
+        ground_truth_file: Path to ground truth JSON file
+        prediction_file: Path to prediction JSON file
+        subset: Evaluation subset name
+        tiou_thresholds: List of tIoU thresholds
+
+    Returns:
+        Recall evaluator object
+    """
+    evaluator = Recall(
+        ground_truth_file=ground_truth_file,
+        prediction_file=prediction_file,
+        subset=subset,
+        tiou_thresholds=tiou_thresholds,
+    )
+    evaluator.evaluate()
+    return evaluator
 
 
 def plot_recall_from_files(
@@ -158,71 +157,48 @@ def plot_recall_from_files(
     output_dir=None,
     show=False,
 ):
-    evaluator = Recall(
-        ground_truth_file=ground_truth_file,
-        prediction_file=prediction_file,
-        subset=subset,
-        tiou_thresholds=tiou_thresholds,
-    )
-    evaluator.evaluate()
+    """Plot recall curves from ground truth and prediction files.
 
-    out_dir = resolve_output_dir(output_dir)
-    plot_ar_an_curve(evaluator, out_dir)
-    plot_recall_k_tiou(evaluator, out_dir)
+    Args:
+        ground_truth_file: Path to ground truth JSON file
+        prediction_file: Path to prediction JSON file
+        subset: Evaluation subset name
+        tiou_thresholds: List of tIoU thresholds
+        output_dir: Output directory for saving plots
+        show: Whether to display plots interactively
+    """
+    evaluator = load_recall_data(ground_truth_file, prediction_file, subset, tiou_thresholds)
+
+    plot_ar_an_curve(evaluator, output_dir)
+    plot_recall_k_tiou(evaluator, output_dir)
 
     if show:
         plt.show()
     else:
         plt.close("all")
 
-    return out_dir
-
-
-def maybe_plot_recall(cfg, args, logger):
-    if not args.plot_recall:
-        return
-
-    result_path = Path(cfg.work_dir) / "result_detection.json"
-    if not result_path.exists():
-        logger.warning(f"Skip recall plotting: prediction file not found: {result_path}")
-        return
-
-    if "evaluation" not in cfg:
-        logger.warning("Skip recall plotting: config missing evaluation section")
-        return
-
-    evaluation_cfg = cfg.evaluation
-    required_keys = ["ground_truth_file", "subset", "tiou_thresholds"]
-    missing_keys = [key for key in required_keys if key not in evaluation_cfg]
-    if missing_keys:
-        logger.warning(f"Skip recall plotting: missing evaluation keys: {missing_keys}")
-        return
-
-    try:
-        out_dir = plot_recall_from_files(
-            ground_truth_file=evaluation_cfg.ground_truth_file,
-            prediction_file=str(result_path),
-            subset=evaluation_cfg.subset,
-            tiou_thresholds=evaluation_cfg.tiou_thresholds,
-            output_dir=args.plot_output_dir,
-            show=False,
-        )
-        logger.info(f"Recall plots saved to: {out_dir}")
-    except Exception as exc:
-        logger.warning(f"Failed to plot recall curves: {exc}")
-
 
 def main():
-    args = parse_args()
+    """Main entry point for recall visualization."""
+    import sys
 
-    plot_recall_from_files(
-        ground_truth_file=args.ground_truth_file,
-        prediction_file=args.prediction_file,
-        subset=args.subset,
-        tiou_thresholds=args.tiou_thresholds,
-        output_dir=args.output_dir,
-        show=args.show,
-    )
+    if len(sys.argv) > 1:
+        args = parse_args()
+        plot_recall_from_files(
+            ground_truth_file=args.ground_truth_file,
+            prediction_file=args.prediction_file,
+            subset=args.subset,
+            tiou_thresholds=args.tiou_thresholds,
+            output_dir=args.output_dir,
+            show=args.show,
+        )
+    else:
+        print("\nUsage: python -m tad.visualization.plot.recall \\")
+        print("    --ground-truth-file <gt.json> \\")
+        print("    --prediction-file <pred.json> \\")
+        print("    --subset validation/test \\")
+        print("    --tiou-thresholds 0.3,0.4,0.5,0.6,0.7")
+        print()
 
 
 if __name__ == "__main__":

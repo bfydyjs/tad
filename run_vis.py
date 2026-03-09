@@ -6,7 +6,6 @@
     python run_vis.py loss
     python run_vis.py map_heatmap
 
-或者直接双击运行（会提示选择脚本）
 """
 
 import sys
@@ -18,11 +17,7 @@ sys.path.insert(0, str(project_root))
 
 
 def run_script(script_name: str) -> None:
-    """运行指定的可视化脚本。
 
-    Args:
-        script_name: 脚本名称（不含 .py 扩展名）
-    """
     try:
         # 动态导入模块
         module_path = f"tad.visualization.plot.{script_name}"
@@ -45,20 +40,52 @@ def run_script(script_name: str) -> None:
 
 
 def list_available_scripts() -> list[str]:
-    """列出所有可用的可视化脚本。"""
     plot_dir = project_root / "tad" / "visualization" / "plot"
     scripts = []
 
     if plot_dir.exists():
         for file in plot_dir.glob("*.py"):
-            if not file.name.startswith("_") and file.name != "__init__.py":
-                scripts.append(file.stem)
+            # Skip special scripts that shouldn't be run directly
+            if file.name.startswith("_") or file.name == "__init__.py":
+                continue
+
+            # Skip recall.py - it should be called from eval.py with --plot-recall
+            # if file.stem == "recall":
+            #     continue
+
+            scripts.append(file.stem)
 
     return sorted(scripts)
 
 
+def run_all_scripts() -> None:
+    """Run all visualization scripts in order."""
+    scripts = list_available_scripts()
+
+    if not scripts:
+        print("No visualization scripts found!")
+        return
+
+    print(f"\n=== Running All {len(scripts)} Visualization Scripts ===\n")
+
+    for i, script in enumerate(scripts, 1):
+        print(f"\n[{i}/{len(scripts)}] Running {script}...")
+        try:
+            module_path = f"tad.visualization.plot.{script}"
+            module = __import__(module_path, fromlist=["main"])
+
+            if hasattr(module, "main"):
+                module.main()
+                print(f"✓ {script} completed!")
+            else:
+                print(f"✗ {script}: No main() function")
+        except Exception as e:
+            print(f"✗ {script} failed: {e}")
+
+    print("\n=== All Scripts Completed ===")
+
+
 def interactive_mode() -> None:
-    """交互模式：让用户选择要运行的脚本。"""
     scripts = list_available_scripts()
 
     if not scripts:
@@ -69,12 +96,15 @@ def interactive_mode() -> None:
     for i, script in enumerate(scripts, 1):
         print(f"  {i}. {script}")
 
-    print("\nEnter the number of the script to run (or 'q' to quit):")
+    print("\nEnter the number of the script to run (or 'all' to run all, 'q' to quit):")
 
     while True:
         choice = input("> ").strip()
 
         if choice.lower() == "q":
+            return
+        elif choice.lower() == "all":
+            run_all_scripts()
             return
 
         try:
@@ -89,13 +119,13 @@ def interactive_mode() -> None:
 
 
 def main():
-    """主函数。"""
     if len(sys.argv) > 1:
-        # 命令行参数模式
         script_name = sys.argv[1]
-        run_script(script_name)
+        if script_name == "all":
+            run_all_scripts()
+        else:
+            run_script(script_name)
     else:
-        # 交互模式
         interactive_mode()
 
 

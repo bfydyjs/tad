@@ -27,7 +27,7 @@ from matplotlib.patches import Rectangle
 from tad.datasets import build_dataset
 from tad.models import build_detector
 from tad.utils import Config
-from tad.visualization.plot.setup_paper_style import setup_paper_style
+from tad.visualization.utils import setup_paper_style
 
 
 def parse_args():
