@@ -6,19 +6,19 @@ build-backend = "setuptools.build_meta"
 name = "ddiou"
 version = "1.0"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11.9"
 license = { text = "Apache-2.0" }
 dependencies = [
     "numpy>=2.4.1",
-    "pyyaml",
-    "tqdm",
-    "mmengine",
-    "wandb",
-    "scipy",
-    "einops",
-    "pandas",
-    "ninja",
-    "imgaug",
+    "pyyaml>=6.0.2",
+    "tqdm>=4.65.2",
+    "mmengine>=0.10.7",
+    "wandb>=0.23.1",
+    "scipy>=1.15.3",
+    "einops>=0.8.1",
+    "pandas>=2.3.3",
+    "ninja>=1.13.0",
+    "imgaug>=0.4.0",
 ]
 
 [tool.setuptools.packages.find]
