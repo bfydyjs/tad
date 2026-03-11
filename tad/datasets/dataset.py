@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -139,7 +140,6 @@ class PaddingDataset(BaseDataset):
         self.logger(f"{self.subset_name} subset: {len(self.data_list)} videos")
 
     def __getitem__(self, index):
-        from copy import deepcopy
 
         video_name, video_info, video_anno = self.data_list[index]
         if video_anno:
@@ -197,7 +197,6 @@ class ResizeDataset(BaseDataset):
         self.logger(f"{self.subset_name} subset: {len(self.data_list)} videos")
 
     def __getitem__(self, index):
-        from copy import deepcopy
 
         video_name, video_info, video_anno = self.data_list[index]
         if video_anno:
@@ -270,7 +269,6 @@ class SlidingWindowDataset(BaseDataset):
         )
 
     def __getitem__(self, index):
-        from copy import deepcopy
 
         video_name, video_info, video_anno, window_snippet_centers = self.data_list[index]
         if video_anno:
