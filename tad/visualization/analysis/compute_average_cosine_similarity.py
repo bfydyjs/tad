@@ -60,10 +60,7 @@ def compute_avg_cosine_similarity(feature_tensor):
         feature_tensor = feature_tensor[0]
 
     features = feature_tensor.transpose(0, 1).detach().cpu().numpy()
-
-    norms = np.linalg.norm(features, axis=1, keepdims=True)
-    features_norm = features / (norms + 1e-8)
-
+    features_norm = features / np.linalg.norm(features, axis=1, keepdims=True).clip(min=1e-8)
     similarity_matrix = np.dot(features_norm, features_norm.T)
 
     avg_sim = np.mean(similarity_matrix)

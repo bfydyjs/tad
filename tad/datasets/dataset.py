@@ -5,6 +5,7 @@ import numpy as np
 from mmengine.dataset import Compose
 
 from .builder import DATASETS, get_class_index
+from .util import filter_same_annotation
 
 
 class BaseDataset:
@@ -59,6 +60,52 @@ class BaseDataset:
             blocked_videos = []
         return anno_database, blocked_videos
 
+    def get_fps(self, video_info):
+        if self.fps > 0:
+            return self.fps
+        return float(video_info["frame"]) / float(video_info["duration"])
+
+    def _parse_and_filter_gt(
+        self,
+        video_info,
+        thresh,
+        segment_converter=None,
+        ignore_label_func=None,
+        custom_valid_func=None,
+    ):
+        gt_segment = []
+        gt_label = []
+        for anno in video_info["annotations"]:
+            if ignore_label_func and ignore_label_func(anno["label"]):
+                continue
+
+            gt_start, gt_end = (
+                segment_converter(anno["segment"]) if segment_converter else anno["segment"]
+            )
+            gt_scale = gt_end - gt_start
+
+            if custom_valid_func:
+                valid_gt = custom_valid_func(gt_start, gt_end, gt_scale)
+            else:
+                valid_gt = (not self.filter_gt) or (gt_scale > thresh)
+
+            if valid_gt:
+                gt_segment.append([gt_start, gt_end])
+                if getattr(self, "class_agnostic", False):
+                    gt_label.append(0)
+                else:
+                    gt_label.append(self.class_map.index(anno["label"]))
+
+        if len(gt_segment) == 0:
+            return None
+
+        return filter_same_annotation(
+            dict(
+                gt_segments=np.array(gt_segment, dtype=np.float32),
+                gt_labels=np.array(gt_label, dtype=np.int32),
+            )
+        )
+
     def get_gt(self, video_info):
         pass
 
@@ -90,6 +137,28 @@ class PaddingDataset(BaseDataset):
 
         self.build_data_list()
         self.logger(f"{self.subset_name} subset: {len(self.data_list)} videos")
+
+    def __getitem__(self, index):
+        from copy import deepcopy
+
+        video_name, video_info, video_anno = self.data_list[index]
+        if video_anno:
+            video_anno = deepcopy(video_anno)
+            video_anno["gt_segments"] = (
+                video_anno["gt_segments"] - self.offset_frames
+            ) / self.snippet_stride
+        return self.pipeline(
+            dict(
+                video_name=video_name,
+                data_path=self.data_path,
+                sample_stride=self.sample_stride,
+                snippet_stride=self.snippet_stride,
+                fps=self.get_fps(video_info),
+                duration=float(video_info["duration"]),
+                offset_frames=self.offset_frames,
+                **(video_anno or {}),
+            )
+        )
 
     def build_data_list(self):
         anno_database, blocked_videos = self.load_annotation_database()
@@ -126,6 +195,24 @@ class ResizeDataset(BaseDataset):
 
         self.build_data_list()
         self.logger(f"{self.subset_name} subset: {len(self.data_list)} videos")
+
+    def __getitem__(self, index):
+        from copy import deepcopy
+
+        video_name, video_info, video_anno = self.data_list[index]
+        if video_anno:
+            video_anno = deepcopy(video_anno)
+        return self.pipeline(
+            dict(
+                video_name=video_name,
+                data_path=self.data_path,
+                resize_length=self.resize_length,
+                sample_stride=self.sample_stride,
+                fps=-1,
+                duration=float(video_info["duration"]),
+                **(video_anno or {}),
+            )
+        )
 
     def build_data_list(self):
         anno_database, blocked_videos = self.load_annotation_database()
@@ -180,6 +267,32 @@ class SlidingWindowDataset(BaseDataset):
         self.logger(
             f"{self.subset_name} subset: {len(set([data[0] for data in self.data_list]))} videos, "
             f"truncated as {len(self.data_list)} windows."
+        )
+
+    def __getitem__(self, index):
+        from copy import deepcopy
+
+        video_name, video_info, video_anno, window_snippet_centers = self.data_list[index]
+        if video_anno:
+            video_anno = deepcopy(video_anno)
+            video_anno["gt_segments"] = (
+                video_anno["gt_segments"] - window_snippet_centers[0] - self.offset_frames
+            ) / self.snippet_stride
+        return self.pipeline(
+            dict(
+                video_name=video_name,
+                data_path=self.data_path,
+                window_size=self.window_size,
+                feature_start_idx=int(window_snippet_centers[0] / self.snippet_stride),
+                feature_end_idx=int(window_snippet_centers[-1] / self.snippet_stride),
+                sample_stride=self.sample_stride,
+                fps=self.get_fps(video_info),
+                snippet_stride=self.snippet_stride,
+                window_start_frame=window_snippet_centers[0],
+                duration=video_info["duration"],
+                offset_frames=self.offset_frames,
+                **(video_anno or {}),
+            )
         )
 
     def build_data_list(self):
