@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -78,24 +80,27 @@ def process_and_save(data_list: list[dict]) -> None:
     plt.show()
 
 
+loss_output_dir = Path(__file__).resolve().parents[3] / "assets"
+
+
 def main():
     loss_configs = [
         {
-            "file": r"C:\Users\yanho\Downloads\wandb_export_2026-02-03T22_06_26.613+08_00.csv",
+            "file": loss_output_dir / "wandb_export_2026-02-03T22_06_26.613+08_00.csv",
             "step_col": "epoch",
-            "loss_col": "0125_1101 - train/loss",
+            "loss_col": "0130_1147 - train/loss",
             "label": "Model A",
             "color": "tab:blue",
             "linestyle": "-",
         },
-        {
-            "file": r"path/to/second_experiment.csv",
-            "step_col": "epoch",
-            "loss_col": None,
-            "label": "Model B",
-            "color": "tab:orange",
-            "linestyle": "--",
-        },
+        # {
+        #     "file": r"path/to/second_experiment.csv",
+        #     "step_col": "epoch",
+        #     "loss_col": None,
+        #     "label": "Model B",
+        #     "color": "tab:orange",
+        #     "linestyle": "--",
+        # },
         # ...
     ]
 

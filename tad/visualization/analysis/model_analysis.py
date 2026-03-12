@@ -31,7 +31,8 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 # Add the parent directory of the 'tad' package to Python path
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+# Also add the tad subdirectory for internal imports
+sys.path.insert(0, str(Path(__file__).resolve().parent / "tad"))
 
 
 def calculate_flops_params(
@@ -150,8 +151,8 @@ if __name__ == "__main__":
         with open(output_file, "a") as f:
             f.write(msg + "\n")
 
-    from tad.tad.models import build_detector
-    from tad.tad.utils import Config
+    from tad.models import build_detector
+    from tad.utils import Config
 
     ddiou_models = [
         ("thumos_i3d.yaml", (2048, 2304)),
@@ -180,17 +181,17 @@ if __name__ == "__main__":
 
     models_info = [
         ("ActionFormer", "actionformer", "thumos_i3d.py", (2048, 2304)),
-        # ("AFSD", "afsd", "thumos_i3d.py", (2048, 2304)),
-        # ("BMN", "bmn", "thumos_i3d.py", (2048, 2304)),
+        # ("AFSD", "afsd", "thumos_i3d.py", (2048, 256)),
+        ("BMN", "bmn", "thumos_i3d.py", (2048, 128)),
         # ("CausalTAD", "causaltad", "thumos_i3d.py", (2048, 2304)),
         ("DyFADet", "dyfadet", "thumos_videomaev2_g.py", (1408, 2304)),
         ("ETAD", "etad", "thumos_i3d.py", (2048, 2304)),
         ("GTAD", "gtad", "thumos_i3d.py", (2048, 2304)),
-        # ("TadTR", "tadtr", "thumos_i3d.py", (2048, 2304)),
+        ("TadTR", "tadtr", "thumos_i3d.py", (2048, 2304)),
         ("Temporalmaxer", "temporalmaxer", "thumos_i3d.py", (2048, 2304)),
         ("Tridet", "tridet", "thumos_i3d.py", (2048, 2304)),
-        # ("TSI", "tsi", "thumos_i3d.py", (2048, 2304)),
-        # ("VSGN", "vsgn", "thumos_i3d.py", (2048, 2304)),
+        ("TSI", "tsi", "thumos_i3d.py", (2048, 128)),
+        ("VSGN", "vsgn", "thumos_i3d.py", (2048, 320)),
     ]
 
     base_path = Path(__file__).resolve().parent / "OpenTAD" / "configs"
