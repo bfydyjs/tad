@@ -1,4 +1,4 @@
-from .checkpoint import save_checkpoint
+from .checkpoint import load_checkpoint, save_checkpoint
 from .ema import ModelEma
 from .load_config import Config, DictAction
 from .logger import setup_logger
@@ -16,6 +16,7 @@ __all__ = [
     "calculate_params_gflops",
     "create_folder",
     "get_custom_config",
+    "load_checkpoint",
     "save_checkpoint",
     "save_config",
     "set_seed",

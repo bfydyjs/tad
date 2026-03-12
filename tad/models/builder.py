@@ -1,4 +1,4 @@
-from mmengine.registry import Registry
+from tad.utils.registry import Registry
 
 from .backbones.backbone_wrapper import BackboneWrapper
 

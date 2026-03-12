@@ -176,6 +176,7 @@ if __name__ == "__main__":
     # pip install opentad/models/roi_heads/roi_extractors/boundary_pooling --no-build-isolation
     from mmengine.config import Config
     from OpenTAD.opentad.models import build_detector
+    # from tad.tad.utils import Config
 
     models_info = [
         ("ActionFormer", "actionformer", "thumos_i3d.py", (2048, 2304)),

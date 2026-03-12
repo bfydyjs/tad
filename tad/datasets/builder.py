@@ -2,11 +2,43 @@ import json
 from collections.abc import Sequence
 
 import torch
-from mmengine.registry import TRANSFORMS, Registry, build_from_cfg
 from torch.utils.data.dataloader import default_collate
 
+from tad.utils.registry import Registry
+
+
+def build_from_cfg(cfg, registry: Registry, default_args=None):
+    """Build a module from config dict."""
+    return registry.build(cfg, default_args)
+
+
 DATASETS = Registry("dataset")
-PIPELINES = TRANSFORMS
+PIPELINES = Registry("pipeline")
+TRANSFORMS = PIPELINES
+
+
+class Compose:
+    """Compose multiple transforms sequentially."""
+
+    def __init__(self, transforms):
+        self.transforms = []
+        if transforms is None:
+            transforms = []
+
+        for transform in transforms:
+            if isinstance(transform, dict):
+                self.transforms.append(build_from_cfg(transform, PIPELINES))
+            elif callable(transform):
+                self.transforms.append(transform)
+            else:
+                raise TypeError(f"transform must be callable or dict, got {type(transform)}")
+
+    def __call__(self, data):
+        for t in self.transforms:
+            data = t(data)
+            if data is None:
+                return None
+        return data
 
 
 def build_dataset(cfg, default_args=None):

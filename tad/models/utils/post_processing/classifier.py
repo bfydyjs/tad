@@ -2,7 +2,8 @@ import json
 
 import numpy as np
 import torch
-from mmengine.registry import Registry
+
+from tad.utils.registry import Registry
 
 CLASSIFIERS = Registry("models")
 

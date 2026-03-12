@@ -3,9 +3,8 @@ from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
-from mmengine.dataset import Compose
 
-from .builder import DATASETS, get_class_index
+from .builder import DATASETS, Compose, get_class_index
 from .util import filter_same_annotation
 
 

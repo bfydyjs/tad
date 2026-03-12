@@ -3,12 +3,13 @@ import copy
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from mmengine.dataset import Compose
-from mmengine.registry import MODELS as MM_BACKBONES
-from mmengine.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
-BACKBONES = MM_BACKBONES
+from tad.datasets.builder import Compose
+from tad.utils import load_checkpoint
+from tad.utils.registry import Registry
+
+BACKBONES = Registry("models")
 
 
 class BackboneWrapper(nn.Module):
