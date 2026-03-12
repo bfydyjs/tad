@@ -6,19 +6,12 @@ from torch.utils.data.dataloader import default_collate
 
 from tad.utils.registry import Registry
 
-
-def build_from_cfg(cfg, registry: Registry, default_args=None):
-    """Build a module from config dict."""
-    return registry.build(cfg, default_args)
-
-
 DATASETS = Registry("dataset")
-PIPELINES = Registry("pipeline")
-TRANSFORMS = PIPELINES
+TRANSFORMS = Registry("transform")
 
 
-class Compose:
-    """Compose multiple transforms sequentially."""
+class Pipeline:
+    """Compose multiple transforms sequentially to form a data pipeline."""
 
     def __init__(self, transforms):
         self.transforms = []
@@ -27,7 +20,7 @@ class Compose:
 
         for transform in transforms:
             if isinstance(transform, dict):
-                self.transforms.append(build_from_cfg(transform, PIPELINES))
+                self.transforms.append(TRANSFORMS.build(transform))
             elif callable(transform):
                 self.transforms.append(transform)
             else:
@@ -42,18 +35,8 @@ class Compose:
 
 
 def build_dataset(cfg, default_args=None):
-    """Build a dataset from config dict.
-
-    Args:
-        cfg (dict): Config dict. It should at least contain the key "type".
-        default_args (dict | None, optional): Default initialization arguments.
-            Default: None.
-
-    Returns:
-        Dataset: The constructed dataset.
-    """
-    dataset = build_from_cfg(cfg, DATASETS, default_args)
-    return dataset
+    """Build a dataset from config dict."""
+    return DATASETS.build(cfg, default_args)
 
 
 def build_dataloader(

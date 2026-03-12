@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .builder import DATASETS, Compose, get_class_index
+from .builder import DATASETS, Pipeline, get_class_index
 from .util import filter_same_annotation
 
 
@@ -32,7 +32,7 @@ class BaseDataset:
         self.class_agnostic = class_agnostic
         self.filter_gt = filter_gt
         self.test_mode = test_mode
-        self.pipeline = Compose(pipeline)
+        self.pipeline = Pipeline(pipeline)
         self.data_list = []
 
     def get_class_map(self, class_map_path):

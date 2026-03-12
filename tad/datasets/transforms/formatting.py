@@ -7,7 +7,7 @@ import torchvision
 from einops import rearrange, reduce
 from torch.nn.functional import interpolate
 
-from ..builder import PIPELINES
+from ..builder import TRANSFORMS
 
 
 def to_tensor(data):
@@ -28,7 +28,7 @@ def to_tensor(data):
     raise TypeError(f"type {type(data)} cannot be converted to tensor.")
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class Collect:
     def __init__(
         self,
@@ -80,7 +80,7 @@ class Collect:
         return f"{self.__class__.__name__}(keys={self.keys}, meta_keys={self.meta_keys}, "
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class ConvertToTensor:
     def __init__(self, keys):
         self.keys = keys
@@ -94,7 +94,7 @@ class ConvertToTensor:
         return f"{self.__class__.__name__}(keys={self.keys})"
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class Rearrange:
     def __init__(self, keys, ops, **kwargs):
         self.keys = keys
@@ -110,7 +110,7 @@ class Rearrange:
         return f"{self.__class__.__name__}(keys={self.keys}ops={self.ops})"
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class Reduce:
     def __init__(self, keys, ops, reduction):
         self.keys = keys
@@ -128,7 +128,7 @@ class Reduce:
         )
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class ResizeFeat:
     def __init__(self, tool, channel_first=False):
         self.tool = tool
@@ -242,7 +242,7 @@ class ResizeFeat:
         return results
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class Padding:
     def __init__(self, length, pad_value=0, channel_first=False):
         self.length = length
@@ -292,7 +292,7 @@ class Padding:
         return results
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class ChannelReduction:
     """Select features along the channel dimension."""
 

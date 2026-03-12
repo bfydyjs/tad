@@ -5,10 +5,10 @@ import numpy as np
 import torch
 from torch.nn.functional import interpolate
 
-from ..builder import PIPELINES
+from ..builder import TRANSFORMS
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class LoadFeats:
     def __init__(self, feat_format, prefix="", suffix=""):
         self.feat_format = feat_format
@@ -97,7 +97,7 @@ class LoadFeats:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class SlidingWindowTrunc:
     """This is used for sliding window dataset, which will give a window start
     and window end in the result dict, and we will extract the window features,
@@ -135,7 +135,7 @@ class SlidingWindowTrunc:
         return results
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class RandomTrunc:
     """Crops features within a window such that they have a large overlap with
     ground truth segments. Withing the cropping ratio, the length is sampled."""

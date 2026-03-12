@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.utils.checkpoint as cp
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from tad.datasets.builder import Compose
+from tad.datasets.builder import Pipeline
 from tad.utils import load_checkpoint
 from tad.utils.registry import Registry
 
@@ -35,13 +35,13 @@ class BackboneWrapper(nn.Module):
 
         # 2. pre_processing_pipeline
         if hasattr(custom_cfg, "pre_processing_pipeline"):
-            self.pre_processing_pipeline = Compose(custom_cfg.pre_processing_pipeline)
+            self.pre_processing_pipeline = Pipeline(custom_cfg.pre_processing_pipeline)
         else:
             self.pre_processing_pipeline = None
 
         # 3. post_processing_pipeline for pooling and other operations
         if hasattr(custom_cfg, "post_processing_pipeline"):
-            self.post_processing_pipeline = Compose(custom_cfg.post_processing_pipeline)
+            self.post_processing_pipeline = Pipeline(custom_cfg.post_processing_pipeline)
         else:
             self.post_processing_pipeline = None
 

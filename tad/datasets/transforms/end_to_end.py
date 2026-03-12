@@ -5,10 +5,10 @@ import numpy as np
 import torch
 from torch.nn.functional import interpolate
 
-from ..builder import PIPELINES
+from ..builder import TRANSFORMS
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class PrepareVideoInfo:
     def __init__(self, format="mp4", modality="RGB", prefix=""):
         self.format = format
@@ -23,7 +23,7 @@ class PrepareVideoInfo:
         return results
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class LoadSnippetFrames:
     """Load the snippet frame, the output should follows the format:
     snippet_num x channel x clip_len x height x width
@@ -183,7 +183,7 @@ class LoadSnippetFrames:
         return results
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class LoadFrames:
     def __init__(
         self,
@@ -354,7 +354,7 @@ class LoadFrames:
         return results
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class Interpolate:
     def __init__(self, keys, size=128, mode="linear"):
         self.keys = keys
