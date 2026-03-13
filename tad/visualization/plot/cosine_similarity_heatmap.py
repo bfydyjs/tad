@@ -67,7 +67,10 @@ def _get_feature_stride(cfg):
         return cfg.dataset.common.feature_stride
     if "feature_stride" in cfg.dataset.val:
         return cfg.dataset.val.feature_stride
-    return 1
+    raise ValueError(
+        "feature_stride not found in config. "
+        "Please specify it in cfg.dataset.common or cfg.dataset.val."
+    )
 
 
 def _extract_features(args, model, inputs, masks):
@@ -121,12 +124,11 @@ def plot_heatmap(args, similarity_matrix, gt_intervals_indices, seconds_per_step
     # Ticker setup
     import matplotlib.ticker as ticker
 
-    def index_to_seconds(x, pos):
-        return f"{x * seconds_per_step:.1f}"
-
     locator = ticker.MaxNLocator(nbins=10, integer=True)
     ax1.xaxis.set_major_locator(locator)
-    ax1.xaxis.set_major_formatter(ticker.FuncFormatter(index_to_seconds))
+    ax1.xaxis.set_major_formatter(
+        ticker.FuncFormatter(lambda x, pos: f"{x * seconds_per_step:.1f}")
+    )
     ax1.yaxis.set_major_locator(ticker.MaxNLocator(nbins=10, integer=True))
 
     # Ticks and labels
@@ -138,9 +140,12 @@ def plot_heatmap(args, similarity_matrix, gt_intervals_indices, seconds_per_step
     ax1.set_ylabel("Time (s)")
 
     # GT rectangles on heatmap
-    for start, end in gt_intervals_indices:
+    print(f"Heatmap size (timesteps): {t}")
+    print("Drawing GT rectangles...")
+    for i, (start, end) in enumerate(gt_intervals_indices):
         start, end = int(max(0, start)), int(min(t, end))
         if end > start:
+            print(f"  GT #{i + 1}: Drawing rectangle at [{start}, {end}] (span={end - start})")
             ax1.add_patch(
                 Rectangle(
                     (start, start),
@@ -151,6 +156,8 @@ def plot_heatmap(args, similarity_matrix, gt_intervals_indices, seconds_per_step
                     facecolor="none",
                 )
             )
+        else:
+            print(f"  GT #{i + 1}: SKIPPED (start={start}, end={end}, invalid span)")
 
     # Timeline bar
     ax2.set_xlim(0, t)
@@ -213,18 +220,61 @@ def main():
 
     # 6. 计算相似度矩阵
     print("Computing cosine similarity...")
-    norms = np.linalg.norm(features, axis=1, keepdims=True)
-    features_norm = features / (norms + 1e-8)
+    # Normalize features
+    features_norm = features / np.linalg.norm(features, axis=1, keepdims=True).clip(min=1e-8)
+    # Compute cosine similarity matrix [T, T]
     similarity_matrix = np.dot(features_norm, features_norm.T)
 
-    # 7. 计算GT和时间缩放
+    # Debug: Print video info from dataset
+    print("\n=== Video Info ===")
+    print(f"Video name: {video_name}")
+    print(f"Dataset index: {args.index}")
+    if hasattr(dataset, "annotations") and isinstance(dataset.annotations, dict):
+        # Try to find the video in annotations
+        for key in dataset.annotations.keys():
+            if key in video_name or video_name in key:
+                print(f"Annotation key: {key}")
+                anno = dataset.annotations[key]
+                if isinstance(anno, dict) and "annotations" in anno:
+                    print(f"Duration: {anno.get('duration', 'N/A')}s")
+                    print(f"FPS: {anno.get('fps', 'N/A')}")
+                    print(f"Number of GT segments: {len(anno['annotations'])}")
+                    for i, gt in enumerate(anno["annotations"]):
+                        segment = gt.get("segment", [0, 0])
+                        label = gt.get("label", "Unknown")
+                        print(f"  GT #{i + 1}: [{segment[0]:.2f}s, {segment[1]:.2f}s] - {label}")
+                break
+    print("==================\n")
+
+    # 7. 计算 GT 和时间缩放
     gt_segments = data_sample["gt_segments"].cpu().numpy()
     feature_stride = _get_feature_stride(cfg)
     fps = metas.get("fps")
     seconds_per_step = feature_stride / fps if fps else 1.0
     if not fps:
         print("Warning: FPS not found. Assuming 1:1 mapping (Index=Seconds).")
+    # Debug: Print GT analysis
+    print("\n=== GT Analysis ===")
+    print(f"Ground truth file: {cfg.evaluation.ground_truth_file}")
+    print(f"Video name: {video_name}")
+    print(f"Original GT segments (seconds): {gt_segments}")
+    print(f"Number of GT annotations: {len(gt_segments)}")
+    print(f"FPS: {fps}, Feature stride: {feature_stride}")
+    print(f"Seconds per step: {seconds_per_step:.6f}")
+
     gt_intervals_indices = gt_segments / seconds_per_step
+
+    for i, (start_sec, end_sec) in enumerate(gt_segments):
+        start_idx = start_sec / seconds_per_step
+        end_idx = end_sec / seconds_per_step
+        duration = end_sec - start_sec
+        print(
+            f"GT #{i + 1}: [{start_sec:.2f}s, {end_sec:.2f}s -> "
+            f"[{start_idx:.1f}, {end_idx:.1f}] (duration: {duration:.2f}s, "
+            f"index span: {end_idx - start_idx:.1f})"
+        )
+    print("===================\n")
+
     print(f"Video: {video_name}, FPS: {fps}, Stride: {feature_stride}")
 
     # 8. 绘图
