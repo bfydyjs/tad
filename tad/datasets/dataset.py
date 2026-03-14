@@ -42,7 +42,7 @@ class BaseDataset:
         else:
             with open(class_map_path, encoding="utf8") as f:
                 lines = f.readlines()
-            class_map = [item.rstrip("\n") for item in lines]
+            class_map = [item.strip() for item in lines if item.strip()]
         return class_map
 
     def load_annotation_database(self):
@@ -115,6 +115,28 @@ class BaseDataset:
     def __len__(self):
         return len(self.data_list)
 
+    def build_data_list(self):
+        anno_database, blocked_videos = self.load_annotation_database()
+
+        self.data_list = []
+        for video_name, video_info in anno_database.items():
+            if (video_name in blocked_videos) or (video_info["subset"] not in self.subset_name):
+                continue
+
+            # get the ground truth annotation
+            if self.test_mode:
+                video_anno = {}
+            else:
+                video_anno = self.get_gt(video_info)
+                if video_anno is None:  # have no valid gt
+                    continue
+
+            self._add_to_data_list(video_name, video_info, video_anno)
+        assert len(self.data_list) > 0, f"No data found in {self.subset_name} subset."
+
+    def _add_to_data_list(self, video_name, video_info, video_anno):
+        self.data_list.append([video_name, video_info, video_anno])
+
 
 @DATASETS.register_module()
 class PaddingDataset(BaseDataset):
@@ -159,25 +181,6 @@ class PaddingDataset(BaseDataset):
             )
         )
 
-    def build_data_list(self):
-        anno_database, blocked_videos = self.load_annotation_database()
-
-        self.data_list = []
-        for video_name, video_info in anno_database.items():
-            if (video_name in blocked_videos) or (video_info["subset"] not in self.subset_name):
-                continue
-
-            # get the ground truth annotation
-            if self.test_mode:
-                video_anno = {}
-            else:
-                video_anno = self.get_gt(video_info)
-                if video_anno is None:  # have no valid gt
-                    continue
-
-            self.data_list.append([video_name, video_info, video_anno])
-        assert len(self.data_list) > 0, f"No data found in {self.subset_name} subset."
-
 
 @DATASETS.register_module()
 class ResizeDataset(BaseDataset):
@@ -211,25 +214,6 @@ class ResizeDataset(BaseDataset):
                 **(video_anno or {}),
             )
         )
-
-    def build_data_list(self):
-        anno_database, blocked_videos = self.load_annotation_database()
-
-        self.data_list = []
-        for video_name, video_info in anno_database.items():
-            if (video_name in blocked_videos) or (video_info["subset"] not in self.subset_name):
-                continue
-
-            # get the ground truth annotation
-            if self.test_mode:
-                video_anno = {}
-            else:
-                video_anno = self.get_gt(video_info)
-                if video_anno is None:  # have no valid gt
-                    continue
-
-            self.data_list.append([video_name, video_info, video_anno])
-        assert len(self.data_list) > 0, f"No data found in {self.subset_name} subset."
 
 
 @DATASETS.register_module()
@@ -292,25 +276,9 @@ class SlidingWindowDataset(BaseDataset):
             )
         )
 
-    def build_data_list(self):
-        anno_database, blocked_videos = self.load_annotation_database()
-
-        self.data_list = []
-        for video_name, video_info in anno_database.items():
-            if (video_name in blocked_videos) or (video_info["subset"] not in self.subset_name):
-                continue
-
-            # get the ground truth annotation
-            if self.test_mode:
-                video_anno = {}
-            else:
-                video_anno = self.get_gt(video_info)
-                if video_anno is None:  # have no valid gt
-                    continue
-
-            tmp_data_list = self.split_video_to_windows(video_name, video_info, video_anno)
-            self.data_list.extend(tmp_data_list)
-        assert len(self.data_list) > 0, f"No data found in {self.subset_name} subset."
+    def _add_to_data_list(self, video_name, video_info, video_anno):
+        tmp_data_list = self.split_video_to_windows(video_name, video_info, video_anno)
+        self.data_list.extend(tmp_data_list)
 
     def split_video_to_windows(self, video_name, video_info, video_anno):
         # need: video frame, video duration, video fps
