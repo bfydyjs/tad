@@ -1,6 +1,8 @@
+from .cropping import RandomTrunc, SlidingWindowTrunc
 from .end_to_end import LoadFrames, LoadSnippetFrames, PrepareVideoInfo
-from .formatting import ChannelReduction, Collect, ConvertToTensor, Padding, Rearrange, Reduce
-from .loading import LoadFeats, RandomTrunc, SlidingWindowTrunc
+from .formatting import Collect, ConvertToTensor, Rearrange, Reduce
+from .loading import LoadFeats
+from .shaping import ChannelReduction, Padding, ResizeFeat
 
 __all__ = [
     "ChannelReduction",
@@ -14,5 +16,6 @@ __all__ = [
     "RandomTrunc",
     "Rearrange",
     "Reduce",
+    "ResizeFeat",
     "SlidingWindowTrunc",
 ]
