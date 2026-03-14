@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import scipy
 import torch
@@ -106,11 +108,11 @@ class ResizeFeat:
         assert resized_feat.shape[0] == feats.shape[0]
         assert resized_feat.shape[1] == tscale
 
-        if "gt_segments" in results.keys():
+        if "gt_segments" in results:
             # convert gt seconds to feature grid
-            results["gt_segments"] = (results["gt_segments"] / results["duration"]).clamp(
-                min=0.0, max=1.0
-            )
+            # clamp using 1e-8 to avoid division by zero
+            dur = max(results["duration"], 1e-8)
+            results["gt_segments"] = (results["gt_segments"] / dur).clamp(min=0.0, max=1.0)
             results["gt_segments"] *= tscale
 
         results["feats_len_ori"] = results["feats"].shape[1]  # for future usage
@@ -119,6 +121,9 @@ class ResizeFeat:
         else:
             results["feats"] = resized_feat
         return results
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(tool='{self.tool}', channel_first={self.channel_first})"
 
 
 @TRANSFORMS.register_module()
@@ -148,19 +153,22 @@ class Padding:
                 results["feats"] = new_feats
 
             pad_masks = torch.zeros(self.length - feat_len).bool()
-            if "masks" in results.keys():
+            if "masks" in results:
                 results["masks"] = torch.cat((results["masks"], pad_masks), dim=0)
             else:
                 results["masks"] = torch.cat((torch.ones(feat_len).bool(), pad_masks), dim=0)
         else:
-            print(
-                f"feature length {feat_len} is larger than padding length. "
-                f"Will be resized to {self.length}."
+            warnings.warn(
+                f"Feature length {feat_len} is larger than padding length. "
+                f"Will be resized to {self.length}.",
+                stacklevel=2,
             )
             results["snippet_stride"] = results["snippet_stride"] * feat_len / self.length
             results["offset_frames"] = results["offset_frames"] * feat_len / self.length
             new_feats = interpolate(
-                feats.permute(1, 0)[None],  # [b,c,t]
+                feats.permute(1, 0)[
+                    None
+                ].float(),  # [b,c,t] Cast to float for stability in linear mode
                 size=self.length,
                 mode="linear",
                 align_corners=False,
@@ -169,6 +177,14 @@ class Padding:
             results["feats"] = new_feats if self.channel_first else new_feats.permute(1, 0)
             results["masks"] = torch.ones(self.length).bool()
         return results
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}("
+            f"length={self.length}, "
+            f"pad_value={self.pad_value}, "
+            f"channel_first={self.channel_first})"
+        )
 
 
 @TRANSFORMS.register_module()
@@ -187,3 +203,6 @@ class ChannelReduction:
         # select the features
         results["feats"] = results["feats"][:, self.index[0] : self.index[1]]
         return results
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(in_channels={self.in_channels}, index={self.index})"

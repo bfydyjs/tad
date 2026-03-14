@@ -24,7 +24,7 @@ class LoadFeats:
         assert feat_format in ["npy", "npz", "pt"], f"not support {feat_format}"
 
     def read_from_tensor(self, file_path):
-        feats = torch.load(file_path).float()
+        feats = torch.load(file_path).float().numpy()
         return feats
 
     def read_from_npy(self, file_path):
@@ -44,8 +44,7 @@ class LoadFeats:
             elif feat_format == "pt":
                 feats = self.read_from_tensor(file_path)
         except Exception as e:
-            print(f"Missing data: {file_path}, error: {e}")
-            exit()
+            raise RuntimeError(f"Missing data: {file_path}, error: {e}") from e
         return feats
 
     def __call__(self, results):
@@ -92,5 +91,5 @@ class LoadFeats:
         return results
 
     def __repr__(self):
-        repr_str = f"{self.__class__.__name__}(feat_format={self.feat_format}"
+        repr_str = f"{self.__class__.__name__}(feat_format={self.feat_format})"
         return repr_str

@@ -15,7 +15,7 @@ class SlidingWindowTrunc:
         self.with_mask = with_mask
 
     def __call__(self, results):
-        assert "window_size" in results.keys(), "should have window_size as a key"
+        assert "window_size" in results, "should have window_size as a key"
         assert isinstance(results["feats"], torch.Tensor)
         window_size = results["window_size"]
 
@@ -41,6 +41,9 @@ class SlidingWindowTrunc:
 
         results["feats"] = window_feats.float()
         return results
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(with_mask={self.with_mask})"
 
 
 @TRANSFORMS.register_module()
@@ -90,7 +93,7 @@ class RandomTrunc:
             # sample a random truncation of the video feats
             st = random.randint(0, feat_len - trunc_len)
             ed = st + trunc_len
-            window = torch.as_tensor([st, ed], dtype=torch.float32)
+            window = torch.as_tensor([st, ed], dtype=gt_segments.dtype, device=gt_segments.device)
 
             # compute the intersection between the sampled window and all segments
             window = window[None].repeat(num_segs, 1)
@@ -158,3 +161,17 @@ class RandomTrunc:
         if self.channel_first:
             results["feats"] = results["feats"].transpose(0, 1)  # [T,C] -> [C,T]
         return results
+
+    def __repr__(self):
+        repr_str = (
+            f"{self.__class__.__name__}("
+            f"trunc_len={self.trunc_len}, "
+            f"trunc_thresh={self.trunc_thresh}, "
+            f"crop_ratio={self.crop_ratio}, "
+            f"max_num_trials={self.max_num_trials}, "
+            f"has_action={self.has_action}, "
+            f"no_trunc={self.no_trunc}, "
+            f"pad_value={self.pad_value}, "
+            f"channel_first={self.channel_first})"
+        )
+        return repr_str

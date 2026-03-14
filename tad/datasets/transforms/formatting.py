@@ -22,7 +22,7 @@ def to_tensor(data):
         return torch.LongTensor([data])
     if isinstance(data, float):
         return torch.FloatTensor([data])
-    raise TypeError(f"type {type(data)} cannot be converted to tensor.")
+    raise TypeError(f"type {type(data)} with value {data} cannot be converted to tensor.")
 
 
 @TRANSFORMS.register_module()
@@ -64,17 +64,13 @@ class Collect:
             data[key] = results[key]
 
         # meta keys
-        if len(self.meta_keys) != 0:
-            meta = {}
-            for key in self.meta_keys:
-                if key in results.keys():
-                    meta[key] = results[key]
-            data["metas"] = meta
+        if self.meta_keys:
+            data["metas"] = {key: results[key] for key in self.meta_keys if key in results}
 
         return data
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(keys={self.keys}, meta_keys={self.meta_keys}, "
+        return f"{self.__class__.__name__}(keys={self.keys}, meta_keys={self.meta_keys})"
 
 
 @TRANSFORMS.register_module()
