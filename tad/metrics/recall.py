@@ -3,8 +3,9 @@ import json
 import numpy as np
 import pandas as pd
 
-from .builder import EVALUATORS, remove_duplicate_annotations
+from .builder import EVALUATORS
 from .map import segment_iou
+from .util import remove_duplicate_annotations
 
 
 @EVALUATORS.register_module()
@@ -63,7 +64,7 @@ class Recall:
         with open(ground_truth_file) as fobj:
             data = json.load(fobj)
         # Checking format
-        if not all([field in list(data.keys()) for field in self.gt_fields]):
+        if not all(field in data for field in self.gt_fields):
             raise OSError("Please input a valid ground truth file.")
 
         # Read ground truth data.
@@ -119,7 +120,7 @@ class Recall:
             raise OSError(f"Type of prediction file is {type(proposal_file)}.")
 
         # Checking format...
-        if not all([field in list(data.keys()) for field in self.pred_fields]):
+        if not all(field in data for field in self.pred_fields):
             raise OSError("Please input a valid proposal file.")
 
         # Read predictions.
@@ -318,7 +319,8 @@ def _compute_score_list(video_lst, ground_truth_gbvn, proposals_gbvn, ratio):
             # Sort proposals by score.
             sort_idx = proposals_videoid["score"].argsort()[::-1]
             this_video_proposals = this_video_proposals[sort_idx, :]
-        except Exception:
+        except KeyError:
+            # KeyError occurs when the video does not exist in proposals
             n = this_video_ground_truth.shape[0]
             score_lst.append(np.zeros((n, 1)))
             continue

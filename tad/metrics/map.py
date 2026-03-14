@@ -5,7 +5,8 @@ import multiprocessing as mp
 import numpy as np
 import pandas as pd
 
-from .builder import EVALUATORS, remove_duplicate_annotations
+from .builder import EVALUATORS
+from .util import remove_duplicate_annotations
 
 
 @EVALUATORS.register_module()
@@ -64,7 +65,7 @@ class MeanAveragePrecision:
         with open(ground_truth_file) as fobj:
             data = json.load(fobj)
         # Checking format
-        if not all([field in list(data.keys()) for field in self.gt_fields]):
+        if not all(field in data for field in self.gt_fields):
             raise OSError("Please input a valid ground truth file.")
 
         # Read ground truth data.
@@ -321,7 +322,7 @@ def compute_average_precision_detection(ground_truth, prediction, tiou_threshold
         try:
             # Check if there is at least one ground truth in the video associated.
             ground_truth_videoid = ground_truth_gbvn.get_group(this_pred["video-id"])
-        except Exception:
+        except KeyError:
             fp[:, idx] = 1
             continue
 
@@ -405,7 +406,7 @@ def compute_topkx_recall_detection(
         n_gts += len(ground_truth_videoid)
         try:
             prediction_videoid = prediction_gbvn.get_group(videoid)
-        except Exception:
+        except KeyError:
             continue
 
         this_gt = ground_truth_videoid.reset_index()
@@ -545,7 +546,7 @@ class MeanAveragePrecisionEpic:
         with open(ground_truth_file) as fobj:
             data = json.load(fobj)
         # Checking format
-        if not all([field in list(data.keys()) for field in self.gt_fields]):
+        if not all(field in data for field in self.gt_fields):
             raise OSError("Please input a valid ground truth file.")
 
         # Read ground truth data.

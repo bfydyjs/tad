@@ -1,4 +1,3 @@
-import json
 from collections.abc import Sequence
 
 import torch
@@ -77,23 +76,3 @@ def collate(batch):
         else:
             collate_data[key] = [sample[key] for sample in batch]
     return collate_data
-
-
-def get_class_index(gt_json_path, class_map_path):
-    with open(gt_json_path) as f:
-        anno = json.load(f)
-
-    anno = anno["database"]
-    class_map = []
-    for video_name in anno.keys():
-        if "annotations" in anno[video_name]:
-            for tmpp_data in anno[video_name]["annotations"]:
-                if tmpp_data["label"] not in class_map:
-                    class_map.append(tmpp_data["label"])
-
-    class_map.sort()
-    f2 = open(class_map_path, "w")
-    for name in class_map:
-        f2.write(name + "\n")
-    f2.close()
-    return class_map

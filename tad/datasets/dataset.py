@@ -4,8 +4,8 @@ from pathlib import Path
 
 import numpy as np
 
-from .builder import DATASETS, Pipeline, get_class_index
-from .util import filter_same_annotation
+from .builder import DATASETS, Pipeline
+from .util import filter_same_annotation, generate_class_map
 
 
 class BaseDataset:
@@ -37,7 +37,7 @@ class BaseDataset:
 
     def get_class_map(self, class_map_path):
         if not Path(class_map_path).exists():
-            class_map = get_class_index(self.ann_file, class_map_path)
+            class_map = generate_class_map(self.ann_file, class_map_path)
             self.logger(f"Class map is saved in {class_map_path}, total {len(class_map)} classes.")
         else:
             with open(class_map_path, encoding="utf8") as f:
