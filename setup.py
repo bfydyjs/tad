@@ -1,0 +1,13 @@
+from setuptools import setup
+from torch.utils.cpp_extension import BuildExtension, CppExtension
+
+setup(
+    ext_modules=[
+        CppExtension(
+            name="nms_1d_cpu",
+            sources=["tad/models/post_processing/nms/nms_cpu.cpp"],
+            extra_compile_args=["-fopenmp"],
+        )
+    ],
+    cmdclass={"build_ext": BuildExtension},
+)

@@ -1,9 +1,8 @@
 # Installation
-```
+```bash
 git clone https://github.com/bfydyjs/tad.git
 cd tad
-pip install . --no-build-isolation
-pip install ./tad/models/post_processing/nms --no-build-isolation
+pip install -e . --no-build-isolation
 ```
 # Prepare the Annotation and Data
 
