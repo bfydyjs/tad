@@ -190,7 +190,7 @@ def resume_training(args, logger, model, optimizer, scheduler, model_ema):
         model.load_state_dict(checkpoint["state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer"])
         scheduler.load_state_dict(checkpoint["scheduler"])
-        if model_ema is not None:
+        if hasattr(model_ema, "module"):
             model_ema.module.load_state_dict(checkpoint["state_dict_ema"])
 
         del checkpoint
@@ -352,9 +352,8 @@ def main():
     finally:
         if args.rank == 0:
             wandb.finish()
-        if hasattr(args, "distributed") and args.distributed:
-            if dist.is_initialized():
-                dist.destroy_process_group()
+        if getattr(args, "distributed", False) and dist.is_initialized():
+            dist.destroy_process_group()
 
 
 if __name__ == "__main__":

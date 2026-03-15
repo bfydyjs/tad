@@ -261,7 +261,7 @@ def eval_one_epoch(
 
         # update the result dict
         for k, v in results.items():
-            if k in result_dict.keys():
+            if k in result_dict:
                 result_dict[k].extend(v)
             else:
                 result_dict[k] = v
@@ -284,7 +284,7 @@ def gather_ddp_results(world_size, result_dict, post_cfg):
         result_dict = {}
         for i in range(world_size):  # update the result dict
             for k, v in gather_dict_list[i].items():
-                if k in result_dict.keys():
+                if k in result_dict:
                     result_dict[k].extend(v)
                 else:
                     result_dict[k] = v
