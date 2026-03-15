@@ -2,7 +2,7 @@ from tad.utils.registry import Registry
 
 from .backbones.backbone_wrapper import BackboneWrapper
 
-MODELS = Registry("models")
+MODELS = Registry("model")
 
 PROJECTIONS = MODELS
 NECKS = MODELS

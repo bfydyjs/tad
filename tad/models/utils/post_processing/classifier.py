@@ -5,7 +5,7 @@ import torch
 
 from tad.utils.registry import Registry
 
-CLASSIFIERS = Registry("models")
+CLASSIFIERS = Registry("model")
 
 
 def build_classifier(cfg):

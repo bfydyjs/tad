@@ -9,7 +9,7 @@ from tad.datasets.builder import Pipeline
 from tad.utils import load_checkpoint
 from tad.utils.registry import Registry
 
-BACKBONES = Registry("models")
+BACKBONES = Registry("model")
 
 
 class BackboneWrapper(nn.Module):
