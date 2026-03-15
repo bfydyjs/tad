@@ -84,88 +84,98 @@ def softnms_python(segs, scores, iou_threshold, sigma, min_score, method):
     return segs[keep], scores[keep], indexes[keep]
 
 
-class NMSop(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, segs, scores, cls_idxs, iou_threshold, min_score, max_num):
-        # vanilla nms will not change the score, so we can filter segs first
-        is_filtering_by_score = min_score > 0
-        if is_filtering_by_score:
-            valid_mask = scores > min_score
-            segs, scores = segs[valid_mask], scores[valid_mask]
-            cls_idxs = cls_idxs[valid_mask]
-            _ = torch.nonzero(valid_mask, as_tuple=False).squeeze(dim=1)
+def nms_op(segs_for_nms, original_segs, scores, cls_idxs, iou_threshold, min_score, max_num):
+    device = original_segs.device
+    is_filtering_by_score = min_score > 0
+    if is_filtering_by_score:
+        valid_mask = scores > min_score
+        segs_for_nms = segs_for_nms[valid_mask]
+        original_segs = original_segs[valid_mask]
+        scores = scores[valid_mask]
+        cls_idxs = cls_idxs[valid_mask]
 
-        # nms op; return inds that is sorted by descending order
-        if nms_1d_cpu is not None:
-            inds = nms_1d_cpu.nms(
-                segs.contiguous().cpu(),
-                scores.contiguous().cpu(),
-                iou_threshold=float(iou_threshold),
-            )
-        else:
-            inds = nms_python(
-                segs.cpu(),
-                scores.cpu(),
-                iou_threshold=float(iou_threshold),
-            )
+    if nms_1d_cpu is not None:
+        inds = nms_1d_cpu.nms(
+            segs_for_nms.contiguous().cpu(),
+            scores.contiguous().cpu(),
+            iou_threshold=float(iou_threshold),
+        )
+    else:
+        inds = nms_python(
+            segs_for_nms.cpu(),
+            scores.cpu(),
+            iou_threshold=float(iou_threshold),
+        )
 
+    if max_num > 0:
+        inds = inds[: min(max_num, len(inds))]
+
+    inds = inds.to(device)
+    sorted_segs = original_segs[inds]
+    sorted_scores = scores[inds]
+    sorted_cls_idxs = cls_idxs[inds]
+    return sorted_segs, sorted_scores, sorted_cls_idxs
+
+
+def softnms_op(
+    segs_for_nms,
+    original_segs,
+    scores,
+    cls_idxs,
+    iou_threshold,
+    sigma,
+    min_score,
+    method,
+    max_num,
+    t1,
+    t2,
+):
+    device = original_segs.device
+    if nms_1d_cpu is not None:
+        # pre allocate memory for sorted results
+        dets = segs_for_nms.new_empty((segs_for_nms.size(0), 3), device="cpu")
+        # softnms op, return dets that stores the sorted segs_for_nms / scores
+        inds = nms_1d_cpu.softnms(
+            segs_for_nms.cpu(),
+            scores.cpu(),
+            dets,
+            iou_threshold=float(iou_threshold),
+            sigma=float(sigma),
+            min_score=float(min_score),
+            method=int(method),
+            t1=float(t1),
+            t2=float(t2),
+        )
         # cap by max number
         if max_num > 0:
-            inds = inds[: min(max_num, len(inds))]
-        # return the sorted segs / scores
-        sorted_segs = segs[inds]
-        sorted_scores = scores[inds]
-        sorted_cls_idxs = cls_idxs[inds]
-        return sorted_segs.clone(), sorted_scores.clone(), sorted_cls_idxs.clone()
-
-
-class SoftNMSop(torch.autograd.Function):
-    @staticmethod
-    def forward(
-        ctx, segs, scores, cls_idxs, iou_threshold, sigma, min_score, method, max_num, t1, t2
-    ):
-        if nms_1d_cpu is not None:
-            # pre allocate memory for sorted results
-            dets = segs.new_empty((segs.size(0), 3), device="cpu")
-            # softnms op, return dets that stores the sorted segs / scores
-            inds = nms_1d_cpu.softnms(
-                segs.cpu(),
-                scores.cpu(),
-                dets.cpu(),
-                iou_threshold=float(iou_threshold),
-                sigma=float(sigma),
-                min_score=float(min_score),
-                method=int(method),
-                t1=float(t1),
-                t2=float(t2),
-            )
-            # cap by max number
-            if max_num > 0:
-                n_segs = min(len(inds), max_num)
-            else:
-                n_segs = len(inds)
-            sorted_segs = dets[:n_segs, :2]
-            sorted_scores = dets[:n_segs, 2]
-            sorted_cls_idxs = cls_idxs[inds]
-            sorted_cls_idxs = sorted_cls_idxs[:n_segs]
+            n_segs = min(len(inds), max_num)
         else:
-            sorted_segs, sorted_scores, inds = softnms_python(
-                segs.cpu(),
-                scores.cpu(),
-                iou_threshold=float(iou_threshold),
-                sigma=float(sigma),
-                min_score=float(min_score),
-                method=int(method),
-            )
-            # cap by max number
-            if max_num > 0:
-                sorted_segs = sorted_segs[:max_num]
-                sorted_scores = sorted_scores[:max_num]
-                inds = inds[:max_num]
+            n_segs = len(inds)
 
-            sorted_cls_idxs = cls_idxs[inds]
+        inds = inds[:n_segs].to(device)
+        sorted_segs = original_segs[inds]
+        sorted_scores = dets[:n_segs, 2].to(device)
+        sorted_cls_idxs = cls_idxs[inds]
+    else:
+        _, sorted_scores, inds = softnms_python(
+            segs_for_nms.cpu(),
+            scores.cpu(),
+            iou_threshold=float(iou_threshold),
+            sigma=float(sigma),
+            min_score=float(min_score),
+            method=int(method),
+        )
+        # cap by max number
+        if max_num > 0:
+            inds = inds[:max_num]
+            sorted_scores = sorted_scores[:max_num]
 
-        return sorted_segs.clone(), sorted_scores.clone(), sorted_cls_idxs.clone()
+        inds = inds.to(device)
+        sorted_scores = sorted_scores.to(device)
+        sorted_segs = original_segs[inds]
+        sorted_cls_idxs = cls_idxs[inds]
+
+    return sorted_segs, sorted_scores, sorted_cls_idxs
 
 
 def seg_voting(nms_segs, all_segs, all_scores, iou_threshold, score_offset=1.5):
@@ -225,101 +235,59 @@ def batched_nms(
     # make sure the inputs are float
     segs = segs.float()
     scores = scores.float()
+    device = segs.device
 
-    # Based on Detectron2 implementation,
-    num_segs = segs.shape[0]
     # corner case, no prediction outputs
+    num_segs = segs.shape[0]
     if num_segs == 0:
         return (
-            torch.zeros([0, 2]),
-            torch.zeros([0]),
-            torch.zeros([0], dtype=cls_idxs.dtype),
+            torch.zeros([0, 2], device=device),
+            torch.zeros([0], device=device),
+            torch.zeros([0], dtype=cls_idxs.dtype, device=device),
         )
 
     if multiclass:
-        # multiclass nms: apply nms on each class independently
-        new_segs, new_scores, new_cls_idxs = [], [], []
-
-        # Optimization: Move data to CPU once if using Soft-NMS
-        if use_soft_nms:
-            segs_proc = segs.cpu()
-            scores_proc = scores.cpu()
-            cls_idxs_proc = cls_idxs.cpu()
-        else:
-            segs_proc = segs
-            scores_proc = scores
-            cls_idxs_proc = cls_idxs
-
-        for class_id in torch.unique(cls_idxs_proc):
-            curr_indices = torch.where(cls_idxs_proc == class_id)[0]
-            # soft_nms vs nms
-            if use_soft_nms:
-                sorted_segs, sorted_scores, sorted_cls_idxs = SoftNMSop.apply(
-                    segs_proc[curr_indices],
-                    scores_proc[curr_indices],
-                    cls_idxs_proc[curr_indices],
-                    iou_threshold,
-                    sigma,
-                    min_score,
-                    method,
-                    max_seg_num,
-                    t1,
-                    t2,
-                )
-            else:
-                sorted_segs, sorted_scores, sorted_cls_idxs = NMSop.apply(
-                    segs_proc[curr_indices],
-                    scores_proc[curr_indices],
-                    cls_idxs_proc[curr_indices],
-                    iou_threshold,
-                    min_score,
-                    max_seg_num,
-                )
-            # disable seg voting for multiclass nms, no sufficient segs
-
-            # fill in the class index
-            new_segs.append(sorted_segs)
-            new_scores.append(sorted_scores)
-            new_cls_idxs.append(sorted_cls_idxs)
-
-        # cat the results
-        new_segs = torch.cat(new_segs)
-        new_scores = torch.cat(new_scores)
-        new_cls_idxs = torch.cat(new_cls_idxs)
-
+        # Optimization: offset trick to eliminate the class loop
+        max_coordinate = segs.max() if num_segs > 0 else 0
+        offsets = cls_idxs.to(segs.dtype) * (max_coordinate + 1)
+        segs_for_nms = segs + offsets[:, None]
     else:
-        # class agnostic
-        if use_soft_nms:
-            new_segs, new_scores, new_cls_idxs = SoftNMSop.apply(
-                segs,
-                scores,
-                cls_idxs,
-                iou_threshold,
-                sigma,
-                min_score,
-                method,
-                max_seg_num,
-                t1,
-                t2,
-            )
-        else:
-            new_segs, new_scores, new_cls_idxs = NMSop.apply(
-                segs,
-                scores,
-                cls_idxs,
-                iou_threshold,
-                min_score,
-                max_seg_num,
-            )
-        # seg voting
-        if voting_thresh > 0:
-            new_segs = seg_voting(new_segs, segs, scores, voting_thresh)
+        segs_for_nms = segs
+
+    if use_soft_nms:
+        new_segs, new_scores, new_cls_idxs = softnms_op(
+            segs_for_nms,
+            segs,
+            scores,
+            cls_idxs,
+            iou_threshold,
+            sigma,
+            min_score,
+            method,
+            max_seg_num,
+            t1,
+            t2,
+        )
+    else:
+        new_segs, new_scores, new_cls_idxs = nms_op(
+            segs_for_nms,
+            segs,
+            scores,
+            cls_idxs,
+            iou_threshold,
+            min_score,
+            max_seg_num,
+        )
+
+    # seg voting
+    if not multiclass and voting_thresh > 0:
+        new_segs = seg_voting(new_segs, segs, scores, voting_thresh)
 
     # sort based on scores and return
     # truncate the results based on max_seg_num
     _, idxs = new_scores.sort(descending=True)
     max_seg_num = min(max_seg_num, new_segs.shape[0])
-    # needed for multiclass NMS
+
     new_segs = new_segs[idxs[:max_seg_num]]
     new_scores = new_scores[idxs[:max_seg_num]]
     new_cls_idxs = new_cls_idxs[idxs[:max_seg_num]]
