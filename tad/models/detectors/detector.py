@@ -1,7 +1,7 @@
 import torch
 
 from ..builder import DETECTORS, build_backbone, build_head, build_neck, build_projection
-from ..utils.post_processing import (
+from ..post_processing import (
     batched_nms,
     convert_to_seconds,
     load_predictions,

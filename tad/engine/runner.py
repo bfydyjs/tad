@@ -10,7 +10,7 @@ import wandb
 
 from tad.datasets.dataset import SlidingWindowDataset
 from tad.metrics import build_evaluator
-from tad.models.utils.post_processing import batched_nms, build_classifier
+from tad.models.post_processing import batched_nms, build_classifier
 from tad.utils import create_folder
 from tad.utils.misc import AverageMeter, reduce_loss
 
