@@ -25,7 +25,7 @@ class BackboneWrapper(nn.Module):
         # custom settings: pretrained checkpoint, post_processing_pipeline,
         # norm_eval, freeze_backbone
         # 1. load the pretrained model
-        if hasattr(custom_cfg, "pretrain") and custom_cfg.pretrain is not None:
+        if getattr(custom_cfg, "pretrain", None):
             load_checkpoint(self.model, custom_cfg.pretrain, map_location="cpu")
         else:
             print(
@@ -34,16 +34,12 @@ class BackboneWrapper(nn.Module):
             )
 
         # 2. pre_processing_pipeline
-        if hasattr(custom_cfg, "pre_processing_pipeline"):
-            self.pre_processing_pipeline = Pipeline(custom_cfg.pre_processing_pipeline)
-        else:
-            self.pre_processing_pipeline = None
+        pre_pipeline_cfg = getattr(custom_cfg, "pre_processing_pipeline", None)
+        self.pre_processing_pipeline = Pipeline(pre_pipeline_cfg) if pre_pipeline_cfg else None
 
         # 3. post_processing_pipeline for pooling and other operations
-        if hasattr(custom_cfg, "post_processing_pipeline"):
-            self.post_processing_pipeline = Pipeline(custom_cfg.post_processing_pipeline)
-        else:
-            self.post_processing_pipeline = None
+        post_pipeline_cfg = getattr(custom_cfg, "post_processing_pipeline", None)
+        self.post_processing_pipeline = Pipeline(post_pipeline_cfg) if post_pipeline_cfg else None
 
         # 4. norm_eval: set all norm layers to eval mode
         self.norm_eval = getattr(custom_cfg, "norm_eval", True)
@@ -56,16 +52,11 @@ class BackboneWrapper(nn.Module):
         # 6. whether to use temporal activation checkpointing
         self.use_temporal_checkpointing = getattr(custom_cfg, "temporal_checkpointing", False)
         if self.use_temporal_checkpointing:
-            assert hasattr(custom_cfg, "temporal_checkpointing_chunk_num"), (
-                "temporal_checkpointing_chunk_num should be provided "
-                "when using temporal checkpointing"
-            )
-            assert hasattr(custom_cfg, "temporal_checkpointing_chunk_dim"), (
-                "temporal_checkpointing_chunk_dim should be provided "
-                "when using temporal checkpointing"
-            )
             self.temporal_checkpointing_chunk_num = custom_cfg.temporal_checkpointing_chunk_num
             self.temporal_checkpointing_chunk_dim = custom_cfg.temporal_checkpointing_chunk_dim
+
+        # apply norm_eval setting immediately
+        self.set_norm_layer()
 
     def forward(self, frames, masks=None):
         # two types: snippet or frame
@@ -73,12 +64,9 @@ class BackboneWrapper(nn.Module):
         # snippet: 3D backbone, [bs, T, 3, clip_len, H, W]
         # frame: 3D backbone, [bs, 1, 3, T, H, W]
 
-        # set all normalization layers
-        self.set_norm_layer()
-
         # data preprocessing: normalize mean and std
         frames, _ = self.model.data_preprocessor.preprocess(
-            self.tensor_to_list(frames),  # need list input
+            list(frames),  # need list input
             data_samples=None,
             training=False,  # for blending, which is not used in openTAD
         )
@@ -92,18 +80,7 @@ class BackboneWrapper(nn.Module):
         frames = frames.flatten(0, 1).contiguous()  # [bs*num_seg, ...]
 
         # go through the video backbone
-        if self.freeze_backbone:  # freeze everything even in training
-            with torch.no_grad():
-                if self.use_temporal_checkpointing:
-                    features = self.temporal_checkpointing(
-                        frames,
-                        self.temporal_checkpointing_chunk_num,
-                        self.temporal_checkpointing_chunk_dim,
-                    )
-                else:
-                    features = self.model.backbone(frames)
-
-        else:  # let the model.train() or model.eval() decide whether to freeze
+        with torch.set_grad_enabled(torch.is_grad_enabled() and not self.freeze_backbone):
             if self.use_temporal_checkpointing:
                 features = self.temporal_checkpointing(
                     frames,
@@ -129,8 +106,11 @@ class BackboneWrapper(nn.Module):
         features = features.to(torch.float32)
         return features
 
-    def tensor_to_list(self, tensor):
-        return [t for t in tensor]
+    def train(self, mode=True):
+        """Override train to set norm layers to eval mode if norm_eval is True."""
+        super().train(mode)
+        self.set_norm_layer()
+        return self
 
     def unflatten_and_pool_features(self, features, batches, num_segs):
         # unflatten the batch dimension and num_segs dimension
