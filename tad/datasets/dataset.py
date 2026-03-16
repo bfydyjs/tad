@@ -28,44 +28,47 @@ class BaseDataset:
         self.ann_file = ann_file
         self.subset_name = subset_name
         self.logger = logger.info if logger is not None else print
-        self.class_map = self.get_class_map(class_map)
+        self.class_map = self._get_class_map(class_map)
         self.class_agnostic = class_agnostic
         self.filter_gt = filter_gt
         self.test_mode = test_mode
         self.pipeline = Pipeline(pipeline)
         self.data_list = []
 
-    def get_class_map(self, class_map_path):
-        if not Path(class_map_path).exists():
-            class_map = generate_class_map(self.ann_file, class_map_path)
-            self.logger(f"Class map is saved in {class_map_path}, total {len(class_map)} classes.")
-        else:
-            with open(class_map_path, encoding="utf8") as f:
-                lines = f.readlines()
-            class_map = [item.strip() for item in lines if item.strip()]
-        return class_map
+    def __getitem__(self, idx):
+        pass
 
-    def load_annotation_database(self):
-        with open(self.ann_file) as f:
-            anno_database = json.load(f)["database"]
+    def __len__(self):
+        return len(self.data_list)
 
-        # some videos might be missed in the features or videos, we need to block them
-        if self.block_list is not None:
-            if isinstance(self.block_list, list):
-                blocked_videos = self.block_list
+    def get_gt(self, video_info):
+        pass
+
+    def build_data_list(self):
+        anno_database, blocked_videos = self._load_annotation_database()
+
+        self.data_list = []
+        for video_name, video_info in anno_database.items():
+            if (video_name in blocked_videos) or (video_info["subset"] not in self.subset_name):
+                continue
+
+            # get the ground truth annotation
+            if self.test_mode:
+                video_anno = {}
             else:
-                with open(self.block_list) as f:
-                    blocked_videos = [line.rstrip("\n") for line in f]
-        else:
-            blocked_videos = []
-        return anno_database, blocked_videos
+                video_anno = self.get_gt(video_info)
+                if video_anno is None:  # have no valid gt
+                    continue
+
+            self._add_to_data_list(video_name, video_info, video_anno)
+        assert len(self.data_list) > 0, f"No data found in {self.subset_name} subset."
 
     def get_fps(self, video_info):
         if self.fps > 0:
             return self.fps
         return float(video_info["frame"]) / float(video_info["duration"])
 
-    def _parse_and_filter_gt(
+    def parse_and_filter_gt(
         self,
         video_info,
         thresh,
@@ -106,36 +109,33 @@ class BaseDataset:
             )
         )
 
-    def get_gt(self, video_info):
-        pass
-
-    def __getitem__(self, idx):
-        pass
-
-    def __len__(self):
-        return len(self.data_list)
-
-    def build_data_list(self):
-        anno_database, blocked_videos = self.load_annotation_database()
-
-        self.data_list = []
-        for video_name, video_info in anno_database.items():
-            if (video_name in blocked_videos) or (video_info["subset"] not in self.subset_name):
-                continue
-
-            # get the ground truth annotation
-            if self.test_mode:
-                video_anno = {}
-            else:
-                video_anno = self.get_gt(video_info)
-                if video_anno is None:  # have no valid gt
-                    continue
-
-            self._add_to_data_list(video_name, video_info, video_anno)
-        assert len(self.data_list) > 0, f"No data found in {self.subset_name} subset."
-
     def _add_to_data_list(self, video_name, video_info, video_anno):
         self.data_list.append([video_name, video_info, video_anno])
+
+    def _get_class_map(self, class_map_path):
+        if not Path(class_map_path).exists():
+            class_map = generate_class_map(self.ann_file, class_map_path)
+            self.logger(f"Class map is saved in {class_map_path}, total {len(class_map)} classes.")
+        else:
+            with open(class_map_path, encoding="utf8") as f:
+                lines = f.readlines()
+            class_map = [item.strip() for item in lines if item.strip()]
+        return class_map
+
+    def _load_annotation_database(self):
+        with open(self.ann_file) as f:
+            anno_database = json.load(f)["database"]
+
+        # some videos might be missed in the features or videos, we need to block them
+        if self.block_list is not None:
+            if isinstance(self.block_list, list):
+                blocked_videos = self.block_list
+            else:
+                with open(self.block_list) as f:
+                    blocked_videos = [line.rstrip("\n") for line in f]
+        else:
+            blocked_videos = []
+        return anno_database, blocked_videos
 
 
 @DATASETS.register_module()

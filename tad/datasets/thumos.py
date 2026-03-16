@@ -13,7 +13,7 @@ def _ignore_ambiguous(label):
 @DATASETS.register_module()
 class ThumosSlidingDataset(SlidingWindowDataset):
     def get_gt(self, video_info, thresh=0.0):
-        return self._parse_and_filter_gt(
+        return self.parse_and_filter_gt(
             video_info, thresh, lambda seg: _time_to_frame(seg, video_info), _ignore_ambiguous
         )
 
@@ -21,6 +21,6 @@ class ThumosSlidingDataset(SlidingWindowDataset):
 @DATASETS.register_module()
 class ThumosPaddingDataset(PaddingDataset):
     def get_gt(self, video_info, thresh=0.0):
-        return self._parse_and_filter_gt(
+        return self.parse_and_filter_gt(
             video_info, thresh, lambda seg: _time_to_frame(seg, video_info), _ignore_ambiguous
         )

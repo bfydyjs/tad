@@ -8,7 +8,7 @@ class AnetResizeDataset(ResizeDataset):
         def custom_valid(start, end, scale):
             return (not self.filter_gt) or (scale / float(video_info["duration"]) > thresh)
 
-        return self._parse_and_filter_gt(
+        return self.parse_and_filter_gt(
             video_info, thresh, lambda seg: [float(s) for s in seg], custom_valid_func=custom_valid
         )
 
@@ -25,7 +25,7 @@ class AnetPaddingDataset(PaddingDataset):
                 and (start - self.offset_frames <= float(video_info["duration"]) * fps)
             )
 
-        return self._parse_and_filter_gt(
+        return self.parse_and_filter_gt(
             video_info,
             thresh,
             lambda seg: [float(s * fps) for s in seg],
@@ -45,7 +45,7 @@ class AnetSlidingDataset(SlidingWindowDataset):
                 and (start - self.offset_frames <= float(video_info["duration"]) * fps)
             )
 
-        return self._parse_and_filter_gt(
+        return self.parse_and_filter_gt(
             video_info,
             thresh,
             lambda seg: [float(s * fps) for s in seg],
