@@ -101,7 +101,9 @@ def _extract_features(args, model, inputs, masks):
     return feature_tensor[0] if feature_tensor.dim() == 3 else feature_tensor
 
 
-def plot_heatmap(args, similarity_matrix, gt_segments, seconds_per_step, video_name):
+def plot_heatmap(
+    args, similarity_matrix, gt_segments, snippet_stride, offset_frames, fps, video_name
+):
     """Plot and save the heatmap and timeline."""
     t = similarity_matrix.shape[0]
     setup_paper_style(
@@ -127,7 +129,7 @@ def plot_heatmap(args, similarity_matrix, gt_segments, seconds_per_step, video_n
     locator = ticker.MaxNLocator(nbins=10, integer=True)
     ax1.xaxis.set_major_locator(locator)
     ax1.xaxis.set_major_formatter(
-        ticker.FuncFormatter(lambda x, pos: f"{x * seconds_per_step:.1f}")
+        ticker.FuncFormatter(lambda x, pos: f"{(x * snippet_stride + offset_frames) / fps:.1f}")
     )
     ax1.yaxis.set_major_locator(ticker.MaxNLocator(nbins=10, integer=True))
 
@@ -141,8 +143,6 @@ def plot_heatmap(args, similarity_matrix, gt_segments, seconds_per_step, video_n
 
     # GT rectangles on heatmap
     print(f"Heatmap size (timesteps): {t}")
-    print("Drawing GT rectangles...")
-    print(gt_segments)
     for i, (start, end) in enumerate(gt_segments):
         start = int(max(0, min(t, start)))
         end = int(max(0, min(t, end)))
@@ -211,13 +211,30 @@ def main():
     # 4. 获取样本数据
     print(f"Processing sample index: {args.index}")
     data_sample = dataset[args.index]
-    print("Sample data keys:", data_sample.keys())
     inputs = data_sample["inputs"].to(device).unsqueeze(0)
     masks = data_sample["masks"].to(device).unsqueeze(0)
-    metas_obj = data_sample.get("metas", {})
-    metas = metas_obj.data if hasattr(metas_obj, "data") else metas_obj
+    gt_segments = data_sample["gt_segments"]
+    metas = data_sample.get("metas", {})
+    inputs = data_sample["inputs"].to(device).unsqueeze(0)
+    masks = data_sample["masks"].to(device).unsqueeze(0)
     video_name = metas.get("video_name", f"sample_{args.index}")
-
+    data_path = metas.get("data_path", "N/A")
+    fps = metas.get("fps", "N/A")
+    duration = metas.get("duration", "N/A")
+    snippet_stride = metas.get("snippet_stride", "N/A")
+    offset_frames = metas.get("offset_frames", "N/A")
+    print("data_sample.keys()", data_sample.keys())
+    print(f"inputs.shape: {data_sample['inputs'].shape}")
+    print(f"masks.shape: {data_sample['masks'].shape}")
+    print(f"gt segments shape: {gt_segments.shape}")
+    print(f"gt segments: {gt_segments}")
+    print(f"metas.keys(): {metas.keys()}")
+    print(f"video_name: {video_name}")
+    print(f"data_path: {data_path}")
+    print(f"fps: {fps}")
+    print(f"duration: {duration}")
+    print(f"snippet_stride: {snippet_stride}")
+    print(f"offset_frames: {offset_frames}")
     # 5. 提取特征
     feature_tensor = _extract_features(args, model, inputs, masks)
     features = feature_tensor.transpose(0, 1).cpu().numpy()
@@ -230,53 +247,14 @@ def main():
     # Compute cosine similarity matrix [T, T]
     similarity_matrix = np.dot(features_norm, features_norm.T)
 
-    # Debug: Print video info from dataset
-    print("\n=== Video Info ===")
-    print(f"Video name: {video_name}")
-    if hasattr(dataset, "annotations") and isinstance(dataset.annotations, dict):
-        # Try to find the video in annotations
-        for key in dataset.annotations.keys():
-            if key in video_name or video_name in key:
-                print(f"Annotation key: {key}")
-                anno = dataset.annotations[key]
-                if isinstance(anno, dict) and "annotations" in anno:
-                    print(f"Duration: {anno.get('duration', 'N/A')}s")
-                    print(f"FPS: {anno.get('fps', 'N/A')}")
-                    print(f"Number of GT segments: {len(anno['annotations'])}")
-                    for i, gt in enumerate(anno["annotations"]):
-                        segment = gt.get("segment", [0, 0])
-                        label = gt.get("label", "Unknown")
-                        print(f"  GT #{i + 1}: [{segment[0]:.2f}s, {segment[1]:.2f}s] - {label}")
-                break
-
     # 7. 计算 GT 和时间缩放
-    gt_segments = data_sample["gt_segments"].cpu().numpy()
-    feature_stride = _get_feature_stride(cfg)
-    fps = metas.get("fps")
-    seconds_per_step = feature_stride / fps if fps else 1.0
-    if not fps:
-        print("Warning: FPS not found. Assuming 1:1 mapping (Index=Seconds).")
     print(f"Ground truth file: {cfg.evaluation.ground_truth_file}")
-    print(f"Original GT segments (seconds): \n{gt_segments}")
-    print(f"Number of GT annotations: {len(gt_segments)}")
-    print(f"FPS: {fps}, Feature stride: {feature_stride}")
-    print(f"Seconds per step: {seconds_per_step:.6f}")
-
-    gt_intervals_indices = gt_segments / seconds_per_step
-
-    for i, (start_sec, end_sec) in enumerate(gt_segments):
-        start_idx = start_sec / seconds_per_step
-        end_idx = end_sec / seconds_per_step
-        duration = end_sec - start_sec
-        print(
-            f"GT #{i + 1}: [{start_sec:.2f}s, {end_sec:.2f}s -> "
-            f"[{start_idx:.1f}, {end_idx:.1f}] (duration: {duration:.2f}s, "
-            f"index span: {end_idx - start_idx:.1f})"
-        )
     print("===================\n")
 
     # 8. 绘图
-    plot_heatmap(args, similarity_matrix, gt_segments, seconds_per_step, video_name)
+    plot_heatmap(
+        args, similarity_matrix, gt_segments, snippet_stride, offset_frames, fps, video_name
+    )
 
 
 if __name__ == "__main__":
