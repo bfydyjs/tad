@@ -228,7 +228,6 @@ def main():
     # Debug: Print video info from dataset
     print("\n=== Video Info ===")
     print(f"Video name: {video_name}")
-    print(f"Dataset index: {args.index}")
     if hasattr(dataset, "annotations") and isinstance(dataset.annotations, dict):
         # Try to find the video in annotations
         for key in dataset.annotations.keys():
@@ -244,7 +243,6 @@ def main():
                         label = gt.get("label", "Unknown")
                         print(f"  GT #{i + 1}: [{segment[0]:.2f}s, {segment[1]:.2f}s] - {label}")
                 break
-    print("==================\n")
 
     # 7. 计算 GT 和时间缩放
     gt_segments = data_sample["gt_segments"].cpu().numpy()
@@ -253,11 +251,8 @@ def main():
     seconds_per_step = feature_stride / fps if fps else 1.0
     if not fps:
         print("Warning: FPS not found. Assuming 1:1 mapping (Index=Seconds).")
-    # Debug: Print GT analysis
-    print("\n=== GT Analysis ===")
     print(f"Ground truth file: {cfg.evaluation.ground_truth_file}")
-    print(f"Video name: {video_name}")
-    print(f"Original GT segments (seconds): {gt_segments}")
+    print(f"Original GT segments (seconds): \n{gt_segments}")
     print(f"Number of GT annotations: {len(gt_segments)}")
     print(f"FPS: {fps}, Feature stride: {feature_stride}")
     print(f"Seconds per step: {seconds_per_step:.6f}")
@@ -274,8 +269,6 @@ def main():
             f"index span: {end_idx - start_idx:.1f})"
         )
     print("===================\n")
-
-    print(f"Video: {video_name}, FPS: {fps}, Stride: {feature_stride}")
 
     # 8. 绘图
     plot_heatmap(args, similarity_matrix, gt_intervals_indices, seconds_per_step, video_name)
