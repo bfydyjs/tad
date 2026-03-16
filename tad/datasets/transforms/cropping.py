@@ -26,18 +26,29 @@ class SlidingWindowTrunc:
         window_feats = results["feats"][start_idx:end_idx]
         valid_len = window_feats.shape[0]
 
-        # if the valid window is smaller than window size, pad with -1
+        # if the valid window is smaller than window size, pad
         if valid_len < window_size:
-            pad_data = torch.zeros(window_size - valid_len, window_feats.shape[1])
+            pad_data = torch.zeros(
+                (window_size - valid_len, window_feats.shape[1]),
+                dtype=window_feats.dtype,
+                device=window_feats.device,
+            )
             window_feats = torch.cat((window_feats, pad_data), dim=0)
 
         # if we need padding mask (valid is 1, pad is 0)
         if self.with_mask:
             if valid_len < window_size:
-                masks = torch.cat([torch.ones(valid_len), torch.zeros(window_size - valid_len)])
+                masks = torch.cat(
+                    [
+                        torch.ones(valid_len, dtype=torch.bool, device=window_feats.device),
+                        torch.zeros(
+                            window_size - valid_len, dtype=torch.bool, device=window_feats.device
+                        ),
+                    ]
+                )
             else:
-                masks = torch.ones(window_size)
-            results["masks"] = masks.bool()
+                masks = torch.ones(window_size, dtype=torch.bool, device=window_feats.device)
+            results["masks"] = masks
 
         results["feats"] = window_feats.float()
         return results
@@ -128,12 +139,24 @@ class RandomTrunc:
     def pad_features(self, feats):
         feat_len = feats.shape[0]
         if feat_len < self.trunc_len:
-            feats_pad = torch.ones((self.trunc_len - feat_len, *feats.shape[1:])) * self.pad_value
+            feats_pad = (
+                torch.ones(
+                    (self.trunc_len - feat_len, *feats.shape[1:]),
+                    dtype=feats.dtype,
+                    device=feats.device,
+                )
+                * self.pad_value
+            )
             feats = torch.cat([feats, feats_pad], dim=0)
-            masks = torch.cat([torch.ones(feat_len), torch.zeros(self.trunc_len - feat_len)])
+            masks = torch.cat(
+                [
+                    torch.ones(feat_len, dtype=torch.bool, device=feats.device),
+                    torch.zeros(self.trunc_len - feat_len, dtype=torch.bool, device=feats.device),
+                ]
+            )
             return feats, masks
         else:
-            return feats, torch.ones(feat_len)
+            return feats, torch.ones(feat_len, dtype=torch.bool, device=feats.device)
 
     def __call__(self, results):
         assert isinstance(results["feats"], torch.Tensor)
@@ -154,7 +177,7 @@ class RandomTrunc:
         feats, masks = self.pad_features(feats)
 
         results["feats"] = feats.float()
-        results["masks"] = masks.bool()
+        results["masks"] = masks
         results["gt_segments"] = gt_segments
         results["gt_labels"] = gt_labels
 

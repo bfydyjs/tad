@@ -101,7 +101,7 @@ def _extract_features(args, model, inputs, masks):
     return feature_tensor[0] if feature_tensor.dim() == 3 else feature_tensor
 
 
-def plot_heatmap(args, similarity_matrix, gt_intervals_indices, seconds_per_step, video_name):
+def plot_heatmap(args, similarity_matrix, gt_segments, seconds_per_step, video_name):
     """Plot and save the heatmap and timeline."""
     t = similarity_matrix.shape[0]
     setup_paper_style(
@@ -142,8 +142,10 @@ def plot_heatmap(args, similarity_matrix, gt_intervals_indices, seconds_per_step
     # GT rectangles on heatmap
     print(f"Heatmap size (timesteps): {t}")
     print("Drawing GT rectangles...")
-    for i, (start, end) in enumerate(gt_intervals_indices):
-        start, end = int(max(0, start)), int(min(t, end))
+    print(gt_segments)
+    for i, (start, end) in enumerate(gt_segments):
+        start = int(max(0, min(t, start)))
+        end = int(max(0, min(t, end)))
         if end > start:
             print(f"  GT #{i + 1}: Drawing rectangle at [{start}, {end}] (span={end - start})")
             ax1.add_patch(
@@ -165,9 +167,11 @@ def plot_heatmap(args, similarity_matrix, gt_intervals_indices, seconds_per_step
     ax2.set_xlabel("Time (s)")
     ax2.set_ylabel("GT", rotation=0, labelpad=10, va="center")
     ax2.set_yticks([])
-    for start, end in gt_intervals_indices:
-        start, end = int(max(0, start)), int(min(t, end))
-        ax2.fill_between([start, end], 0, 1, color="#32CD32", alpha=0.8)
+    for start, end in gt_segments:
+        start = int(max(0, min(t, start)))
+        end = int(max(0, min(t, end)))
+        if end > start:
+            ax2.fill_between([start, end], 0, 1, color="#32CD32", alpha=0.8)
 
     save_figure(f"cosine_similarity_heatmap_{args.index}_{args.level}")
     plt.show()
@@ -207,6 +211,7 @@ def main():
     # 4. 获取样本数据
     print(f"Processing sample index: {args.index}")
     data_sample = dataset[args.index]
+    print("Sample data keys:", data_sample.keys())
     inputs = data_sample["inputs"].to(device).unsqueeze(0)
     masks = data_sample["masks"].to(device).unsqueeze(0)
     metas_obj = data_sample.get("metas", {})
@@ -271,7 +276,7 @@ def main():
     print("===================\n")
 
     # 8. 绘图
-    plot_heatmap(args, similarity_matrix, gt_intervals_indices, seconds_per_step, video_name)
+    plot_heatmap(args, similarity_matrix, gt_segments, seconds_per_step, video_name)
 
 
 if __name__ == "__main__":
