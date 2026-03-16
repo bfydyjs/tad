@@ -6,7 +6,7 @@ from .dataset import PaddingDataset, SlidingWindowDataset
 class EpicKitchensPaddingDataset(PaddingDataset):
     def get_gt(self, video_info, thresh=0.0):
         return self.parse_and_filter_gt(
-            video_info, thresh, lambda seg: [int(s * self.fps) for s in seg]
+            video_info, thresh, lambda segment: [int(s * self.fps) for s in segment]
         )
 
 
@@ -14,5 +14,5 @@ class EpicKitchensPaddingDataset(PaddingDataset):
 class EpicKitchensSlidingDataset(SlidingWindowDataset):
     def get_gt(self, video_info, thresh=0.0):
         return self.parse_and_filter_gt(
-            video_info, thresh, lambda seg: [int(s * self.fps) for s in seg]
+            video_info, thresh, lambda segment: [int(s * self.fps) for s in segment]
         )

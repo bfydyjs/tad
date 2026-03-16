@@ -2,8 +2,8 @@ from .builder import DATASETS
 from .dataset import PaddingDataset, SlidingWindowDataset
 
 
-def _time_to_frame(segment, info):
-    return [int(segment[i] / info["duration"] * info["frame"]) for i in range(2)]
+def _time_to_frame(segment, video_info):
+    return [int(segment[i] / video_info["duration"] * video_info["frame"]) for i in range(2)]
 
 
 def _ignore_ambiguous(label):
@@ -14,7 +14,10 @@ def _ignore_ambiguous(label):
 class ThumosSlidingDataset(SlidingWindowDataset):
     def get_gt(self, video_info, thresh=0.0):
         return self.parse_and_filter_gt(
-            video_info, thresh, lambda seg: _time_to_frame(seg, video_info), _ignore_ambiguous
+            video_info,
+            thresh,
+            lambda segment: _time_to_frame(segment, video_info),
+            _ignore_ambiguous,
         )
 
 
@@ -22,5 +25,8 @@ class ThumosSlidingDataset(SlidingWindowDataset):
 class ThumosPaddingDataset(PaddingDataset):
     def get_gt(self, video_info, thresh=0.0):
         return self.parse_and_filter_gt(
-            video_info, thresh, lambda seg: _time_to_frame(seg, video_info), _ignore_ambiguous
+            video_info,
+            thresh,
+            lambda segment: _time_to_frame(segment, video_info),
+            _ignore_ambiguous,
         )
