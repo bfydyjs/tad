@@ -53,11 +53,16 @@ def _patch_config_for_gt(cfg):
     """Forcefully enable GT loading for the validation dataset."""
     print("Patching config to enable GT loading...")
     cfg.dataset.val.test_mode = False
+    keys_to_add = ["gt_segments_feat", "gt_segments_s", "gt_segments_frame"]
     for transform in cfg.dataset.val.pipeline:
-        if transform["type"] == "ConvertToTensor" and "gt_segments" not in transform["keys"]:
-            transform["keys"].append("gt_segments")
-        if transform["type"] == "Collect" and "gt_segments" not in transform["keys"]:
-            transform["keys"].append("gt_segments")
+        if transform["type"] == "ConvertToTensor":
+            for k in keys_to_add:
+                if k not in transform["keys"]:
+                    transform["keys"].append(k)
+        if transform["type"] == "Collect":
+            for k in keys_to_add:
+                if k not in transform["keys"]:
+                    transform["keys"].append(k)
     return cfg
 
 
@@ -213,7 +218,7 @@ def main():
     data_sample = dataset[args.index]
     inputs = data_sample["inputs"].to(device).unsqueeze(0)
     masks = data_sample["masks"].to(device).unsqueeze(0)
-    gt_segments = data_sample["gt_segments"]
+    gt_segments_feat = data_sample["gt_segments_feat"]  # [N_gt, 2]
     metas = data_sample.get("metas", {})
     inputs = data_sample["inputs"].to(device).unsqueeze(0)
     masks = data_sample["masks"].to(device).unsqueeze(0)
@@ -226,8 +231,8 @@ def main():
     print("data_sample.keys()", data_sample.keys())
     print(f"inputs.shape: {data_sample['inputs'].shape}")
     print(f"masks.shape: {data_sample['masks'].shape}")
-    print(f"gt segments shape: {gt_segments.shape}")
-    print(f"gt segments: {gt_segments}")
+    print(f"gt segments shape: {gt_segments_feat.shape}")
+    print(f"gt segments: {gt_segments_feat}")
     print(f"metas.keys(): {metas.keys()}")
     print(f"video_name: {video_name}")
     print(f"data_path: {data_path}")
@@ -253,7 +258,7 @@ def main():
 
     # 8. 绘图
     plot_heatmap(
-        args, similarity_matrix, gt_segments, snippet_stride, offset_frames, fps, video_name
+        args, similarity_matrix, gt_segments_feat, snippet_stride, offset_frames, fps, video_name
     )
 
 
