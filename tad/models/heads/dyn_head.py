@@ -97,7 +97,7 @@ class TDynHead(ActionFormerHead):
                 )
             )
 
-    def forward_train(self, feat_list, mask_list, gt_segments, gt_labels, **kwargs):
+    def forward_train(self, feat_list, mask_list, gt_segments_feat, gt_labels, **kwargs):
         cls_pred = []
         reg_pred = []
 
@@ -115,7 +115,7 @@ class TDynHead(ActionFormerHead):
 
         points = self.prior_generator(feat_list)
 
-        losses = self.losses(cls_pred, reg_pred, mask_list, points, gt_segments, gt_labels)
+        losses = self.losses(cls_pred, reg_pred, mask_list, points, gt_segments_feat, gt_labels)
         return losses
 
     def forward_test(self, feat_list, mask_list, **kwargs):

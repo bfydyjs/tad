@@ -108,12 +108,14 @@ class ResizeFeat:
         assert resized_feat.shape[0] == feats.shape[0]
         assert resized_feat.shape[1] == tscale
 
-        if "gt_segments" in results:
+        if "gt_segments_feat" in results:
             # convert gt seconds to feature grid
             # clamp using 1e-8 to avoid division by zero
             dur = max(results["duration"], 1e-8)
-            results["gt_segments"] = (results["gt_segments"] / dur).clamp(min=0.0, max=1.0)
-            results["gt_segments"] *= tscale
+            results["gt_segments_feat"] = (results["gt_segments_feat"] / dur).clamp(
+                min=0.0, max=1.0
+            )
+            results["gt_segments_feat"] *= tscale
 
         results["feats_len_ori"] = results["feats"].shape[1]  # for future usage
         if not self.channel_first:

@@ -82,14 +82,14 @@ class RandomTrunc:
         self.pad_value = pad_value
         self.channel_first = channel_first
 
-    def trunc_features(self, feats, gt_segments, gt_labels, offset):
+    def trunc_features(self, feats, gt_segments_feat, gt_labels, offset):
         feat_len = feats.shape[0]
-        num_segs = gt_segments.shape[0]
+        num_segs = gt_segments_feat.shape[0]
 
         trunc_len = self.trunc_len
         if feat_len <= self.trunc_len:
             if self.crop_ratio is None:  # do nothing
-                return feats, gt_segments, gt_labels
+                return feats, gt_segments_feat, gt_labels
             else:  # randomly crop the seq by setting trunc_len to a value in [l, r]
                 trunc_len = random.randint(
                     max(round(self.crop_ratio[0] * feat_len), 1),
@@ -97,21 +97,23 @@ class RandomTrunc:
                 )
                 # corner case
                 if feat_len == trunc_len:
-                    return feats, gt_segments, gt_labels
+                    return feats, gt_segments_feat, gt_labels
 
         # try a few times till a valid truncation with at least one action
         for _ in range(self.max_num_trials):
             # sample a random truncation of the video feats
             st = random.randint(0, feat_len - trunc_len)
             ed = st + trunc_len
-            window = torch.as_tensor([st, ed], dtype=gt_segments.dtype, device=gt_segments.device)
+            window = torch.as_tensor(
+                [st, ed], dtype=gt_segments_feat.dtype, device=gt_segments_feat.device
+            )
 
             # compute the intersection between the sampled window and all segments
             window = window[None].repeat(num_segs, 1)
-            left = torch.maximum(window[:, 0] - offset, gt_segments[:, 0])
-            right = torch.minimum(window[:, 1] + offset, gt_segments[:, 1])
+            left = torch.maximum(window[:, 0] - offset, gt_segments_feat[:, 0])
+            right = torch.minimum(window[:, 1] + offset, gt_segments_feat[:, 1])
             inter = (right - left).clamp(min=0)
-            area_segs = torch.abs(gt_segments[:, 1] - gt_segments[:, 0])
+            area_segs = torch.abs(gt_segments_feat[:, 1] - gt_segments_feat[:, 0])
             inter_ratio = inter / area_segs
 
             # only select those segments over the thresh
@@ -131,10 +133,12 @@ class RandomTrunc:
                 break
 
         feats = feats[st:ed, :]  # [T,C]
-        gt_segments = torch.stack((left[seg_idx], right[seg_idx]), dim=1)  # [N,2] in feature grids
-        gt_segments = gt_segments - st  # shift the time stamps due to truncation
+        gt_segments_feat = torch.stack(
+            (left[seg_idx], right[seg_idx]), dim=1
+        )  # [N,2] in feature grids
+        gt_segments_feat = gt_segments_feat - st  # shift the time stamps due to truncation
         gt_labels = gt_labels[seg_idx]  # [N]
-        return feats, gt_segments, gt_labels
+        return feats, gt_segments_feat, gt_labels
 
     def pad_features(self, feats):
         feat_len = feats.shape[0]
@@ -166,9 +170,9 @@ class RandomTrunc:
             results["feats"] = results["feats"].transpose(0, 1)  # [C,T] -> [T,C]
 
         # truncate the features
-        feats, gt_segments, gt_labels = self.trunc_features(
+        feats, gt_segments_feat, gt_labels = self.trunc_features(
             results["feats"],
-            results["gt_segments"],
+            results["gt_segments_feat"],
             results["gt_labels"],
             offset,
         )
@@ -178,7 +182,7 @@ class RandomTrunc:
 
         results["feats"] = feats.float()
         results["masks"] = masks
-        results["gt_segments"] = gt_segments
+        results["gt_segments_feat"] = gt_segments_feat
         results["gt_labels"] = gt_labels
 
         if self.channel_first:
