@@ -89,7 +89,7 @@ class DecoupledIoUHead(AnchorFreeHead):
             bias_value = -(math.log((1 - self.cls_prior_prob) / self.cls_prior_prob))
             nn.init.constant_(self.cls_head.bias, bias_value)
 
-    def forward_train(self, feat_list, mask_list, gt_segments_feat, gt_labels, **kwargs):
+    def forward_train(self, feat_list, mask_list, gt_segments, gt_labels, **kwargs):
         cls_pred, reg_pred, iou_pred = [], [], []
 
         for level, (feat, mask) in enumerate(zip(feat_list, mask_list, strict=False)):
@@ -108,7 +108,7 @@ class DecoupledIoUHead(AnchorFreeHead):
         points = self.prior_generator(feat_list)
 
         losses = self.losses(
-            cls_pred, reg_pred, iou_pred, mask_list, points, gt_segments_feat, gt_labels
+            cls_pred, reg_pred, iou_pred, mask_list, points, gt_segments, gt_labels
         )
         return losses
 

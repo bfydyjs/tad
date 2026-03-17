@@ -31,7 +31,7 @@ class Detector(torch.nn.Module):
         inputs,
         masks,
         metas,
-        gt_segments=None,
+        gt_segments_feat=None,
         gt_labels=None,
         return_loss=True,
         infer_cfg=None,
@@ -40,7 +40,12 @@ class Detector(torch.nn.Module):
     ):
         if return_loss:
             return self.forward_train(
-                inputs, masks, metas, gt_segments=gt_segments, gt_labels=gt_labels, **kwargs
+                inputs,
+                masks,
+                metas,
+                gt_segments_feat=gt_segments_feat,
+                gt_labels=gt_labels,
+                **kwargs,
             )
         else:
             return self.forward_detection(inputs, masks, metas, infer_cfg, post_cfg, **kwargs)
@@ -94,7 +99,7 @@ class Detector(torch.nn.Module):
             x, masks = self.neck(x, masks)
         return x, masks
 
-    def forward_train(self, inputs, masks, metas, gt_segments, gt_labels, **kwargs):
+    def forward_train(self, inputs, masks, metas, gt_segments_feat, gt_labels, **kwargs):
         x, masks = self.extract_feat(inputs, masks)
         losses = dict()
 
@@ -102,7 +107,7 @@ class Detector(torch.nn.Module):
             rpn_losses = self.rpn_head.forward_train(
                 x,
                 masks,
-                gt_segments=gt_segments,
+                gt_segments=gt_segments_feat,
                 gt_labels=gt_labels,
                 **kwargs,
             )
