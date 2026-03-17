@@ -18,7 +18,6 @@ from .transforms import (
     Reduce,
     SlidingWindowTrunc,
 )
-from .util import filter_same_annotation
 
 __all__ = [
     "AnetPaddingDataset",

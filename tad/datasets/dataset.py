@@ -5,10 +5,21 @@ from pathlib import Path
 import numpy as np
 
 from .builder import DATASETS, Pipeline
-from .util import filter_same_annotation, generate_class_map
+from .util import generate_class_map
 
 
 class BaseDataset:
+    """
+    Data building pipeline:
+    Dataset.__init__()
+       └── self.build_data_list()
+              └── for video in database:
+                     └── video_anno = self.get_gt(video_info)
+                            └── (Implemented by subclass) self.parse_and_filter_gt(...)
+                                  └── Outputs a dictionary with gt_segments_s / gt_segments_frame
+                     └── self.add_to_data_list(video_name, ..., video_anno)
+    """
+
     def __init__(
         self,
         ann_file,  # path of the annotation json file
@@ -60,7 +71,7 @@ class BaseDataset:
                 if video_anno is None:  # have no valid gt
                     continue
 
-            self._add_to_data_list(video_name, video_info, video_anno)
+            self.add_to_data_list(video_name, video_info, video_anno)
         assert len(self.data_list) > 0, f"No data found in {self.subset_name} subset."
 
     def get_fps(self, video_info):
@@ -76,7 +87,8 @@ class BaseDataset:
         ignore_label_func=None,
         custom_valid_func=None,
     ):
-        gt_segment = []
+        gt_segment_s = []
+        gt_segment_frame = []
         gt_label = []
         for anno in video_info["annotations"]:
             if ignore_label_func and ignore_label_func(anno["label"]):
@@ -93,23 +105,35 @@ class BaseDataset:
                 valid_gt = (not self.filter_gt) or (gt_scale > thresh)
 
             if valid_gt:
-                gt_segment.append([gt_start, gt_end])
+                gt_segment_s.append(anno["segment"])
+                gt_segment_frame.append([gt_start, gt_end])
                 if getattr(self, "class_agnostic", False):
                     gt_label.append(0)
                 else:
                     gt_label.append(self.class_map.index(anno["label"]))
 
-        if len(gt_segment) == 0:
+        if len(gt_segment_frame) == 0:
             return None
+        unique_segments_s = []
+        unique_segments_frame = []
+        unique_labels = []
+        seen = set()
 
-        return filter_same_annotation(
-            dict(
-                gt_segments=np.array(gt_segment, dtype=np.float32),
-                gt_labels=np.array(gt_label, dtype=np.int32),
-            )
+        for frame, s, label in zip(gt_segment_frame, gt_segment_s, gt_label, strict=True):
+            identifier = (tuple(frame), label)
+            if identifier not in seen:
+                unique_segments_frame.append(frame)
+                unique_segments_s.append(s)
+                unique_labels.append(label)
+                seen.add(identifier)
+
+        return dict(
+            gt_segments_s=np.array(unique_segments_s, dtype=np.float32).reshape(-1, 2),
+            gt_segments_frame=np.array(unique_segments_frame, dtype=np.float32).reshape(-1, 2),
+            gt_labels=np.array(unique_labels, dtype=np.int32),
         )
 
-    def _add_to_data_list(self, video_name, video_info, video_anno):
+    def add_to_data_list(self, video_name, video_info, video_anno):
         self.data_list.append([video_name, video_info, video_anno])
 
     def _get_class_map(self, class_map_path):
@@ -165,8 +189,8 @@ class PaddingDataset(BaseDataset):
         video_name, video_info, video_anno = self.data_list[index]
         if video_anno:
             video_anno = deepcopy(video_anno)
-            video_anno["gt_segments"] = (
-                video_anno["gt_segments"] - self.offset_frames
+            video_anno["gt_segments_feat"] = (
+                video_anno["gt_segments_frame"] - self.offset_frames
             ) / self.snippet_stride
         return self.pipeline(
             dict(
@@ -256,8 +280,8 @@ class SlidingWindowDataset(BaseDataset):
         video_name, video_info, video_anno, window_snippet_centers = self.data_list[index]
         if video_anno:
             video_anno = deepcopy(video_anno)
-            video_anno["gt_segments"] = (
-                video_anno["gt_segments"] - window_snippet_centers[0] - self.offset_frames
+            video_anno["gt_segments_feat"] = (
+                video_anno["gt_segments_frame"] - window_snippet_centers[0] - self.offset_frames
             ) / self.snippet_stride
         return self.pipeline(
             dict(
@@ -276,7 +300,7 @@ class SlidingWindowDataset(BaseDataset):
             )
         )
 
-    def _add_to_data_list(self, video_name, video_info, video_anno):
+    def add_to_data_list(self, video_name, video_info, video_anno):
         tmp_data_list = self.split_video_to_windows(video_name, video_info, video_anno)
         self.data_list.extend(tmp_data_list)
 
@@ -307,18 +331,18 @@ class SlidingWindowDataset(BaseDataset):
             window_end_frame = window_snippet_centers[-1]
 
             if video_anno and self.ioa_thresh > 0:
-                gt_segments = video_anno["gt_segments"]
+                gt_segments_frame = video_anno["gt_segments_frame"]
                 gt_labels = video_anno["gt_labels"]
                 anchor = np.array([window_start_frame, window_end_frame])
 
                 # truncate the gt segments inside the window and compute the completeness
-                gt_completeness, truncated_gt = compute_gt_completeness(gt_segments, anchor)
+                gt_completeness, truncated_gt = compute_gt_completeness(gt_segments_frame, anchor)
                 valid_idx = gt_completeness > self.ioa_thresh
 
                 # only append window who has gt
                 if np.sum(valid_idx) > 0:
                     window_anno = dict(
-                        gt_segments=truncated_gt[valid_idx],
+                        gt_segments_frame=truncated_gt[valid_idx],
                         gt_labels=gt_labels[valid_idx],
                     )
                     data_list.append(
