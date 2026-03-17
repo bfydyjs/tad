@@ -60,7 +60,7 @@ def parse_float_list(value):
     return [float(item.strip()) for item in value.split(",") if item.strip()]
 
 
-def plot_ar_an_curve(evaluator, output_dir):
+def plot_ar_an_curve(evaluator):
     """Plot Average Recall vs Average Number of proposals curve.
 
     The curve shows average recall over all tIoU thresholds as a function
@@ -74,24 +74,24 @@ def plot_ar_an_curve(evaluator, output_dir):
         font_size_main=4.5,
         line_width_axis=0.5,
     )
-    plt.figure()
-    plt.plot(
+    fig, ax = plt.subplots()
+    ax.plot(
         evaluator.proposals_per_video,
         evaluator.avg_recall,
         label=f"Average Recall (AUC={evaluator.average_auc * 100:.2f}%)",
         color="tab:blue",
     )
-    plt.xlabel("Average Number of Proposals per Video")
-    plt.ylabel("Average Recall")
-    plt.title("AR-AN Curve")
-    plt.ylim(0, 1.05)
-    plt.legend()
-    plt.tight_layout()
+    ax.set_xlabel("Average Number of Proposals per Video")
+    ax.set_ylabel("Average Recall")
+    ax.set_title("AR-AN Curve")
+    ax.set_ylim(0, 1.05)
+    ax.legend()
+    fig.tight_layout()
 
-    save_figure("recall_ar_an_curve", output_dir=output_dir)
+    return fig
 
 
-def plot_recall_k_tiou(evaluator, output_dir):
+def plot_recall_k_tiou(evaluator):
     """Plot Recall@K vs tIoU thresholds for different K values.
 
     Each curve shows recall at a specific K (number of top proposals)
@@ -105,7 +105,7 @@ def plot_recall_k_tiou(evaluator, output_dir):
         font_size_main=4.5,
         line_width_axis=0.5,
     )
-    plt.figure()
+    fig, ax = plt.subplots()
 
     num_points = evaluator.recall.shape[1]
     for k in evaluator.topk:
@@ -115,16 +115,14 @@ def plot_recall_k_tiou(evaluator, output_dir):
         # recall[i, j] is recall at ith tiou threshold and jth proposal count
         # k-1 index corresponds to the k-th proposal count (0-indexed)
         recall_values = evaluator.recall[:, k - 1]
-        plt.plot(evaluator.tiou_thresholds, recall_values, marker="o", label=f"Recall@{k}")
+        ax.plot(evaluator.tiou_thresholds, recall_values, marker="o", label=f"Recall@{k}")
 
-    plt.xlabel("tIoU Threshold")
-    plt.ylabel("Recall")
-    plt.title("Recall@K vs tIoU")
-    plt.ylim(0, 1.05)
-    plt.legend()
-    plt.tight_layout()
-
-    save_figure("recall_k_tiou_curve", output_dir=output_dir)
+    ax.set_xlabel("tIoU Threshold")
+    ax.set_ylabel("Recall")
+    ax.set_title("Recall@K vs tIoU")
+    ax.set_ylim(0, 1.05)
+    ax.legend()
+    return fig
 
 
 def load_recall_data(ground_truth_file, prediction_file, subset, tiou_thresholds):
@@ -169,13 +167,21 @@ def plot_recall_from_files(
     """
     evaluator = load_recall_data(ground_truth_file, prediction_file, subset, tiou_thresholds)
 
-    plot_ar_an_curve(evaluator, output_dir)
-    plot_recall_k_tiou(evaluator, output_dir)
+    fig_ar = plot_ar_an_curve(evaluator)
+    try:
+        save_figure("recall_ar_an_curve", output_dir=output_dir, fig=fig_ar)
+        if show:
+            plt.show()
+    finally:
+        plt.close(fig_ar)
 
-    if show:
-        plt.show()
-    else:
-        plt.close("all")
+    fig_k = plot_recall_k_tiou(evaluator)
+    try:
+        save_figure("recall_k_tiou_curve", output_dir=output_dir, fig=fig_k)
+        if show:
+            plt.show()
+    finally:
+        plt.close(fig_k)
 
 
 def main():

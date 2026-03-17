@@ -45,10 +45,10 @@ def plot_training_loss(
         font_size_main=4.5,
         line_width_axis=0.5,
     )
-    plt.figure()
+    fig, ax = plt.subplots()
 
     for data_config in data_list:
-        plt.plot(
+        ax.plot(
             data_config["data"][data_config["step_col"]],
             data_config["data"]["loss"],
             label=data_config["label"],
@@ -57,12 +57,12 @@ def plot_training_loss(
             linewidth=1.5,
         )
 
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
-    plt.grid(True, linestyle="--", alpha=0.7)
-    plt.legend(loc="upper right")
-    plt.tight_layout()
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.grid(True, linestyle="--", alpha=0.7)
+    ax.legend(loc="upper right")
+    return fig
 
 
 def process_and_save(data_list: list[dict]) -> None:
@@ -74,10 +74,12 @@ def process_and_save(data_list: list[dict]) -> None:
     if not data_list:
         print("Error: No valid data to plot")
         return
-
-    plot_training_loss(data_list)
-    save_figure("loss")
-    plt.show()
+    # plt.show()
+    fig = plot_training_loss(data_list)
+    try:
+        save_figure("loss", fig=fig)
+    finally:
+        plt.close(fig)
 
 
 loss_output_dir = Path(__file__).resolve().parents[3] / "assets"

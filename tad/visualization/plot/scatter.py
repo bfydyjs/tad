@@ -52,6 +52,8 @@ def get_data_gflops():
             "color": "lightcoral",
             "s": 30,
         },
+        {"name": "BMN", "metric": 171.0, "mAP": 38.5, "marker": "D", "color": "gold", "s": 20},
+        {"name": "G-TAD", "metric": 639.8, "mAP": 38.5, "marker": "D", "color": "gold", "s": 20},
         {"name": "TriDet", "metric": 43.7, "mAP": 69.3, "marker": "D", "color": "gold", "s": 20},
         {"name": "HSFPN", "metric": 2.6, "mAP": 31.2, "marker": "p", "color": "plum", "s": 30},
         {"name": "AFPN", "metric": 2.8, "mAP": 30.5, "marker": "v", "color": "lightgreen", "s": 30},
@@ -137,15 +139,16 @@ def main():
 
     setup_plot_style()
 
-    _, axes = plt.subplots(1, 2)
+    fig, axes = plt.subplots(1, 2)
 
     for ax, data, metric in zip(axes, data_list, metrics, strict=True):
         plot_single_scatter(ax, data, metric)
         ax.set_ylabel("mAP@0.5 (%)") if ax == axes[0] else ax.set_ylabel("")
-
-    plt.tight_layout()
-    save_figure("scatter_mAP_vs_Params")
-    plt.show()
+    # plt.show()
+    try:
+        save_figure("scatter_mAP_vs_Params", fig=fig)
+    finally:
+        plt.close(fig)
 
 
 if __name__ == "__main__":

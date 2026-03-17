@@ -28,7 +28,7 @@ def plot_map_heatmap(
     kernel_sizes_1: list[int],
     kernel_sizes_2: list[int],
     map_values: np.ndarray,
-) -> None:
+):
     setup_paper_style(
         textwidth=440 / 2,
         ratio=1.618,
@@ -37,8 +37,8 @@ def plot_map_heatmap(
         font_size_main=4.5,
         line_width_axis=0.5,
     )
-    plt.figure()
-    ax = sns.heatmap(
+    fig, ax = plt.subplots()
+    sns.heatmap(
         map_values,
         annot=True,
         annot_kws={"size": 4.5},
@@ -47,6 +47,7 @@ def plot_map_heatmap(
         cbar_kws={"label": "mAP (%)"},
         xticklabels=kernel_sizes_1,
         yticklabels=kernel_sizes_2,
+        ax=ax,
     )
     ax.grid(False)
     cbar = ax.collections[0].colorbar
@@ -57,14 +58,17 @@ def plot_map_heatmap(
     ax.tick_params(left=False, bottom=False)
 
     cbar.ax.tick_params(length=0)
-    plt.tight_layout()
+    return fig
 
 
 def main():
     kernel_sizes_1, kernel_sizes_2, map_values = load_map_data()
-    plot_map_heatmap(kernel_sizes_1, kernel_sizes_2, map_values)
-    save_figure("map_heatmap")
-    plt.show()
+    fig = plot_map_heatmap(kernel_sizes_1, kernel_sizes_2, map_values)
+    # plt.show()
+    try:
+        save_figure("map_heatmap", fig=fig)
+    finally:
+        plt.close(fig)
 
 
 if __name__ == "__main__":

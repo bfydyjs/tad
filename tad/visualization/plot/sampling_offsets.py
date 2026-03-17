@@ -119,9 +119,6 @@ def plot_sampling_offsets(data, n=50):
     ax2.set_xlabel("(b) DiGIT", fontsize=11)
     ax2.grid(axis="x", linestyle="--")
     ax2.legend(loc="upper left")
-
-    plt.tight_layout()
-
     return fig
 
 
@@ -142,8 +139,11 @@ def main():
     setup_plot_style()
     data = generate_sampling_data(n=n)
     fig = plot_sampling_offsets(data, n=n)
-    save_figure("sampling_offsets", fig=fig)
-    plt.show()
+    # plt.show()
+    try:
+        save_figure("sampling_offsets", fig=fig)
+    finally:
+        plt.close(fig)
 
 
 if __name__ == "__main__":

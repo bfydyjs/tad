@@ -39,9 +39,9 @@ def plot_cosine_similarity():
     x = list(range(min_len))
     x_labels = [str(i) for i in x]
 
-    fig = plt.figure()
+    fig, ax = plt.subplots()
 
-    plt.hlines(
+    ax.hlines(
         y=baseline_value,
         xmin=min(x),
         xmax=max(x),
@@ -50,26 +50,25 @@ def plot_cosine_similarity():
         linestyle="--",
         label="Raw Baseline",
     )
-    plt.plot(x, y_a, marker="o", linestyle="-", label=model_a_name, color="#1f77b4")
-    plt.plot(x, y_b, marker="o", linestyle="-", label=model_b_name, color="#ff7f0e")
+    ax.plot(x, y_a, marker="o", linestyle="-", label=model_a_name, color="#1f77b4")
+    ax.plot(x, y_b, marker="o", linestyle="-", label=model_b_name, color="#ff7f0e")
 
     all_values = y_a + y_b + [baseline_value]
 
     y_min = max(0.0, min(all_values) - 0.05)
     y_max = min(1.05, max(all_values) + 0.05)
 
-    plt.ylim(y_min, y_max)
-    plt.xlim(min(x) - 0.2, max(x) + 0.2)
-    plt.xlabel("Levels", labelpad=0)
-    plt.ylabel("Cosine Similarity", labelpad=2.7)
-    plt.xticks(x, labels=x_labels)
-    plt.yticks()
+    ax.set_ylim(y_min, y_max)
+    ax.set_xlim(min(x) - 0.2, max(x) + 0.2)
+    ax.set_xlabel("Levels", labelpad=0)
+    ax.set_ylabel("Cosine Similarity", labelpad=2.7)
 
-    ax = plt.gca()
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_labels)
+
     ax.yaxis.set_major_locator(MultipleLocator(0.05))
 
-    plt.legend(loc="center", edgecolor="#bfbfbf", handlelength=2, fontsize=8, frameon=False)
-    plt.tight_layout()
+    ax.legend(loc="center", edgecolor="#bfbfbf", handlelength=2, fontsize=8, frameon=False)
 
     return fig
 
@@ -88,8 +87,11 @@ def setup_plot_style():
 def main():
     setup_plot_style()
     fig = plot_cosine_similarity()
-    save_figure("cosine_similarity_comparison", fig=fig)
-    plt.show()
+    # plt.show()
+    try:
+        save_figure("cosine_similarity_comparison", fig=fig)
+    finally:
+        plt.close(fig)
 
 
 if __name__ == "__main__":

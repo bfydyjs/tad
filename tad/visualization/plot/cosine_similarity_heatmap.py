@@ -66,18 +66,6 @@ def _patch_config_for_gt(cfg):
     return cfg
 
 
-def _get_feature_stride(cfg):
-    """Get feature stride from config."""
-    if "common" in cfg.dataset and "feature_stride" in cfg.dataset.common:
-        return cfg.dataset.common.feature_stride
-    if "feature_stride" in cfg.dataset.val:
-        return cfg.dataset.val.feature_stride
-    raise ValueError(
-        "feature_stride not found in config. "
-        "Please specify it in cfg.dataset.common or cfg.dataset.val."
-    )
-
-
 def _extract_features(args, model, inputs, masks):
     """Extract features based on the specified level."""
     if args.level == 0:
@@ -112,7 +100,12 @@ def plot_heatmap(
     """Plot and save the heatmap and timeline."""
     t = similarity_matrix.shape[0]
     setup_paper_style(
-        440 / 2, ratio=1.1, fraction=0.98, font_size_tex=10, font_size_main=7, line_width_axis=0.5
+        440 / 2,
+        ratio=1.1,
+        fraction=0.98,
+        font_size_tex=10,
+        font_size_main=7,
+        line_width_axis=0.5,
     )
     print("Plotting heatmap...")
     fig = plt.figure()
@@ -131,16 +124,33 @@ def plot_heatmap(
     # Ticker setup
     import matplotlib.ticker as ticker
 
-    locator = ticker.MaxNLocator(nbins=10, integer=True)
-    ax1.xaxis.set_major_locator(locator)
+    max_sec = (t * snippet_stride + offset_frames) / fps
+
+    if max_sec < 10:
+        locator = ticker.MultipleLocator(base=2)
+        sec_ticks = locator.tick_values(0, max_sec)
+    else:
+        target_step = max_sec / 5.0
+        if max_sec <= 50:
+            step = max(5, round(target_step / 5.0) * 5)
+        else:
+            step = max(10, round(target_step / 10.0) * 10)
+
+        locator = ticker.MultipleLocator(base=step)
+        sec_ticks = locator.tick_values(0, max_sec)
+
+    sec_ticks = [s for s in sec_ticks if 0 <= (s * fps - offset_frames) / snippet_stride <= t]
+    x_ticks = [(s * fps - offset_frames) / snippet_stride for s in sec_ticks]
+
+    ax1.set_xticks(x_ticks)
     ax1.xaxis.set_major_formatter(
-        ticker.FuncFormatter(lambda x, pos: f"{(x * snippet_stride + offset_frames) / fps:.1f}")
+        ticker.FuncFormatter(lambda x, pos: f"{round((x * snippet_stride + offset_frames) / fps)}")
     )
     ax1.yaxis.set_major_locator(ticker.MaxNLocator(nbins=10, integer=True))
 
     # Ticks and labels
     ax1.tick_params(axis="both", which="both", length=0)
-    ax2.tick_params(axis="both", which="both", length=0)
+    ax2.tick_params(axis="x", which="both", length=1)
     plt.setp(ax1.get_xticklabels(), visible=False)
     plt.setp(ax1.get_yticklabels(), visible=False)
     plt.setp(ax2.get_xticklabels(), visible=True)
@@ -178,8 +188,7 @@ def plot_heatmap(
         if end > start:
             ax2.fill_between([start, end], 0, 1, color="#32CD32", alpha=0.8)
 
-    save_figure(f"cosine_similarity_heatmap_{args.index}_{args.level}")
-    plt.show()
+    return fig
 
 
 def main():
@@ -220,8 +229,6 @@ def main():
     masks = data_sample["masks"].to(device).unsqueeze(0)
     gt_segments_feat = data_sample["gt_segments_feat"]  # [N_gt, 2]
     metas = data_sample.get("metas", {})
-    inputs = data_sample["inputs"].to(device).unsqueeze(0)
-    masks = data_sample["masks"].to(device).unsqueeze(0)
     video_name = metas.get("video_name", f"sample_{args.index}")
     data_path = metas.get("data_path", "N/A")
     fps = metas.get("fps", "N/A")
@@ -254,12 +261,22 @@ def main():
 
     # 7. 计算 GT 和时间缩放
     print(f"Ground truth file: {cfg.evaluation.ground_truth_file}")
-    print("===================\n")
+    print("=====================================================\n")
 
     # 8. 绘图
-    plot_heatmap(
-        args, similarity_matrix, gt_segments_feat, snippet_stride, offset_frames, fps, video_name
+    fig = plot_heatmap(
+        args,
+        similarity_matrix,
+        gt_segments_feat,
+        snippet_stride,
+        offset_frames,
+        fps,
+        video_name,
     )
+    try:
+        save_figure(f"cosine_similarity_heatmap_{args.index}_{args.level}")
+    finally:
+        plt.close(fig)
 
 
 if __name__ == "__main__":

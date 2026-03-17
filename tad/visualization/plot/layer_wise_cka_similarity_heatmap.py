@@ -38,7 +38,7 @@ def load_cka_data() -> dict[str, tuple[np.ndarray, str]]:
     }
 
 
-def plot_heatmaps(data_dict: dict[str, tuple[np.ndarray, str]]) -> None:
+def plot_heatmaps(data_dict: dict[str, tuple[np.ndarray, str]]):
     """绘制热力图。
 
     Args:
@@ -52,7 +52,7 @@ def plot_heatmaps(data_dict: dict[str, tuple[np.ndarray, str]]) -> None:
         font_size_main=4.5,
         line_width_axis=0.5,
     )
-    _, axes = plt.subplots(1, 2, figsize=(10, 4))
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 
     # 绘制预编码器热力图
     sns.heatmap(
@@ -80,14 +80,17 @@ def plot_heatmaps(data_dict: dict[str, tuple[np.ndarray, str]]) -> None:
     axes[1].set_xlabel("Scale Level")
     axes[1].set_ylabel("Scale Level")
 
-    plt.tight_layout()
+    return fig
 
 
 def main():
     data_dict = load_cka_data()
-    plot_heatmaps(data_dict)
-    save_figure("layer-wise_cka_similarity_heatmap")
-    plt.show()
+    fig = plot_heatmaps(data_dict)
+    # plt.show()
+    try:
+        save_figure("layer-wise_cka_similarity_heatmap", fig=fig)
+    finally:
+        plt.close(fig)
 
 
 if __name__ == "__main__":
