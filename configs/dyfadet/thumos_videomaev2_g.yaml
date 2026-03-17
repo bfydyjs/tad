@@ -17,7 +17,7 @@ dataset:
       - type: "LoadFeats"
         feat_format: "npy"
       - type: "ConvertToTensor"
-        keys: ["feats", "gt_segments", "gt_labels"]
+        keys: ["feats", "gt_segments_feat", "gt_labels"]
       - type: "RandomTrunc"
         trunc_len: 2304
         trunc_thresh: 0.5
@@ -27,7 +27,7 @@ dataset:
         ops: "t c -> c t"
       - type: "Collect"
         inputs: "feats"
-        keys: ["masks", "gt_segments", "gt_labels"]
+        keys: ["masks", "gt_segments_feat", "gt_labels"]
 
   val:
     <<: *default_common
@@ -37,13 +37,13 @@ dataset:
       - type: "LoadFeats"
         feat_format: "npy"
       - type: "ConvertToTensor"
-        keys: ["feats", "gt_segments", "gt_labels"]
+        keys: ["feats", "gt_segments_feat", "gt_labels"]
       - type: "Rearrange"
         keys: ["feats"]
         ops: "t c -> c t"
       - type: "Collect"
         inputs: "feats"
-        keys: ["masks", "gt_segments", "gt_labels"]
+        keys: ["masks", "gt_segments_feat", "gt_labels"]
 
   test:
     <<: *default_common
@@ -102,7 +102,6 @@ model:
       dyn_type: "c"
     cls_prior_prob: 0.01
     prior_generator:
-      type: "PointGenerator"
       strides: [1, 2, 4, 8, 16, 32]
       regression_range: [[0, 4], [4, 8], [8, 16], [16, 32], [32, 64], [64, 10000]]
     loss_normalizer: 100
