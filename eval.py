@@ -9,7 +9,7 @@ from torch.nn.parallel import DistributedDataParallel
 from tad.datasets import build_dataloader, build_dataset
 from tad.engine import eval_one_epoch
 from tad.models import build_detector
-from tad.utils import Config, DictAction, create_folder, set_seed, setup_logger
+from tad.utils import Config, DictAction, set_seed, setup_logger
 
 
 def parse_args():
@@ -60,7 +60,7 @@ def setup_env(cfg, args):
     set_seed(args.seed, args.disable_deterministic)
     cfg.work_dir = Path(cfg.work_dir) / f"gpu{args.world_size}_id{args.id}"
     if args.rank == 0:
-        create_folder(cfg.work_dir)
+        Path(cfg.work_dir).expanduser().mkdir(mode=0o777, parents=True, exist_ok=True)
 
     # setup logger
     logger = setup_logger("Test", save_dir=cfg.work_dir, distributed_rank=args.rank)

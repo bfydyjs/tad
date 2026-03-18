@@ -21,7 +21,6 @@ from tad.utils import (
     LRFinder,
     ModelEma,
     calculate_params_gflops,
-    create_folder,
     get_custom_config,
     save_checkpoint,
     set_seed,
@@ -76,7 +75,7 @@ def setup_env(cfg, args):
     set_seed(args.seed, args.disable_deterministic)
 
     if args.rank == 0:
-        create_folder(cfg.work_dir)
+        Path(cfg.work_dir).expanduser().mkdir(mode=0o777, parents=True, exist_ok=True)
         shutil.copy2(args.config, cfg.work_dir)
 
     # setup logger

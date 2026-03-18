@@ -11,8 +11,7 @@ import wandb
 from tad.datasets.dataset import SlidingWindowDataset
 from tad.metrics import build_evaluator
 from tad.models.post_processing import batched_nms, build_classifier
-from tad.utils import create_folder
-from tad.utils.misc import AverageMeter, reduce_loss
+from tad.tad.utils.meters import AverageMeter
 
 
 def move_to_device(data_dict, device):
@@ -142,7 +141,13 @@ def train_one_epoch(
             model_ema.update(model)
 
         # track all losses
-        losses = reduce_loss(losses)  # only for log
+        # reduce loss when distributed training, only for logging
+        if dist.is_available() and dist.is_initialized():
+            for loss_name, loss_value in losses.items():
+                loss_value = loss_value.detach().clone()
+                dist.all_reduce(loss_value, op=dist.ReduceOp.AVG)
+                losses[loss_name] = loss_value
+
         for key, value in losses.items():
             if key not in losses_tracker:
                 losses_tracker[key] = AverageMeter()
@@ -180,7 +185,7 @@ def train_one_epoch(
 def _setup_inference_resources(cfg, test_loader):
     cfg.inference["folder"] = Path(cfg.work_dir) / "outputs"
     if cfg.inference.save_raw_prediction:
-        create_folder(cfg.inference["folder"])
+        Path(cfg.inference["folder"]).expanduser().mkdir(mode=0o777, parents=True, exist_ok=True)
 
     # external classifier
     if "external_cls" in cfg.post_processing:
