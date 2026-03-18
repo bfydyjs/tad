@@ -77,6 +77,7 @@ def setup_paper_style(
     plt.rcParams.update(
         {
             "figure.figsize": figsize,
+            "figure.constrained_layout.use": True,
             # Journal Standard: Arial/Helvetica.
             # Note:
             # - Draw.io's default Helvetica is effectively Arial.
@@ -114,7 +115,7 @@ def setup_paper_style(
             "patch.linewidth": line_width_axis,
             "savefig.dpi": 600,
             "savefig.bbox": "tight",
-            "savefig.pad_inches": 0,
+            "savefig.pad_inches": 0.005,
         }
     )
 
