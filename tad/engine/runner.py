@@ -11,7 +11,7 @@ import wandb
 from tad.datasets.dataset import SlidingWindowDataset
 from tad.metrics import build_evaluator
 from tad.models.post_processing import batched_nms, build_classifier
-from tad.tad.utils.meters import AverageMeter
+from tad.utils.meters import AverageMeter
 
 
 def move_to_device(data_dict, device):
