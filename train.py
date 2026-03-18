@@ -1,6 +1,7 @@
 import argparse
 import datetime
 import os
+import shutil
 import time
 from pathlib import Path
 
@@ -23,10 +24,8 @@ from tad.utils import (
     create_folder,
     get_custom_config,
     save_checkpoint,
-    save_config,
     set_seed,
     setup_logger,
-    update_workdir,
 )
 
 
@@ -78,7 +77,7 @@ def setup_env(cfg, args):
 
     if args.rank == 0:
         create_folder(cfg.work_dir)
-        save_config(args.config, cfg.work_dir)
+        shutil.copy2(args.config, cfg.work_dir)
 
     # setup logger
     logger = setup_logger("Train", save_dir=cfg.work_dir, distributed_rank=args.rank)
@@ -303,7 +302,7 @@ def main():
 
     # Initialize environment
     init_distributed(args)
-    cfg = update_workdir(cfg, args.id, args.world_size)
+    cfg.work_dir = Path(cfg.work_dir) / f"gpu{args.world_size}_id{args.id}"
     logger = setup_env(cfg, args)
 
     try:

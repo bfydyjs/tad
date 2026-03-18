@@ -1,6 +1,5 @@
 import os
 import random
-import shutil
 from pathlib import Path
 
 import numpy as np
@@ -26,18 +25,9 @@ def set_seed(seed, disable_deterministic=False):
         torch.use_deterministic_algorithms(True, warn_only=True)
 
 
-def update_workdir(cfg, exp_id, gpu_num):
-    cfg.work_dir = Path(cfg.work_dir) / f"gpu{gpu_num}_id{exp_id}"
-    return cfg
-
-
 def create_folder(folder_path):
     path = Path(folder_path).expanduser()
     path.mkdir(mode=0o777, parents=True, exist_ok=True)
-
-
-def save_config(cfg, folder_path):
-    shutil.copy2(cfg, folder_path)
 
 
 def reduce_loss(loss_dict):
