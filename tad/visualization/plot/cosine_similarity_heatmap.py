@@ -17,7 +17,6 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import seaborn as sns
 import torch
 from matplotlib.patches import Rectangle
@@ -37,8 +36,14 @@ def parse_args():
     parser.add_argument(
         "--index",
         type=int,
-        default=0,
-        help="Index of the video sample in validation set to visualize",
+        nargs="+",
+        default=[0],
+        help="Index(es) of the video sample(s) in validation set to visualize. e.g. --index 0 1 2",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="If set, visualize all samples in the dataset, ignoring --index.",
     )
     parser.add_argument(
         "--level",
@@ -223,60 +228,60 @@ def main():
         model.eval()
 
     # 4. 获取样本数据
-    print(f"Processing sample index: {args.index}")
-    data_sample = dataset[args.index]
-    inputs = data_sample["inputs"].to(device).unsqueeze(0)
-    masks = data_sample["masks"].to(device).unsqueeze(0)
-    gt_segments_feat = data_sample["gt_segments_feat"]  # [N_gt, 2]
-    metas = data_sample.get("metas", {})
-    video_name = metas.get("video_name", f"sample_{args.index}")
-    data_path = metas.get("data_path", "N/A")
-    fps = metas.get("fps", "N/A")
-    duration = metas.get("duration", "N/A")
-    snippet_stride = metas.get("snippet_stride", "N/A")
-    offset_frames = metas.get("offset_frames", "N/A")
-    print("data_sample.keys()", data_sample.keys())
-    print(f"inputs.shape: {data_sample['inputs'].shape}")
-    print(f"masks.shape: {data_sample['masks'].shape}")
-    print(f"gt segments shape: {gt_segments_feat.shape}")
-    print(f"gt segments: {gt_segments_feat}")
-    print(f"metas.keys(): {metas.keys()}")
-    print(f"video_name: {video_name}")
-    print(f"data_path: {data_path}")
-    print(f"fps: {fps}")
-    print(f"duration: {duration}")
-    print(f"snippet_stride: {snippet_stride}")
-    print(f"offset_frames: {offset_frames}")
-    # 5. 提取特征
-    feature_tensor = _extract_features(args, model, inputs, masks)
-    features = feature_tensor.transpose(0, 1).cpu().numpy()
-    print(f"Feature shape for heatmap: Time={features.shape[0]}, Dim={features.shape[1]}")
+    indices_to_process = range(len(dataset)) if args.all else args.index
 
-    # 6. 计算相似度矩阵
-    print("Computing cosine similarity...")
-    # Normalize features
-    features_norm = features / np.linalg.norm(features, axis=1, keepdims=True).clip(min=1e-8)
-    # Compute cosine similarity matrix [T, T]
-    similarity_matrix = np.dot(features_norm, features_norm.T)
+    for idx in indices_to_process:
+        print(f"============ Processing sample index: {idx} ============")
+        data_sample = dataset[idx]
+        inputs = data_sample["inputs"].to(device).unsqueeze(0)
+        masks = data_sample["masks"].to(device).unsqueeze(0)
+        gt_segments_feat = data_sample["gt_segments_feat"]  # [N_gt, 2]
+        metas = data_sample.get("metas", {})
+        video_name = metas.get("video_name", f"sample_{idx}")
+        fps = metas.get("fps", "N/A")
+        duration = metas.get("duration", "N/A")
+        snippet_stride = metas.get("snippet_stride", "N/A")
+        offset_frames = metas.get("offset_frames", "N/A")
+        print(f"video_name: {video_name}")
+        print(f"gt segments: {gt_segments_feat}")
+        print(f"fps: {fps}")
+        print(f"duration: {duration}")
+        print(f"snippet_stride: {snippet_stride}")
+        print(f"offset_frames: {offset_frames}")
+        # 5. 提取特征
+        feature_tensor = _extract_features(args, model, inputs, masks)  # [C, T]
 
-    # 7. 计算 GT 和时间缩放
-    print(f"Ground truth file: {cfg.evaluation.ground_truth_file}")
-    print("=====================================================\n")
+        # 6. 计算相似度矩阵 (直接在 GPU 上计算更高效)
+        print("Computing cosine similarity...")
+        with torch.no_grad():
+            # 沿通道维度 (dim=0) 归一化
+            features_norm = torch.nn.functional.normalize(feature_tensor, p=2, dim=0)
+            # 矩阵乘法计算相似度矩阵 [T, C] @ [C, T] -> [T, T]
+            similarity_matrix = torch.mm(features_norm.t(), features_norm).cpu().numpy()
 
-    # 8. 绘图
-    fig = plot_heatmap(
-        args,
-        similarity_matrix,
-        gt_segments_feat,
-        snippet_stride,
-        offset_frames,
-        fps,
-        video_name,
-    )
-    try:
-        save_figure(f"cosine_similarity_heatmap_{args.index}_{args.level}")
-    finally:
-        plt.close(fig)
+        features_shape = feature_tensor.shape
+        print(f"Feature shape for heatmap: Time={features_shape[1]}, Dim={features_shape[0]}")
+
+        # 7. 计算 GT 和时间缩放
+        print(f"Ground truth file: {cfg.evaluation.ground_truth_file}")
+        print("=====================================================\n")
+
+        # 8. 绘图
+        fig = plot_heatmap(
+            args,
+            similarity_matrix,
+            gt_segments_feat,
+            snippet_stride,
+            offset_frames,
+            fps,
+            video_name,
+        )
+        try:
+            save_figure(
+                f"cosine_similarity_heatmap_{idx}_{args.level}", extensions=["png"], fig=fig
+            )
+        finally:
+            plt.close(fig)
 
 
 if __name__ == "__main__":

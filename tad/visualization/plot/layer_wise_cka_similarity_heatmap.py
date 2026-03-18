@@ -54,7 +54,6 @@ def plot_heatmaps(data_dict: dict[str, tuple[np.ndarray, str]]):
     )
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 
-    # 绘制预编码器热力图
     sns.heatmap(
         data_dict["pre_encoder"][0],
         annot=True,
@@ -68,7 +67,6 @@ def plot_heatmaps(data_dict: dict[str, tuple[np.ndarray, str]]):
     axes[0].set_xlabel("Scale Level")
     axes[0].set_ylabel("Scale Level")
 
-    # 绘制后编码器热力图
     sns.heatmap(
         data_dict["post_encoder"][0],
         annot=True,
