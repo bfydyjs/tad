@@ -13,6 +13,8 @@ def set_seed(seed, disable_deterministic=False):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
     if disable_deterministic:
         torch.backends.cudnn.deterministic = False
@@ -44,38 +46,25 @@ def reduce_loss(loss_dict):
         return loss_dict
 
     for loss_name, loss_value in loss_dict.items():
-        loss_value = loss_value.data.clone()
+        loss_value = loss_value.detach().clone()
         dist.all_reduce(loss_value.div_(dist.get_world_size()))
         loss_dict[loss_name] = loss_value
     return loss_dict
 
 
 class AverageMeter:
-    """Computes and stores the average and current value.
-    Used to compute dataset stats from mini-batches
-    """
+    """Computes and stores the average and current value"""
 
     def __init__(self):
-        self.initialized = False
-        self.val = None
-        self.avg = None
-        self.sum = None
-        self.count = 0.0
+        self.reset()
 
-    def initialize(self, val, n):
-        self.val = val
-        self.avg = val
-        self.sum = val * n
-        self.count = n
-        self.initialized = True
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
 
     def update(self, val, n=1):
-        if not self.initialized:
-            self.initialize(val, n)
-        else:
-            self.add(val, n)
-
-    def add(self, val, n):
         self.val = val
         self.sum += val * n
         self.count += n
