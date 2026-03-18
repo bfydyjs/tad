@@ -20,6 +20,11 @@ dependencies = [
     "imgaug>=0.4.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.15.4",
+]
+
 [tool.setuptools.packages.find]
 include = ["ddiou*"]
 
