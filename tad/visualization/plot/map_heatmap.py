@@ -53,9 +53,7 @@ def plot_map_heatmap(
     cbar = ax.collections[0].colorbar
     ax.set_xlabel("Kernel Size A")
     ax.set_ylabel("Kernel Size B")
-    ax.set_xticks(np.arange(len(kernel_sizes_1)) + 0.5, labels=kernel_sizes_1)
-    ax.set_yticks(np.arange(len(kernel_sizes_2)) + 0.5, labels=kernel_sizes_2)
-    ax.tick_params(left=False, bottom=False)
+    # ax.tick_params(left=False, bottom=False)
 
     cbar.ax.tick_params(length=0)
     return fig

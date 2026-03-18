@@ -63,6 +63,7 @@ def plot_heatmaps(data_dict: dict[str, tuple[np.ndarray, str]]):
         cbar=False,
         ax=axes[0],
     )
+    axes[0].grid(False)
     axes[0].set_title(data_dict["pre_encoder"][1])
     axes[0].set_xlabel("Scale Level")
     axes[0].set_ylabel("Scale Level")
@@ -76,6 +77,7 @@ def plot_heatmaps(data_dict: dict[str, tuple[np.ndarray, str]]):
         cbar=False,
         ax=axes[1],
     )
+    axes[1].grid(False)
     axes[1].set_title(data_dict["post_encoder"][1])
     axes[1].set_xlabel("Scale Level")
     axes[1].set_ylabel("Scale Level")
