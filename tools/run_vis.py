@@ -2,9 +2,9 @@
 """可视化脚本运行器。
 
 使用方法:
-    python run_vis.py layer_wise_cka_similarity_heatmap
-    python run_vis.py loss
-    python run_vis.py map_heatmap
+    python tools/run_vis.py layer_wise_cka_similarity_heatmap
+    python tools/run_vis.py loss
+    python tools/run_vis.py map_heatmap
 
 """
 
