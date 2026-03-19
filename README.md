@@ -10,7 +10,7 @@ pip install -e . --no-build-isolation
 
 ## Training
 ```bash
-python train.py configs/ddiou/thumos_videomaev2_g.yaml
+python tools/train.py configs/ddiou/thumos_videomaev2_g.yaml
 ```
 ```bash
 torchrun \
@@ -18,12 +18,12 @@ torchrun \
     --nproc_per_node=1 \
     --rdzv_backend=c10d \
     --rdzv_endpoint=localhost:0 \
-    train.py configs/ddiou/thumos_videomaev2_g.yaml
+    tools/train.py configs/ddiou/thumos_videomaev2_g.yaml
 ```
 
 ## Inference
 ```bash
-python eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
+python tools/eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
 ```
 ```bash
 torchrun \
@@ -31,7 +31,7 @@ torchrun \
     --nproc_per_node=4 \
     --rdzv_backend=c10d \
     --rdzv_endpoint=localhost:0 \
-    eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
+    tools/eval.py configs/ddiou/thumos_videomaev2_g.yaml --checkpoint exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
 ```
 ## 改进
 - 尽量使用稳定的社区版本包，避免重复造轮子。
