@@ -13,8 +13,14 @@ def compute_delta(bboxes_init, gt_segments, wc=2.0, wl=2.0):
     init_c = (bboxes_init[..., 0] + bboxes_init[..., 1]) * 0.5
     init_w = bboxes_init[..., 1] - bboxes_init[..., 0]
 
+    # Prevent division by zero
+    init_w = torch.clamp(init_w, min=1e-6)
+
     gt_c = (gt_segments[..., 0] + gt_segments[..., 1]) * 0.5
     gt_w = gt_segments[..., 1] - gt_segments[..., 0]
+
+    # Prevent taking log of zero or negative numbers
+    gt_w = torch.clamp(gt_w, min=1e-6)
 
     dc = (gt_c - init_c) / init_w * wc
     dw = torch.log(gt_w / init_w) * wl
