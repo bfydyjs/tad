@@ -29,8 +29,9 @@ class CUHKANETClassifier:
 
         # sort video classification
         cuhk_score = np.array(self.cuhk_data_score[video_id])
-        cuhk_classes = self.cuhk_data_action[np.argsort(-cuhk_score)]
-        cuhk_score = cuhk_score[np.argsort(-cuhk_score)]
+        sorted_idx = np.argsort(-cuhk_score)[: self.topk]
+        cuhk_classes = self.cuhk_data_action[sorted_idx]
+        cuhk_score = cuhk_score[sorted_idx]
 
         new_segments = []
         new_labels = []
@@ -121,8 +122,10 @@ class TCANetHACSClassifier:
         cls_score = np.array(self.cls_data_score[video_id][0])
         cls_score = np.exp(cls_score) / np.sum(np.exp(cls_score)) * 2.0
         cls_data_action = np.array(self.cls_data_action)
-        cls_classes = cls_data_action[np.argsort(-cls_score)]
-        cls_score = cls_score[np.argsort(-cls_score)]
+
+        sorted_idx = np.argsort(-cls_score)[: self.topk]
+        cls_classes = cls_data_action[sorted_idx]
+        cls_score = cls_score[sorted_idx]
 
         new_segments = []
         new_labels = []
@@ -171,7 +174,7 @@ class StandardClassifier:
         for k in range(self.topk):
             new_segments.append(segments)
             new_labels.extend([topk_cls_label[k]] * len(segments))
-            new_scores.append(np.sqrt(scores * topk_cls_score[k]))  # default is sqrt
+            new_scores.append(torch.sqrt(scores * topk_cls_score[k]))
 
         new_segments = torch.cat(new_segments)
         new_scores = torch.cat(new_scores)
