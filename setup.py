@@ -5,7 +5,7 @@ setup(
     ext_modules=[
         CppExtension(
             name="nms_1d_cpu",
-            sources=["tad/models/post_processing/nms/nms_cpu.cpp"],
+            sources=["tad/csrc/nms_cpu.cpp"],
             extra_compile_args=["-fopenmp"],
         )
     ],

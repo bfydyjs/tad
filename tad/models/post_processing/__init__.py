@@ -1,5 +1,5 @@
 from .classifier import build_classifier
-from .nms.nms import batched_nms
+from .nms import batched_nms
 from .utils import boundary_choose, convert_to_seconds, load_predictions, save_predictions
 
 __all__ = [
