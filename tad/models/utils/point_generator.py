@@ -19,16 +19,16 @@ class PointGenerator:
         pts_list = []
         for i, feat in enumerate(feat_list):
             t = feat.shape[-1]
+            device = feat.device
 
-            points = torch.linspace(0, t - 1, t, dtype=torch.float) * self.strides[i]  # [T]
-            reg_range = torch.as_tensor(self.regression_range[i], dtype=torch.float)
-            stride = torch.as_tensor(self.strides[i], dtype=torch.float)
+            points = torch.arange(t, dtype=torch.float, device=device) * self.strides[i]
 
             if self.use_offset:
-                points += 0.5 * stride
+                points += 0.5 * self.strides[i]
 
-            points = points[:, None]  # [T,1]
-            reg_range = reg_range[None].repeat(t, 1)  # [T,2]
-            stride = stride[None].repeat(t, 1)  # [T,1]
-            pts_list.append(torch.cat((points, reg_range, stride), dim=1).to(feat.device))  # [T,4]
+            points = points[:, None]  # [T, 1]
+            reg_range = torch.tensor(self.regression_range[i], device=device).expand(t, 2)
+            stride = torch.tensor(self.strides[i], device=device).expand(t, 1)
+
+            pts_list.append(torch.cat((points, reg_range, stride), dim=1))  # [T, 4]
         return pts_list
