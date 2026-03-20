@@ -4,9 +4,9 @@ import torch
 import torch.nn as nn
 from torch.nn.functional import one_hot, relu
 
-from ..bricks import ConvModule, Scale
-from ..builder import HEADS, build_loss
-from .point_generator import PointGenerator
+from tad.models.bricks import ConvModule, Scale
+from tad.models.builder import HEADS, build_loss
+from tad.models.utils.point_generator import PointGenerator
 
 
 @HEADS.register_module()
@@ -104,7 +104,7 @@ class AnchorFreeHead(nn.Module):
             bias_value = -(math.log((1 - self.cls_prior_prob) / self.cls_prior_prob))
             nn.init.constant_(self.cls_head.bias, bias_value)
 
-    def forward_train(self, feat_list, mask_list, gt_segments, gt_labels, **kwargs):
+    def forward(self, feat_list, mask_list):
         cls_pred = []
         reg_pred = []
 
@@ -119,27 +119,18 @@ class AnchorFreeHead(nn.Module):
             cls_pred.append(self.cls_head(cls_feat))
             reg_pred.append(relu(self.scale[layer_idx](self.reg_head(reg_feat))))
 
-        points = self.prior_generator(feat_list)
+        with torch.no_grad():
+            points = self.prior_generator(feat_list)
 
+        return cls_pred, reg_pred, points
+
+    def forward_train(self, feat_list, mask_list, gt_segments, gt_labels, **kwargs):
+        cls_pred, reg_pred, points = self.forward(feat_list, mask_list)
         losses = self.losses(cls_pred, reg_pred, mask_list, points, gt_segments, gt_labels)
         return losses
 
     def forward_test(self, feat_list, mask_list, **kwargs):
-        cls_pred = []
-        reg_pred = []
-
-        for layer_idx, (feat, mask) in enumerate(zip(feat_list, mask_list, strict=True)):
-            cls_feat = feat
-            reg_feat = feat
-
-            for i in range(self.num_convs):
-                cls_feat, mask = self.cls_convs[i](cls_feat, mask)
-                reg_feat, mask = self.reg_convs[i](reg_feat, mask)
-
-            cls_pred.append(self.cls_head(cls_feat))
-            reg_pred.append(relu(self.scale[layer_idx](self.reg_head(reg_feat))))
-
-        points = self.prior_generator(feat_list)
+        cls_pred, reg_pred, points = self.forward(feat_list, mask_list)
 
         # get refined proposals and scores
         proposals, scores = self.get_valid_proposals_scores(
@@ -235,31 +226,33 @@ class AnchorFreeHead(nn.Module):
                 gt_reg.append(gt_segment.new_zeros((num_pts, 2)))
                 continue
 
-            # compute the lengths of all segments -> F T x N
+            # compute the lengths of all segments -> [num_gts]
             lens = gt_segment[:, 1] - gt_segment[:, 0]
-            lens = lens[None, :].repeat(num_pts, 1)
 
             # compute the distance of every point to each segment boundary
             # auto broadcasting for all reg target-> F T x N x2
-            gt_segs = gt_segment[None].expand(num_pts, num_gts, 2)
-            left = concat_points[:, 0, None] - gt_segs[:, :, 0]
-            right = gt_segs[:, :, 1] - concat_points[:, 0, None]
+            left = concat_points[:, 0, None] - gt_segment[None, :, 0]
+            right = gt_segment[None, :, 1] - concat_points[:, 0, None]
             reg_targets = torch.stack((left, right), dim=-1)
 
             if self.center_sample == "radius":
-                # center of all segments F T x N
-                center_pts = 0.5 * (gt_segs[:, :, 0] + gt_segs[:, :, 1])
+                # center of all segments -> [1, num_gts]
+                center_pts = 0.5 * (gt_segment[None, :, 0] + gt_segment[None, :, 1])
                 # center sampling based on stride radius
                 # compute the new boundaries:
                 # concat_points[:, 3] stores the stride
                 t_mins = center_pts - concat_points[:, 3, None] * self.center_sample_radius
                 t_maxs = center_pts + concat_points[:, 3, None] * self.center_sample_radius
                 # prevent t_mins / maxs from over-running the action boundary
-                # left: torch.maximum(t_mins, gt_segs[:, :, 0])
-                # right: torch.minimum(t_maxs, gt_segs[:, :, 1])
+                # left: torch.maximum(t_mins, gt_segment[None, :, 0])
+                # right: torch.minimum(t_maxs, gt_segment[None, :, 1])
                 # F T x N (distance to the new boundary)
-                cb_dist_left = concat_points[:, 0, None] - torch.maximum(t_mins, gt_segs[:, :, 0])
-                cb_dist_right = torch.minimum(t_maxs, gt_segs[:, :, 1]) - concat_points[:, 0, None]
+                cb_dist_left = concat_points[:, 0, None] - torch.maximum(
+                    t_mins, gt_segment[None, :, 0]
+                )
+                cb_dist_right = (
+                    torch.minimum(t_maxs, gt_segment[None, :, 1]) - concat_points[:, 0, None]
+                )
                 # F T x N x 2
                 center_seg = torch.stack((cb_dist_left, cb_dist_right), -1)
                 # F T x N
@@ -276,20 +269,22 @@ class AnchorFreeHead(nn.Module):
                 (max_regress_distance <= concat_points[:, 2, None]),
             )
 
+            # Create a combined invalid mask
+            invalid_mask = torch.logical_not(inside_gt_seg_mask & inside_regress_range)
+
             # if there are still more than one actions for one moment
             # pick the one with the shortest duration (easiest to regress)
-            lens.masked_fill_(inside_gt_seg_mask == 0, float("inf"))
-            lens.masked_fill_(inside_regress_range == 0, float("inf"))
+            lens_matrix = torch.where(invalid_mask, float("inf"), lens[None, :])
             # F T x N -> F T
-            min_len, min_len_inds = lens.min(dim=1)
+            min_len, min_len_inds = lens_matrix.min(dim=1)
 
             # corner case: multiple actions with very similar durations (e.g., THUMOS14)
             if self.filter_similar_gt:
                 min_len_mask = torch.logical_and(
-                    (lens <= (min_len[:, None] + 1e-3)), (lens < float("inf"))
+                    (lens_matrix <= (min_len[:, None] + 1e-3)), (lens_matrix < float("inf"))
                 )
             else:
-                min_len_mask = lens < float("inf")
+                min_len_mask = lens_matrix < float("inf")
             min_len_mask = min_len_mask.to(reg_targets.dtype)
 
             # cls_targets: F T x C; reg_targets F T x 2

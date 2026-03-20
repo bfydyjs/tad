@@ -2,7 +2,7 @@ import random
 
 import torch
 
-from ..builder import TRANSFORMS
+from tad.datasets.builder import TRANSFORMS
 
 
 @TRANSFORMS.register_module()

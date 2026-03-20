@@ -1,7 +1,8 @@
 import torch.nn as nn
 
-from ..bricks import AffineDropPath, Scale
-from ..builder import DETECTORS
+from tad.models.bricks import AffineDropPath, Scale
+from tad.models.builder import DETECTORS
+
 from .detector import Detector
 
 

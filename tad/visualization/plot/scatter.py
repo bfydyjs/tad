@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from ..utils import save_figure, setup_paper_style
+from tad.visualization.utils import save_figure, setup_paper_style
 
 
 def get_data_params():

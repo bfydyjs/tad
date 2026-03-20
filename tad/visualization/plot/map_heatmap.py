@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from ..utils import save_figure, setup_paper_style
+from tad.visualization.utils import save_figure, setup_paper_style
 
 
 def load_map_data() -> tuple[list[int], list[int], np.ndarray]:

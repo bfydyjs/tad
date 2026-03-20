@@ -1,4 +1,5 @@
-from ..builder import HEADS
+from tad.models.builder import HEADS
+
 from .anchor_free_head import AnchorFreeHead
 
 

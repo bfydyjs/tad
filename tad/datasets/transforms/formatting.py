@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from einops import rearrange, reduce
 
-from ..builder import TRANSFORMS
+from tad.datasets.builder import TRANSFORMS
 
 
 def to_tensor(data):

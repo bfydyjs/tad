@@ -3,7 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from ..utils import save_figure, setup_paper_style
+from tad.visualization.utils import save_figure, setup_paper_style
 
 
 def load_loss_data(

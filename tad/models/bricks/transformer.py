@@ -4,7 +4,8 @@ import torch
 import torch.nn as nn
 from torch.nn.functional import softmax
 
-from ..builder import MODELS
+from tad.models.builder import MODELS
+
 from .conv import ConvModule
 
 

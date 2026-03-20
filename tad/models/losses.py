@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.nn.functional import binary_cross_entropy_with_logits
 
 from .builder import LOSSES
-from .utils.iou_tools import compute_diou_torch, compute_giou_torch
+from .utils import compute_diou_torch, compute_giou_torch
 
 
 @LOSSES.register_module()

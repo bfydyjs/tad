@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..builder import MODELS
+from tad.models.builder import MODELS
 
 
 @MODELS.register_module()

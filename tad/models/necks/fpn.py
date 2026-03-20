@@ -3,8 +3,8 @@ import copy
 import torch.nn as nn
 from torch.nn.functional import interpolate
 
-from ..bricks import ConvModule
-from ..builder import NECKS
+from tad.models.bricks import ConvModule
+from tad.models.builder import NECKS
 
 
 @NECKS.register_module()

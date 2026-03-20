@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 from torch.nn.functional import interpolate, silu
 
-from ..bricks import AffineDropPath, ConvModule
-from ..builder import PROJECTIONS
+from tad.models.bricks import AffineDropPath, ConvModule
+from tad.models.builder import PROJECTIONS
+
 from .actionformer_proj import get_sinusoid_encoding
 
 

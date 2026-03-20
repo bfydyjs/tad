@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from torch.nn.functional import interpolate
 
-from ..builder import TRANSFORMS
+from tad.datasets.builder import TRANSFORMS
 
 
 @TRANSFORMS.register_module()

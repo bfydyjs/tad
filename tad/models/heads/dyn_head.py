@@ -4,7 +4,8 @@ import torch
 import torch.nn as nn
 from torch.nn.functional import interpolate, pad, relu
 
-from ..builder import HEADS
+from tad.models.builder import HEADS
+
 from .actionformer_head import ActionFormerHead
 
 

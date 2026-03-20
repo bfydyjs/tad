@@ -3,7 +3,7 @@ import numpy as np
 import seaborn as sns
 
 # 导入通用工具函数
-from ..utils import save_figure, setup_paper_style
+from tad.visualization.utils import save_figure, setup_paper_style
 
 
 def load_cka_data() -> dict[str, tuple[np.ndarray, str]]:

@@ -1,7 +1,7 @@
 import torch
 
-from ..builder import DETECTORS, build_backbone, build_head, build_neck, build_projection
-from ..post_processing import (
+from tad.models.builder import DETECTORS, build_backbone, build_head, build_neck, build_projection
+from tad.models.post_processing import (
     batched_nms,
     convert_to_seconds,
     load_predictions,
@@ -183,10 +183,11 @@ class Detector(torch.nn.Module):
             segments = convert_to_seconds(segments, metas[i])
 
             # merge with external classifier
-            if isinstance(ext_cls, list):  # own classification results
-                labels = [ext_cls[label.item()] for label in labels]
-            else:
-                segments, labels, scores = ext_cls(video_id, segments, scores)
+            if ext_cls is not None:
+                if isinstance(ext_cls, list):  # own classification results
+                    labels = [ext_cls[label.item()] for label in labels]
+                else:
+                    segments, labels, scores = ext_cls(video_id, segments, scores)
 
             results_per_video = []
             for segment, label, score in zip(segments, labels, scores, strict=False):

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 
-from ..utils import save_figure, setup_paper_style
+from tad.visualization.utils import save_figure, setup_paper_style
 
 # ==========================================
 # 1. Insert the numerical results obtained from running average_cosine_similarity.py here.

@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 from torch.nn.functional import interpolate
 
-from ..bricks import ConvModule, TransformerBlock
-from ..builder import PROJECTIONS
+from tad.models.bricks import ConvModule, TransformerBlock
+from tad.models.builder import PROJECTIONS
 
 
 @PROJECTIONS.register_module()

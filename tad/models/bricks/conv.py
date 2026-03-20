@@ -1,14 +1,34 @@
 import copy
 import math
 
+import torch
 import torch.nn as nn
 from torch.nn.functional import interpolate
 
-from ..builder import MODELS
+from tad.models.builder import MODELS
 
 
 @MODELS.register_module()
 class ConvModule(nn.Module):
+    def _build_activation(self, act_cfg):
+        """Helper to build activation layer and reduce __init__ complexity."""
+        act_cfg = copy.copy(act_cfg)
+        act_type = act_cfg.pop("type")
+
+        if act_type == "relu":
+            return nn.ReLU(inplace=True, **act_cfg)
+        elif act_type == "gelu":
+            return nn.GELU(**act_cfg)
+        elif act_type == "silu":
+            return nn.SiLU(**act_cfg)
+        elif act_type == "swish":
+            return nn.SiLU(**act_cfg)  # PyTorch uses SiLU for Swish
+        else:
+            if hasattr(nn, act_type):
+                return getattr(nn, act_type)(**act_cfg)
+            else:
+                raise ValueError(f"Unknown activation type: {act_type}")
+
     def __init__(
         self,
         in_channels,
@@ -62,13 +82,7 @@ class ConvModule(nn.Module):
         self.with_act = act_cfg is not None
 
         if self.with_act:
-            act_cfg = copy.copy(act_cfg)  # make a copy
-            act_type = act_cfg.pop("type")
-
-            if act_type == "relu":
-                self.act = nn.ReLU(inplace=True, **act_cfg)
-            else:  # other type
-                self.act = eval(act_type)(**act_cfg)
+            self.act = self._build_activation(act_cfg)
 
         # init weights
         self.apply(self.__init_weights__)
@@ -89,12 +103,11 @@ class ConvModule(nn.Module):
 
         if mask is not None:  # masking before the norm
             if mask.shape[-1] != x.shape[-1]:
-                mask = (
-                    interpolate(mask.unsqueeze(1).to(x.dtype), size=x.size(-1), mode="nearest")
-                    .squeeze(1)
-                    .to(mask.dtype)
-                )
-            x = x * mask.unsqueeze(1).float().detach()  # [B,C,T]
+                expanded_mask = mask.unsqueeze(1).to(x.dtype)
+                expanded_mask = interpolate(expanded_mask, size=x.size(-1), mode="nearest")
+                mask = expanded_mask.squeeze(1).to(torch.bool)
+
+            x = x * mask.unsqueeze(1)  # [B,C,T] PyTorch handles boolean multiplication securely
 
         if self.with_norm:
             if self.norm_type == "LN":
@@ -106,7 +119,7 @@ class ConvModule(nn.Module):
             x = self.act(x)
 
         if mask is not None:  # masking the output
-            x = x * mask.unsqueeze(1).float().detach()  # [B,C,T]
+            x = x * mask.unsqueeze(1)  # [B,C,T]
             return x, mask
         else:
             return x

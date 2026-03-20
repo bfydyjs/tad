@@ -1,9 +1,12 @@
+import math
+
 import torch
 import torch.nn as nn
 from torch.nn.functional import binary_cross_entropy_with_logits, relu
 
-from ..bricks import ConvModule, Scale
-from ..builder import HEADS, build_loss
+from tad.models.bricks import ConvModule, Scale
+from tad.models.builder import HEADS, build_loss
+
 from .anchor_free_head import AnchorFreeHead
 
 
@@ -84,15 +87,13 @@ class DecoupledIoUHead(AnchorFreeHead):
 
         # 初始化分类偏置
         if self.cls_prior_prob > 0:
-            import math
-
             bias_value = -(math.log((1 - self.cls_prior_prob) / self.cls_prior_prob))
             nn.init.constant_(self.cls_head.bias, bias_value)
 
-    def forward_train(self, feat_list, mask_list, gt_segments, gt_labels, **kwargs):
+    def forward(self, feat_list, mask_list):
         cls_pred, reg_pred, iou_pred = [], [], []
 
-        for level, (feat, mask) in enumerate(zip(feat_list, mask_list, strict=False)):
+        for level, (feat, mask) in enumerate(zip(feat_list, mask_list, strict=True)):
             cls_feat = feat
             reg_feat = feat
 
@@ -105,7 +106,13 @@ class DecoupledIoUHead(AnchorFreeHead):
             reg_pred.append(relu(self.scale[level](self.reg_head(reg_feat))))
             iou_pred.append(self.iou_head(reg_feat))  # IoU 分支
 
-        points = self.prior_generator(feat_list)
+        with torch.no_grad():
+            points = self.prior_generator(feat_list)
+
+        return cls_pred, reg_pred, iou_pred, points
+
+    def forward_train(self, feat_list, mask_list, gt_segments, gt_labels, **kwargs):
+        cls_pred, reg_pred, iou_pred, points = self.forward(feat_list, mask_list)
 
         losses = self.losses(
             cls_pred, reg_pred, iou_pred, mask_list, points, gt_segments, gt_labels
@@ -113,21 +120,7 @@ class DecoupledIoUHead(AnchorFreeHead):
         return losses
 
     def forward_test(self, feat_list, mask_list, **kwargs):
-        cls_pred, reg_pred, iou_pred = [], [], []
-
-        for level, (feat, mask) in enumerate(zip(feat_list, mask_list, strict=False)):
-            cls_feat = feat
-            reg_feat = feat
-
-            for i in range(self.num_convs):
-                cls_feat, mask = self.cls_convs[i](cls_feat, mask)
-                reg_feat, mask = self.reg_convs[i](reg_feat, mask)
-
-            cls_pred.append(self.cls_head(cls_feat))
-            reg_pred.append(relu(self.scale[level](self.reg_head(reg_feat))))
-            iou_pred.append(self.iou_head(reg_feat))
-
-        points = self.prior_generator(feat_list)
+        cls_pred, reg_pred, iou_pred, points = self.forward(feat_list, mask_list)
 
         # 获取 proposals 和 scores (包含 IoU 修正)
         return self.get_valid_proposals_scores(points, reg_pred, cls_pred, iou_pred, mask_list)
@@ -225,7 +218,7 @@ class DecoupledIoUHead(AnchorFreeHead):
         # Mask out invalid
         masks = torch.cat(mask_list, dim=1)  # [B,T]
         new_proposals, new_scores = [], []
-        for proposal, score, mask in zip(proposals, final_scores, masks, strict=False):
+        for proposal, score, mask in zip(proposals, final_scores, masks, strict=True):
             new_proposals.append(proposal[mask])
             new_scores.append(score[mask])
         return new_proposals, new_scores
