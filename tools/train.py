@@ -1,3 +1,9 @@
+# --------------------------------------------------------
+# This file is modified from OpenTAD
+# (https://github.com/sming256/OpenTAD)
+# Copyright (c) OpenTAD Authors. All rights reserved.
+# --------------------------------------------------------
+
 import argparse
 import datetime
 import os
@@ -44,8 +50,7 @@ def parse_args():
     )
     parser.add_argument("--lr-range-test", action="store_true", help="run lr range test")
     parser.add_argument("--cfg-options", nargs="+", action=DictAction, help="override settings")
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def init_distributed(args):
@@ -162,9 +167,7 @@ def build_model_and_optimizer(cfg, args, logger, len_train_loader):
     use_amp = getattr(cfg.dataloader, "amp", False)
     if use_amp:
         logger.info("Using Automatic Mixed Precision...")
-        scaler = GradScaler()
-    else:
-        scaler = None
+    scaler = GradScaler("cuda", enabled=use_amp)
 
     # build optimizer and scheduler
     optimizer = build_optimizer(cfg.optimizer, model, logger)

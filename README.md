@@ -1,9 +1,29 @@
+# tad
+An improved Temporal Action Detection (TAD) framework based on OpenTAD.
+
+## Acknowledgement / 鸣谢
+
+This project is built upon [OpenTAD](https://github.com/sming256/OpenTAD). We sincerely thank the authors for their excellent open-source work.
+
+本项目基于 [OpenTAD](https://github.com/sming256/OpenTAD) 框架进行二次开发并在其基础上进行了多项功能增强与代码重构。非常感谢原开源作者的杰出贡献。
+
+---
+
 # Installation
 ```bash
 git clone https://github.com/bfydyjs/tad.git
 cd tad
 pip install -e . --no-build-isolation
 ```
+
+如果出现
+root@I25d9ac251f00301b56:/hy-tmp/tad# pip install -e . --no-build-isolation
+Looking in indexes: https://mirrors.aliyun.com/pypi/simple
+Obtaining file:///hy-tmp/tad
+  Checking if build backend supports build_editable ... done
+ERROR: Project file:///hy-tmp/tad uses a build backend that is missing the 'build_editable' hook, so it cannot be installed in editable mode. Consider using a build backend that supports PEP 660.
+
+解决方法：pip install --upgrade setuptools
 # Prepare the Annotation and Data
 
 # Usage
