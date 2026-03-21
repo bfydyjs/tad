@@ -184,8 +184,7 @@ class TADTrainer:
         # AMP
         if self.use_amp:
             self.logger.info("Using Automatic Mixed Precision...")
-        else:
-            scaler = None
+        scaler = torch.GradScaler(enabled=self.use_amp, device="cuda")
 
         # build optimizer and scheduler
         optimizer = build_optimizer(self.cfg.optimizer, model, self.logger)

@@ -84,7 +84,6 @@ def train_one_epoch(
     losses_tracker = {}
     grad_norm_tracker = AverageMeter()
     num_iters = len(train_loader)
-    use_amp = False if scaler is None else True
 
     # get the device of the model
     device = next(model.parameters()).device
@@ -110,23 +109,29 @@ def train_one_epoch(
             curr_backbone_lr = scheduler.get_last_lr()[0]
         curr_det_lr = scheduler.get_last_lr()[-1]
 
+        # Use amp if scaler is provided and enabled
+        is_amp_enabled = scaler is not None and scaler.is_enabled()
+
         # forward pass
-        with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_amp):
+        with torch.amp.autocast("cuda", dtype=torch.float16, enabled=is_amp_enabled):
             losses = model(**data_dict, return_loss=True)
 
         # compute the gradients
-        (scaler.scale(losses["loss"]) if use_amp else losses["loss"]).backward()
+        if is_amp_enabled:
+            scaler.scale(losses["loss"]).backward()
+        else:
+            losses["loss"].backward()
 
         # gradient clipping (to stabilize training if necessary)
         if clip_grad_l2norm > 0.0:
-            if use_amp:
+            if is_amp_enabled:
                 scaler.unscale_(optimizer)
             grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad_l2norm)
         else:
             grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), float("inf"))
 
         # update parameters
-        if use_amp:
+        if is_amp_enabled:
             scaler.step(optimizer)
             scaler.update()
         else:
@@ -139,17 +144,7 @@ def train_one_epoch(
         if model_ema is not None:
             model_ema.update(model)
 
-        # track all losses
-        # reduce loss when distributed training, only for logging
-        if dist.is_available() and dist.is_initialized():
-            loss_names = list(losses.keys())
-            loss_tensors = [losses[name].detach().clone() for name in loss_names]
-            if len(loss_tensors) > 0:
-                stacked = torch.stack(loss_tensors)
-                dist.all_reduce(stacked, op=dist.ReduceOp.AVG)
-                for i, name in enumerate(loss_names):
-                    losses[name] = stacked[i]
-
+        # track all losses locally
         for key, value in losses.items():
             if key not in losses_tracker:
                 losses_tracker[key] = AverageMeter()
@@ -162,6 +157,19 @@ def train_one_epoch(
         if ((iter_idx != 0) and (iter_idx % logging_interval) == 0) or (
             (iter_idx + 1) == num_iters
         ):
+            # reduce local averages across distributed GPUs, only for logging
+            if dist.is_available() and dist.is_initialized():
+                loss_names = list(losses_tracker.keys())
+                if len(loss_names) > 0:
+                    # gather locally accumulated averages
+                    loss_avgs = torch.tensor(
+                        [losses_tracker[name].avg for name in loss_names], device=device
+                    )
+                    dist.all_reduce(loss_avgs, op=dist.ReduceOp.AVG)
+                    # temporarily override avg for logging
+                    for i, name in enumerate(loss_names):
+                        losses_tracker[name].avg = loss_avgs[i].item()
+
             _log_training_info(
                 logger,
                 curr_epoch,
@@ -242,6 +250,9 @@ def inference_and_eval_one_epoch(
 
     # get the device of the model
     device = next(eval_model.parameters()).device
+
+    # determine if amp is enabled based on scaler if provided, or default to checking use_amp param
+    # Note: inference usually uses the manual use_amp flag since test doesn't necessarily get scaler
 
     # model forward
     eval_model.eval()
