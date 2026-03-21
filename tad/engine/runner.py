@@ -1,4 +1,3 @@
-import copy
 import json
 import time
 from pathlib import Path
@@ -143,10 +142,13 @@ def train_one_epoch(
         # track all losses
         # reduce loss when distributed training, only for logging
         if dist.is_available() and dist.is_initialized():
-            for loss_name, loss_value in losses.items():
-                loss_value = loss_value.detach().clone()
-                dist.all_reduce(loss_value, op=dist.ReduceOp.AVG)
-                losses[loss_name] = loss_value
+            loss_names = list(losses.keys())
+            loss_tensors = [losses[name].detach().clone() for name in loss_names]
+            if len(loss_tensors) > 0:
+                stacked = torch.stack(loss_tensors)
+                dist.all_reduce(stacked, op=dist.ReduceOp.AVG)
+                for i, name in enumerate(loss_names):
+                    losses[name] = stacked[i]
 
         for key, value in losses.items():
             if key not in losses_tracker:
@@ -220,7 +222,7 @@ def _save_and_evaluate(result_dict, cfg, logger, skip_eval):
     return 0.0
 
 
-def eval_one_epoch(
+def inference_and_eval_one_epoch(
     test_loader,
     model,
     cfg,
@@ -233,30 +235,24 @@ def eval_one_epoch(
 ):
     """Inference and Evaluation the model"""
 
-    # load the ema dict for evaluation
-    current_dict = None
-    if model_ema is not None:
-        current_dict = copy.deepcopy(model.state_dict())
-        if hasattr(model, "module"):
-            model.module.load_state_dict(model_ema.module.state_dict())
-        else:
-            model.load_state_dict(model_ema.module.state_dict())
+    # Use EMA model directly for evaluation to save memory, or fallback to standard model
+    eval_model = model_ema.module if model_ema is not None else model
 
     external_cls, cfg = _setup_inference_resources(cfg, test_loader)
 
     # get the device of the model
-    device = next(model.parameters()).device
+    device = next(eval_model.parameters()).device
 
     # model forward
-    model.eval()
+    eval_model.eval()
     result_dict = {}
     for data_dict in tqdm.tqdm(test_loader, disable=(rank != 0)):  # inference + NMS
         # move data to device
         move_to_device(data_dict, device)
-
+        # forward pass
         with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_amp):
             with torch.no_grad():
-                results = model(
+                results = eval_model(
                     **data_dict,
                     return_loss=False,
                     infer_cfg=cfg.inference,
@@ -272,10 +268,6 @@ def eval_one_epoch(
                 result_dict[k] = v
 
     result_dict = gather_ddp_results(world_size, result_dict, cfg.post_processing)
-
-    # load back the normal model dict
-    if model_ema is not None and current_dict is not None:
-        model.load_state_dict(current_dict)
 
     if rank == 0:
         return _save_and_evaluate(result_dict, cfg, logger, skip_eval)

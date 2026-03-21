@@ -7,7 +7,7 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel
 
 from tad.datasets import build_dataloader, build_dataset
-from tad.engine import eval_one_epoch
+from tad.engine import inference_and_eval_one_epoch
 from tad.models import build_detector
 from tad.utils import Config, DictAction, set_seed, setup_logger
 
@@ -149,7 +149,7 @@ def run_evaluation(cfg, args, logger, test_loader, model):
 
     # test the detector
     logger.info("Testing Starts...\n")
-    eval_one_epoch(
+    inference_and_eval_one_epoch(
         test_loader,
         model,
         cfg,

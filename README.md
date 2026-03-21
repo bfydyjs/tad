@@ -67,6 +67,19 @@ torchrun \
 
 # 未来改进计划
 - 将warmup_epoch改为按百分比（warmup_ratio）设置
+```python    
+if use_amp:
+    logger.info("Using Automatic Mixed Precision...")
+    scaler = GradScaler()
+else:
+    scaler = None
+```
+改成
+```python    
+if use_amp:
+    logger.info("Using Automatic Mixed Precision...")
+scaler = GradScaler("cuda", enabled=use_amp)
+```
 
 - torch.compiles实现失败，如果未来 PyTorch 3.0+等高版本让用 torch.compile 成为可能，可以尝试重新启用。
 - 代码不再改动

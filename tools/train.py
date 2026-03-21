@@ -14,12 +14,16 @@ from pathlib import Path
 import torch
 import torch.distributed as dist
 import wandb
-from torch.amp import GradScaler
 from torch.distributed.algorithms.ddp_comm_hooks import default as comm_hooks
 from torch.nn.parallel import DistributedDataParallel
 
 from tad.datasets import build_dataloader, build_dataset
-from tad.engine import build_optimizer, build_scheduler, eval_one_epoch, train_one_epoch
+from tad.engine import (
+    build_optimizer,
+    build_scheduler,
+    inference_and_eval_one_epoch,
+    train_one_epoch,
+)
 from tad.models import build_detector
 from tad.utils import (
     Config,
@@ -180,7 +184,8 @@ class TADTrainer:
         # AMP
         if self.use_amp:
             self.logger.info("Using Automatic Mixed Precision...")
-        scaler = GradScaler("cuda", enabled=self.use_amp)
+        else:
+            scaler = None
 
         # build optimizer and scheduler
         optimizer = build_optimizer(self.cfg.optimizer, model, self.logger)
@@ -258,7 +263,7 @@ class TADTrainer:
                 if (self.cfg.workflow.val_eval_interval > 0) and (
                     (epoch + 1) % self.cfg.workflow.val_eval_interval == 0
                 ):
-                    val_map = eval_one_epoch(
+                    val_map = inference_and_eval_one_epoch(
                         self.val_loader,
                         self.model,
                         self.cfg,
