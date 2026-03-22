@@ -23,11 +23,12 @@ def move_to_device(data_dict, device):
 
 
 def _log_training_info(
+    losses_tracker,
+    device,
     logger,
     curr_epoch,
     iter_idx,
     num_iters,
-    losses_tracker,
     grad_norm_tracker,
     curr_det_lr,
     curr_backbone_lr,
@@ -35,7 +36,19 @@ def _log_training_info(
     start_time,
     rank,
 ):
-    """Log training information to logger and wandb."""
+    """Reduce loss averages across GPUs and log training information."""
+    if dist.is_available() and dist.is_initialized():
+        loss_names = list(losses_tracker.keys())
+        if len(loss_names) > 0:
+            # gather locally accumulated averages
+            loss_avgs = torch.tensor(
+                [losses_tracker[name].avg for name in loss_names], device=device
+            )
+            dist.all_reduce(loss_avgs, op=dist.ReduceOp.AVG)
+            # temporarily override avg for logging
+            for i, name in enumerate(loss_names):
+                losses_tracker[name].avg = loss_avgs[i].item()
+
     # print to terminal
     block1 = f"[{curr_epoch:03d}][{iter_idx:05d}/{num_iters - 1:05d}]"
     block2 = f"Loss={losses_tracker['loss'].avg:.4f}"
@@ -157,25 +170,13 @@ def train_one_epoch(
         if ((iter_idx != 0) and (iter_idx % logging_interval) == 0) or (
             (iter_idx + 1) == num_iters
         ):
-            # reduce local averages across distributed GPUs, only for logging
-            if dist.is_available() and dist.is_initialized():
-                loss_names = list(losses_tracker.keys())
-                if len(loss_names) > 0:
-                    # gather locally accumulated averages
-                    loss_avgs = torch.tensor(
-                        [losses_tracker[name].avg for name in loss_names], device=device
-                    )
-                    dist.all_reduce(loss_avgs, op=dist.ReduceOp.AVG)
-                    # temporarily override avg for logging
-                    for i, name in enumerate(loss_names):
-                        losses_tracker[name].avg = loss_avgs[i].item()
-
             _log_training_info(
+                losses_tracker,
+                device,
                 logger,
                 curr_epoch,
                 iter_idx,
                 num_iters,
-                losses_tracker,
                 grad_norm_tracker,
                 curr_det_lr,
                 curr_backbone_lr,

@@ -207,10 +207,32 @@ class TADTrainer:
             self.model.load_state_dict(checkpoint["state_dict"])
             self.optimizer.load_state_dict(checkpoint["optimizer"])
             self.scheduler.load_state_dict(checkpoint["scheduler"])
+            if "scaler" in checkpoint and self.scaler is not None:
+                self.scaler.load_state_dict(checkpoint["scaler"])
             if hasattr(self.model_ema, "module"):
                 self.model_ema.module.load_state_dict(checkpoint["state_dict_ema"])
 
             del checkpoint
+
+    def _save_ckpt(self, epoch, mode="last"):
+        raw_model = self.model.module if hasattr(self.model, "module") else self.model
+        save_states = {
+            "epoch": epoch,
+            "state_dict": raw_model.state_dict(),
+            "val_map_best": self.val_map_best,
+        }
+
+        if mode != "best":
+            save_states["optimizer"] = self.optimizer.state_dict()
+            save_states["scheduler"] = self.scheduler.state_dict()
+            if self.scaler is not None:
+                save_states["scaler"] = self.scaler.state_dict()
+
+        if self.model_ema is not None:
+            raw_ema = self.model_ema.module if hasattr(self.model_ema, "module") else self.model_ema
+            save_states["state_dict_ema"] = raw_ema.state_dict()
+
+        save_checkpoint(save_states, work_dir=self.cfg.work_dir, mode=mode)
 
     def run(self):
         """Run the main training loop."""
@@ -243,16 +265,7 @@ class TADTrainer:
                 (epoch + 1) % self.cfg.workflow.checkpoint_interval == 0
             ):
                 if self.args.rank == 0:
-                    save_checkpoint(
-                        self.model,
-                        self.model_ema,
-                        self.optimizer,
-                        self.scheduler,
-                        epoch,
-                        work_dir=self.cfg.work_dir,
-                        mode="last.pt",
-                        val_map_best=self.val_map_best,
-                    )
+                    self._save_ckpt(epoch, mode="last")
 
             # val_eval
             if epoch >= val_start_epoch:
@@ -276,16 +289,7 @@ class TADTrainer:
                         self.logger.info(f"New best mAP {val_map * 100:.2f} % at epoch {epoch}")
                         self.val_map_best = val_map
                         if self.args.rank == 0:
-                            save_checkpoint(
-                                self.model,
-                                self.model_ema,
-                                self.optimizer,
-                                self.scheduler,
-                                epoch,
-                                work_dir=self.cfg.work_dir,
-                                mode="best.pt",
-                                val_map_best=self.val_map_best,
-                            )
+                            self._save_ckpt(epoch, mode="best")
             log_dict["epoch"] = epoch
             if self.args.rank == 0:
                 wandb.log(log_dict, step=global_step)

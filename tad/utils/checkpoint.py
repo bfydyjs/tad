@@ -40,24 +40,14 @@ def load_checkpoint(model, filename, map_location="cpu", strict=False, logger=No
     return checkpoint
 
 
-def save_checkpoint(
-    model, model_ema, optimizer, scheduler, epoch, work_dir=None, mode=None, **kwargs
-):
+def save_checkpoint(save_states, work_dir, mode):
+
     save_dir = Path(work_dir) / "checkpoint"
-    save_states = {
-        "epoch": epoch,
-        "state_dict": model.state_dict(),
-        "optimizer": optimizer.state_dict(),
-        "scheduler": scheduler.state_dict(),
-    }
-    save_states.update(kwargs)
-
-    if model_ema is not None:
-        save_states.update({"state_dict_ema": model_ema.module.state_dict()})
-
     os.makedirs(save_dir, exist_ok=True)
 
-    checkpoint_path = Path(save_dir) / mode  # mode: 'last' or 'best'
+    checkpoint_path = Path(save_dir) / f"{mode}.pt"
     temp_path = Path(str(checkpoint_path) + ".tmp")
+
+    # 原子写入
     torch.save(save_states, temp_path)
     os.replace(temp_path, checkpoint_path)
