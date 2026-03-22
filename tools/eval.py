@@ -27,8 +27,7 @@ def parse_args():
         help="disable deterministic for faster speed",
     )
     parser.add_argument("--cfg-options", nargs="+", action=DictAction, help="override settings")
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def init_distributed(args):

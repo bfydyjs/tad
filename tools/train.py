@@ -44,10 +44,10 @@ def parse_args():
     parser.add_argument("--id", type=int, default=0, help="repeat experiment id")
     parser.add_argument("--resume", type=str, default=None, help="resume from a checkpoint")
     parser.add_argument(
-        "--skip_eval", action="store_true", help="whether not to eval, only do inference"
+        "--skip-eval", action="store_true", help="whether not to eval, only do inference"
     )
     parser.add_argument(
-        "--disable_deterministic",
+        "--disable-deterministic",
         action="store_true",
         help="disable deterministic for faster speed",
     )
@@ -211,7 +211,6 @@ class TADTrainer:
                 self.model_ema.module.load_state_dict(checkpoint["state_dict_ema"])
 
             del checkpoint
-            torch.cuda.empty_cache()
 
     def run(self):
         """Run the main training loop."""
