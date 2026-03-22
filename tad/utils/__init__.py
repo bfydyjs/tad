@@ -2,7 +2,6 @@ from .checkpoint import load_checkpoint, save_checkpoint
 from .ema import ModelEma
 from .load_config import Config, DictAction
 from .logger import setup_logger
-from .lr_finder import LRFinder
 from .meters import AverageMeter
 from .model_analysis import calculate_params_gflops
 from .registry import Registry
@@ -13,7 +12,6 @@ __all__ = [
     "AverageMeter",
     "Config",
     "DictAction",
-    "LRFinder",
     "ModelEma",
     "Registry",
     "calculate_params_gflops",

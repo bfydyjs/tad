@@ -1,29 +1,21 @@
-#!/usr/bin/env python3
-"""可视化脚本运行器。
+"""Visualization script runner.
 
-使用方法:
+Usage:
     python tools/run_vis.py layer_wise_cka_similarity_heatmap
     python tools/run_vis.py loss
     python tools/run_vis.py map_heatmap
-
 """
 
 import sys
 from pathlib import Path
 
-# 添加项目根目录到路径
-project_root = Path(__file__).resolve().parent
-sys.path.insert(0, str(project_root))
-
 
 def run_script(script_name: str) -> None:
 
     try:
-        # 动态导入模块
         module_path = f"tad.visualization.plot.{script_name}"
         module = __import__(module_path, fromlist=["main"])
 
-        # 调用 main 函数
         if hasattr(module, "main"):
             print(f"Running {script_name}...")
             module.main()
@@ -40,7 +32,7 @@ def run_script(script_name: str) -> None:
 
 
 def list_available_scripts() -> list[str]:
-    plot_dir = project_root / "tad" / "visualization" / "plot"
+    plot_dir = Path(__file__).resolve().parents[1] / "tad" / "visualization" / "plot"
     scripts = []
 
     if plot_dir.exists():
