@@ -1,7 +1,7 @@
 pad_len: &pad_len 960
 
 dataset:
-  common: &dataset_common
+  _common: &dataset_common
     type: "AnetPaddingDataset"
     ann_file: "data/hacs-1.1.1/annotations/HACS_segments_v1.1.1.json"
     block_list: "data/hacs-1.1.1/features/slowfast101_15fps_stride8_len32_hacs/missing_files.txt"

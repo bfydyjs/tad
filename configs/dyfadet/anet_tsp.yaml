@@ -1,7 +1,7 @@
 pad_len: &pad_len 768
 
 dataset:
-  common: &dataset_common
+  _common: &dataset_common
     type: "AnetPaddingDataset"
     ann_file: "data/activitynet-1.3/annotations/activity_net.v1-3.min.json"
     block_list: "data/activitynet-1.3/features/anet_tsp_npy_unresize/missing_files.txt"

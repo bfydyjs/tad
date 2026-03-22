@@ -1,5 +1,5 @@
 dataset:
-  common: &dataset_common
+  _common: &dataset_common
     type: AnetPaddingDataset
     ann_file: data/fineaction/annotations/annotations_gt.json
     class_map: data/fineaction/annotations/category_idx.txt

@@ -1,5 +1,5 @@
 dataset:
-  common: &dataset_common
+  _common: &dataset_common
     type: EpicKitchensPaddingDataset
     ann_file: data/epic_kitchens-100/annotations/epic_kitchens_noun.json
     class_map: data/epic_kitchens-100/annotations/category_idx_noun.txt

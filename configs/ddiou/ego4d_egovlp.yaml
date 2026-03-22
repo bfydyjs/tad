@@ -1,5 +1,5 @@
 dataset:
-  common: &dataset_common
+  _common: &dataset_common
     type: Ego4DPaddingDataset
     ann_file: data/ego4d/annotations/ego4d_v2_220429.json
     class_map: data/ego4d/annotations/category_idx.txt

@@ -1,5 +1,5 @@
 dataset:
-  common: &dataset_common
+  _common: &dataset_common
     type: AnetPaddingDataset
     ann_file: data/hacs-1.1.1/annotations/HACS_segments_v1.1.1.json
     class_map: data/hacs-1.1.1/annotations/category_idx.txt

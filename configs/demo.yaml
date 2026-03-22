@@ -1,5 +1,5 @@
 dataset:
-  common: &dataset_common
+  _common: &dataset_common  # load_config.py skip keys starting with '_'
     type: ThumosPaddingDataset  
     # 短视频用 PaddingDataset / ResizeDataset,一个视频一个样本；长视频用 SlidingDataset，一个视频多个窗口样本
     # 如果用 SlidingDataset,需要在 val 和 test 的pipline中加入 SlidingWindowTrunc
@@ -180,12 +180,6 @@ workflow:
   end_epoch: 60
 
 work_dir: exps/thumos/videomaev2_g
-# 训练 = 正向传播 → 损失计算 → 反向传播 → 参数更新
-# 验证/测试 = 正向传播/推理 → [损失计算,可有可无] → 评估指标计算
-# 推理 = 正向传播=输入 → 模型（前向计算） → 输出
-# 反向传播 = 基于损失，反向计算所有参数的梯度
-# 参数更新 = 优化器根据梯度更新参数
-
 # 调参优先级顺序：
 # 1. 先确定 batch_size，再确定lr,lr选损失最低的那个的数值与同数量级最小的中间试，比如loss 在 lr=3e-4 时最低，之后开始上升 → 选 lr=1e-4 ~ 3e-4
 # 2. 再设定 warmup 和 max_epoch

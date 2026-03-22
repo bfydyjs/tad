@@ -52,6 +52,9 @@ class Config(dict):
         if isinstance(d, dict):
             cfg = Config()
             for k, v in d.items():
+                # skip keys starting with '_'
+                if isinstance(k, str) and k.startswith("_"):
+                    continue
                 cfg[k] = Config._dict_to_config(v)
             return cfg
         elif isinstance(d, list):

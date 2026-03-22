@@ -1,7 +1,7 @@
 pad_len: &pad_len 2304
 
 dataset:
-  common: &dataset_common
+  _common: &dataset_common
     type: "AnetPaddingDataset"
     ann_file: "data/fineaction/annotations/annotations_gt.json"
     block_list: "data/fineaction/features/fineaction_mae_g/missing_files.txt"

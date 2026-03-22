@@ -88,8 +88,6 @@ def setup_env(cfg, args):
     # setup logger
     logger = setup_logger("Train", save_dir=cfg.work_dir, distributed_rank=args.rank)
     logger.info(f"Using torch version: {torch.__version__}, CUDA version: {torch.version.cuda}")
-    if "common" in cfg.dataset:
-        del cfg.dataset["common"]
     logger.info(f"Config: \n{cfg.pretty_text}")
     return logger
 

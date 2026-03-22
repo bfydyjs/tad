@@ -1,5 +1,5 @@
 dataset:
-  common: &dataset_common
+  _common: &dataset_common
     type: ThumosPaddingDataset
     ann_file: data/thumos-14/annotations/thumos_14_anno.json
     class_map: data/thumos-14/annotations/category_idx.txt

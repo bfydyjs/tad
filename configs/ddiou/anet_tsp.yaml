@@ -1,5 +1,5 @@
 dataset:
-  common: &dataset_common
+  _common: &dataset_common
     type: AnetPaddingDataset
     ann_file: data/activitynet-1.3/annotations/activity_net.v1-3.min.json
     class_map: data/activitynet-1.3/annotations/category_idx.txt

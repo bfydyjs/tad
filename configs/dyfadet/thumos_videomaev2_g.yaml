@@ -1,5 +1,5 @@
 dataset:
-  common: &default_common
+  _common: &default_common
     type: "ThumosPaddingDataset"
     ann_file: "data/thumos-14/annotations/thumos_14_anno.json"
     block_list: "data/thumos-14/features/i3d_actionformer_stride4_thumos/missing_files.txt"
