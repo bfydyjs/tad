@@ -78,6 +78,31 @@ def _log_training_info(
         pass
 
 
+def _backward_and_step(losses, model, optimizer, scaler, is_amp_enabled, clip_grad_l2norm):
+    # compute the gradients
+    if is_amp_enabled:
+        scaler.scale(losses["loss"]).backward()
+    else:
+        losses["loss"].backward()
+
+    # gradient clipping (to stabilize training if necessary)
+    if clip_grad_l2norm > 0.0:
+        if is_amp_enabled:
+            scaler.unscale_(optimizer)
+        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad_l2norm)
+    else:
+        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), float("inf"))
+
+    # update parameters
+    if is_amp_enabled:
+        scaler.step(optimizer)
+        scaler.update()
+    else:
+        optimizer.step()
+
+    return grad_norm
+
+
 def train_one_epoch(
     train_loader,
     model,
@@ -129,26 +154,9 @@ def train_one_epoch(
         with torch.amp.autocast("cuda", dtype=torch.float16, enabled=is_amp_enabled):
             losses = model(**data_dict, return_loss=True)
 
-        # compute the gradients
-        if is_amp_enabled:
-            scaler.scale(losses["loss"]).backward()
-        else:
-            losses["loss"].backward()
-
-        # gradient clipping (to stabilize training if necessary)
-        if clip_grad_l2norm > 0.0:
-            if is_amp_enabled:
-                scaler.unscale_(optimizer)
-            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad_l2norm)
-        else:
-            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), float("inf"))
-
-        # update parameters
-        if is_amp_enabled:
-            scaler.step(optimizer)
-            scaler.update()
-        else:
-            optimizer.step()
+        grad_norm = _backward_and_step(
+            losses, model, optimizer, scaler, is_amp_enabled, clip_grad_l2norm
+        )
 
         # update scheduler
         scheduler.step()
