@@ -44,8 +44,7 @@ dataset:
       - type: Collect
         inputs: feats
         keys: [masks]
-  test:
-    <<: *dataset_val
+  test: *dataset_val
 
 evaluation:
   type: MeanAveragePrecision
@@ -101,8 +100,7 @@ dataloader:
   val: &dataloader_val
     batch_size: 1
     num_workers: 1
-  test:
-    <<: *dataloader_val
+  test: *dataloader_val
   clip_grad_norm: 1
 
 optimizer:
@@ -114,10 +112,6 @@ scheduler:
   max_epoch: 35
   start_factor: 1.0e-9
   eta_min: 0
-
-inference:
-  load_from_raw_predictions: false
-  save_raw_prediction: false
 
 post_processing:
   pre_nms_thresh: 0.001

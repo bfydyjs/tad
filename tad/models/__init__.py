@@ -10,8 +10,6 @@ from .post_processing import (
     boundary_choose,
     build_classifier,
     convert_to_seconds,
-    load_predictions,
-    save_predictions,
 )
 from .projections.dyne_proj import DynEProj
 from .projections.gdk_proj import GDKLayer
@@ -37,6 +35,4 @@ __all__ = [
     "build_classifier",
     "build_detector",
     "convert_to_seconds",
-    "load_predictions",
-    "save_predictions",
 ]

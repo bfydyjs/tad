@@ -1,11 +1,11 @@
 import torch
 
 from tad.models.builder import DETECTORS, build_backbone, build_head, build_neck, build_projection
-from tad.models.post_processing import (
-    batched_nms,
-    convert_to_seconds,
+from tad.models.post_processing import batched_nms, convert_to_seconds
+from tad.models.utils.inference_utils import (
     load_predictions,
-    save_predictions,
+    save_features,
+    save_raw_predictions,
 )
 
 
@@ -52,15 +52,13 @@ class Detector(torch.nn.Module):
 
     def forward_detection(self, inputs, masks, metas, infer_cfg, post_cfg, **kwargs):
         # step1: inference the model
-        if (
-            infer_cfg.load_from_raw_predictions
-        ):  # easier and faster to tune the hyper parameter in postprocessing
+        if getattr(infer_cfg, "load_raw_predictions", False):
+            # easier and faster to tune the hyper parameter in postprocessing
             predictions = load_predictions(metas, infer_cfg)
         else:
             predictions = self.forward_test(inputs, masks, metas, infer_cfg)
-
-            if infer_cfg.save_raw_prediction:  # save the predictions to disk
-                save_predictions(predictions, metas, infer_cfg.folder)
+            if getattr(infer_cfg, "save_raw_predictions", False):
+                save_raw_predictions(predictions, metas, infer_cfg.work_dir)
 
         # step2: detection post processing
         results = self.post_processing(predictions, metas, post_cfg, **kwargs)
@@ -119,6 +117,8 @@ class Detector(torch.nn.Module):
 
     def forward_test(self, inputs, masks, metas=None, infer_cfg=None, **kwargs):
         x, masks = self.extract_feat(inputs, masks)
+        if getattr(infer_cfg, "save_features", False):
+            save_features(x, metas, infer_cfg.work_dir)
 
         if self.with_rpn_head:
             rpn_proposals, rpn_scores = self.rpn_head.forward_test(x, masks)

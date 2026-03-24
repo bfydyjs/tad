@@ -1,5 +1,5 @@
-from .bbox_tools import compute_delta, delta_to_pred, proposal_cw_to_se, proposal_se_to_cw
-from .iou_tools import (
+from .bbox_utils import compute_delta, delta_to_pred, proposal_cw_to_se, proposal_se_to_cw
+from .iou_utils import (
     compute_batched_iou_torch,
     compute_diou_torch,
     compute_giou_torch,

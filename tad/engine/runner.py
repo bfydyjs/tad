@@ -202,10 +202,6 @@ def train_one_epoch(
 
 
 def _setup_inference_resources(cfg, test_loader):
-    cfg.inference["folder"] = Path(cfg.work_dir) / "outputs"
-    if cfg.inference.save_raw_prediction:
-        Path(cfg.inference["folder"]).expanduser().mkdir(mode=0o777, parents=True, exist_ok=True)
-
     # external classifier
     if "external_cls" in cfg.post_processing:
         if cfg.post_processing.external_cls is not None:
@@ -269,6 +265,10 @@ def inference_and_eval_one_epoch(
     for data_dict in tqdm.tqdm(test_loader, disable=(rank != 0)):  # inference + NMS
         # move data to device
         move_to_device(data_dict, device)
+
+        # Inject work_dir into inference config for saving/loading
+        cfg.inference["work_dir"] = cfg.work_dir
+
         # forward pass
         with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_amp):
             with torch.no_grad():
