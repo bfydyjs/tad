@@ -104,9 +104,8 @@ def build_and_wrap_model(cfg, args, logger):
 
 def load_weights(cfg, args, logger, model):
     """Load model weights from checkpoint or skip if using raw predictions."""
-    if (
-        cfg.inference.load_from_raw_predictions
-    ):  # if load with saved predictions, no need to load checkpoint
+    if getattr(cfg.inference, "load_raw_predictions", False):
+        # if load with saved predictions, no need to load checkpoint
         logger.info(f"Loading from raw predictions: {cfg.inference.fuse_list}")
         return
 
