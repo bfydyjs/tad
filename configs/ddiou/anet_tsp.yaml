@@ -118,6 +118,11 @@ scheduler:
   max_epoch: 16
   eta_min: 0.00005
 
+inference:
+  load_raw_predictions: false
+  save_raw_predictions: false
+  save_features: false
+ 
 post_processing:
   nms:
     use_soft_nms: true

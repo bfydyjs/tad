@@ -108,6 +108,11 @@ optimizer:
   lr: 1.0e-4
   weight_decay: 0.1
 
+inference:
+  load_raw_predictions: false
+  save_raw_predictions: false
+  save_features: false
+
 scheduler:
   warmup_epoch: 20
   max_epoch: 40
