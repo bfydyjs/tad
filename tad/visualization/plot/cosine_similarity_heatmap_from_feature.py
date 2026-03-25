@@ -108,7 +108,6 @@ def plot_heatmap(
         font_size_main=7,
         line_width_axis=0.5,
     )
-    print("Plotting heatmap...")
     fig = plt.figure()
     gs = fig.add_gridspec(
         2, 2, width_ratios=[50, 1], height_ratios=[20, 1], wspace=0.02, hspace=0.05
@@ -202,14 +201,16 @@ def main():
     cfg = Config.fromfile(args.config)
 
     # 2. 构建数据集
-    print("Building dataset...")
     dataset = build_dataset(cfg.dataset.val)
-    print(f"Dataset loaded with {len(dataset)} samples.")
+
     # 4. 获取样本数据
     indices_to_process = range(len(dataset)) if args.all else args.index
 
     for idx in indices_to_process:
-        print(f"============ Processing sample index: {idx} ============")
+        print(
+            "===================================================================="
+            "===================================================================="
+        )
         data_sample = dataset[idx]
         inputs = data_sample["inputs"].to(device).unsqueeze(0)
         metas = data_sample.get("metas", {})
@@ -238,17 +239,15 @@ def main():
         duration = metas.get("duration", "N/A")
         snippet_stride = metas.get("snippet_stride", "N/A")
         offset_frames = metas.get("offset_frames", "N/A")
-        print(f"video_name: {video_name}")
-        print(f"gt segments: {gt_segments_feat}")
-        print(f"fps: {fps}")
-        print(f"duration: {duration}")
-        print(f"snippet_stride: {snippet_stride}")
-        print(f"offset_frames: {offset_frames}")
+        print(
+            f"[{idx}/{indices_to_process[-1]}] | video_name: {video_name} | fps: {fps} | "
+            f"duration: {duration} | snippet_stride: {snippet_stride} | "
+            f"offset_frames: {offset_frames}"
+        )
         # 5. 提取特征
         feature_tensor = _load_features(args, inputs, video_name).to(device)  # [C, T]
 
         # 6. 计算相似度矩阵 (直接在 GPU 上计算更高效)
-        print("Computing cosine similarity...")
         with torch.no_grad():
             # 沿通道维度 (dim=0) 归一化
             features_norm = torch.nn.functional.normalize(feature_tensor, p=2, dim=0)
@@ -256,13 +255,14 @@ def main():
             similarity_matrix = torch.mm(features_norm.t(), features_norm).cpu().numpy()
 
         features_shape = feature_tensor.shape
-        print(features_shape[0])
-        print(features_shape[1])
         print(f"Feature shape for heatmap: Time={features_shape[1]}, Dim={features_shape[0]}")
 
         # 7. 计算 GT 和时间缩放
         print(f"Ground truth file: {cfg.evaluation.ground_truth_file}")
-        print("=====================================================\n")
+        print(
+            "===================================================================="
+            "===================================================================="
+        )
 
         # 8. 绘图
         fig = plot_heatmap(
