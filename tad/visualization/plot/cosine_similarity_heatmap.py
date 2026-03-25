@@ -56,8 +56,6 @@ def parse_args():
 
 def _extract_features(args, model, inputs, masks):
     """Extract features based on the specified level."""
-    print(f"input.shape: {inputs.shape}")
-    print(f"input: {inputs}")
     if args.level == 0:
         print("Using RAW INPUT features (level=0).")
         return inputs[0]  # [C, T]
@@ -65,15 +63,6 @@ def _extract_features(args, model, inputs, masks):
     print(f"Extracting MODEL OUTPUT features for level {args.level}...")
     with torch.no_grad():
         feats, _ = model.extract_feat(inputs, masks)
-    print("==============================================")
-    print(f"feats[0].shape: {feats[0].shape}")
-    print(f"feats[1].shape: {feats[1].shape}")
-    print(f"feats[2].shape: {feats[2].shape}")
-    print(f"feats[3].shape: {feats[3].shape}")
-    print(f"feats[4].shape: {feats[4].shape}")
-    print(f"feats[5].shape: {feats[5].shape}")
-    print(f"feats[1]: {feats[1]}")
-    print("==============================================")
     if isinstance(feats, (list, tuple)):
         level_idx = args.level - 1  # map 1..N -> 0..N-1
         feature_tensor = feats[level_idx]
@@ -156,11 +145,12 @@ def plot_heatmap(
 
     # GT rectangles on heatmap
     print(f"Heatmap size (timesteps): {t}")
+    rectangles = []
     for i, (start, end) in enumerate(gt_segments):
         start = int(max(0, min(t, start)))
         end = int(max(0, min(t, end)))
         if end > start:
-            print(f"  GT #{i + 1}: Drawing rectangle at [{start}, {end}] (span={end - start})")
+            rectangles.append((start, end))
             ax1.add_patch(
                 Rectangle(
                     (start, start),
@@ -173,7 +163,7 @@ def plot_heatmap(
             )
         else:
             print(f"  GT #{i + 1}: SKIPPED (start={start}, end={end}, invalid span)")
-
+    print(f"Drawing rectangle at {rectangles}")
     # Timeline bar
     ax2.set_xlim(0, t)
     ax2.set_ylim(0, 1)
@@ -199,9 +189,7 @@ def main():
     cfg = Config.fromfile(args.config)
 
     # 2. 构建数据集
-    print("Building dataset...")
     dataset = build_dataset(cfg.dataset.val)
-    print(f"Dataset loaded with {len(dataset)} samples.")
 
     # 3. 构建模型 (如果需要)
     model = None
@@ -262,12 +250,11 @@ def main():
         duration = metas.get("duration", "N/A")
         snippet_stride = metas.get("snippet_stride", "N/A")
         offset_frames = metas.get("offset_frames", "N/A")
-        print(f"video_name: {video_name}")
+        print(
+            f"video_name: {video_name} | fps: {fps} | duration: {duration} | "
+            f"snippet_stride: {snippet_stride} | offset_frames: {offset_frames}"
+        )
         print(f"gt segments: {gt_segments_feat}")
-        print(f"fps: {fps}")
-        print(f"duration: {duration}")
-        print(f"snippet_stride: {snippet_stride}")
-        print(f"offset_frames: {offset_frames}")
         # 5. 提取特征
         feature_tensor = _extract_features(args, model, inputs, masks)  # [C, T]
 
@@ -280,8 +267,6 @@ def main():
             similarity_matrix = torch.mm(features_norm.t(), features_norm).cpu().numpy()
 
         features_shape = feature_tensor.shape
-        print(features_shape[0])
-        print(features_shape[1])
         print(f"Feature shape for heatmap: Time={features_shape[1]}, Dim={features_shape[0]}")
 
         # 7. 计算 GT 和时间缩放
