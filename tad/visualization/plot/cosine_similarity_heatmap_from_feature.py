@@ -2,18 +2,18 @@
 Usage:
 
 1. for Linux/Mac:
-python -m tad.visualization.plot.cosine_similarity_heatmap \
+python -m tad.visualization.plot.cosine_similarity_heatmap_from_feature \
     configs/ddiou/thumos_videomaev2_g.yaml \
-    exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
+    --feature_dir exps/thumos/videomaev2_g/gpu1_id0
 
 2. for Windows PowerShell:
-python -m tad.visualization.plot.cosine_similarity_heatmap `
+python -m tad.visualization.plot.cosine_similarity_heatmap_from_feature `
     configs/ddiou/thumos_videomaev2_g.yaml `
-    exps/thumos/videomaev2_g/gpu1_id0/checkpoint/best.pt
+    --feature_dir exps/thumos/videomaev2_g/gpu1_id0
 """
 
 import argparse
-import sys
+import pickle
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -22,7 +22,6 @@ import torch
 from matplotlib.patches import Rectangle
 
 from tad.datasets import build_dataset
-from tad.models import build_detector
 from tad.utils import Config
 from tad.visualization.utils import save_figure, setup_paper_style
 
@@ -32,7 +31,12 @@ def parse_args():
         description="Visualize Cosine Similarity Heatmap from Real Model Features"
     )
     parser.add_argument("config", help="Path to config file (e.g., configs/anet_i3d.yaml)")
-    parser.add_argument("checkpoint", help="Path to checkpoint file (e.g., work_dirs/xxx/best.pt)")
+    parser.add_argument(
+        "--feature_dir",
+        type=str,
+        default=r"C:\Users\yanho\Desktop\git\tad\exps\thumos\videomaev2_g\gpu1_id0",
+        help="Path to directory containing features/ (e.g., exps/thumos/videomaev2_g/gpu1_id0)",
+    )
     parser.add_argument(
         "--index",
         type=int,
@@ -54,42 +58,41 @@ def parse_args():
     return parser.parse_args()
 
 
-def _extract_features(args, model, inputs, masks):
-    """Extract features based on the specified level."""
-    print(f"input.shape: {inputs.shape}")
-    print(f"input: {inputs}")
+def _load_features(args, inputs, video_name):
+    """Load features based on the specified level from saved .pkl."""
     if args.level == 0:
         print("Using RAW INPUT features (level=0).")
         return inputs[0]  # [C, T]
 
-    print(f"Extracting MODEL OUTPUT features for level {args.level}...")
-    with torch.no_grad():
-        feats, _ = model.extract_feat(inputs, masks)
-    print("==============================================")
-    print(f"feats[0].shape: {feats[0].shape}")
-    print(f"feats[1].shape: {feats[1].shape}")
-    print(f"feats[2].shape: {feats[2].shape}")
-    print(f"feats[3].shape: {feats[3].shape}")
-    print(f"feats[4].shape: {feats[4].shape}")
-    print(f"feats[5].shape: {feats[5].shape}")
-    print(f"feats[1]: {feats[1]}")
+    feature_file = Path(args.feature_dir) / "features" / f"{video_name}.pkl"
+    if not feature_file.exists():
+        raise FileNotFoundError(f"Feature file not found: {feature_file}")
+
+    with open(feature_file, "rb") as infile:
+        feats = pickle.load(infile)
+
     print("==============================================")
     if isinstance(feats, (list, tuple)):
+        for i, f in enumerate(feats):
+            print(f"feats[{i}].shape: {f.shape}")
+
         level_idx = args.level - 1  # map 1..N -> 0..N-1
         feature_tensor = feats[level_idx]
         print(
-            f"Model returned {len(feats)} feature levels. "
-            f"Selecting level {args.level} (index {level_idx})."
+            f"Loaded {len(feats)} feature levels. Selecting level {args.level} (index {level_idx})."
         )
     else:
+        print(f"feats.shape: {feats.shape}")
         if args.level != 1:
             raise ValueError(
-                f"Requested level {args.level}, but model is single-scale. "
-                "Use --level 0 for inputs or --level 1 for output."
+                f"Requested level {args.level}, but saved feature is single-scale. "
+                "Use --level 1 for output."
             )
         feature_tensor = feats
 
-    return feature_tensor[0] if feature_tensor.dim() == 3 else feature_tensor
+    # Features saved by save_features have already detached and stripped the batch dim [C, T]
+    # We ensure it's on CUDA if needed, though CPU is fine here
+    return feature_tensor if feature_tensor.dim() == 2 else feature_tensor[0]
 
 
 def plot_heatmap(
@@ -202,32 +205,6 @@ def main():
     print("Building dataset...")
     dataset = build_dataset(cfg.dataset.val)
     print(f"Dataset loaded with {len(dataset)} samples.")
-
-    # 3. 构建模型 (如果需要)
-    model = None
-    if args.level != 0:
-        print(f"Building model and loading checkpoint from {args.checkpoint}...")
-        checkpoint_path = Path(args.checkpoint)
-        if not checkpoint_path.exists():
-            print(f"Error: checkpoint file not found: {checkpoint_path}")
-            print("Tip: provide a valid path or set --level 0 to use raw inputs.")
-            sys.exit(1)
-        model = build_detector(cfg.model)
-        checkpoint = torch.load(str(checkpoint_path), map_location=device, weights_only=False)
-
-        # 尝试像 eval.py 一样优先加载 EMA 权重
-        use_ema = getattr(cfg.dataloader, "ema", True) if hasattr(cfg, "dataloader") else True
-        if use_ema and "state_dict_ema" in checkpoint:
-            print("Loading Model EMA weights...")
-            state_dict = checkpoint["state_dict_ema"]
-        else:
-            print("Loading standard model weights...")
-            state_dict = checkpoint.get("state_dict", checkpoint)
-
-        model.load_state_dict(state_dict)
-        model.to(device)
-        model.eval()
-
     # 4. 获取样本数据
     indices_to_process = range(len(dataset)) if args.all else args.index
 
@@ -235,7 +212,6 @@ def main():
         print(f"============ Processing sample index: {idx} ============")
         data_sample = dataset[idx]
         inputs = data_sample["inputs"].to(device).unsqueeze(0)
-        masks = data_sample["masks"].to(device).unsqueeze(0)
         metas = data_sample.get("metas", {})
 
         # Manually extract GTs since test_mode=True bypasses them in pipeline
@@ -269,7 +245,7 @@ def main():
         print(f"snippet_stride: {snippet_stride}")
         print(f"offset_frames: {offset_frames}")
         # 5. 提取特征
-        feature_tensor = _extract_features(args, model, inputs, masks)  # [C, T]
+        feature_tensor = _load_features(args, inputs, video_name).to(device)  # [C, T]
 
         # 6. 计算相似度矩阵 (直接在 GPU 上计算更高效)
         print("Computing cosine similarity...")
