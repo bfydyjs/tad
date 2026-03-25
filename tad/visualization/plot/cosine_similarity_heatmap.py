@@ -231,17 +231,14 @@ def main():
                 video_info = info
                 break
 
+        gt_segments_feat = []
         if video_info is not None:
             # We must load GT manually here
             video_anno = dataset.get_gt(video_info)
-            if video_anno:
+            if video_anno and "gt_segments_frame" in video_anno:
                 gt_segments_feat = (
                     video_anno["gt_segments_frame"] - dataset.offset_frames
                 ) / dataset.snippet_stride
-            else:
-                gt_segments_feat = []
-        else:
-            gt_segments_feat = []
 
         fps = metas.get("fps", "N/A")
         duration = metas.get("duration", "N/A")
