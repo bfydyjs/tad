@@ -58,6 +58,23 @@ def parse_args():
     return parser.parse_args()
 
 
+def _patch_config_for_gt(cfg):
+    """Forcefully enable GT loading for the validation dataset."""
+    print("Patching config to enable GT loading...")
+    cfg.dataset.val.test_mode = False
+    keys_to_add = ["gt_segments_feat", "gt_segments_s", "gt_segments_frame"]
+    for transform in cfg.dataset.val.pipeline:
+        if transform["type"] == "ConvertToTensor":
+            for k in keys_to_add:
+                if k not in transform["keys"]:
+                    transform["keys"].append(k)
+        if transform["type"] == "Collect":
+            for k in keys_to_add:
+                if k not in transform["keys"]:
+                    transform["keys"].append(k)
+    return cfg
+
+
 def _load_features(args, inputs, video_name):
     """Load features based on the specified level from saved .pkl."""
     if args.level == 0:
@@ -71,7 +88,10 @@ def _load_features(args, inputs, video_name):
     with open(feature_file, "rb") as infile:
         feats = pickle.load(infile)
 
-    print("==============================================")
+    print(
+        "================================================================"
+        "================================================================"
+    )
     if isinstance(feats, (list, tuple)):
         for i, f in enumerate(feats):
             print(f"feats[{i}].shape: {f.shape}")
@@ -199,6 +219,7 @@ def main():
 
     # 1. 加载配置并打补丁
     cfg = Config.fromfile(args.config)
+    cfg = _patch_config_for_gt(cfg)
 
     # 2. 构建数据集
     dataset = build_dataset(cfg.dataset.val)
@@ -208,33 +229,15 @@ def main():
 
     for idx in indices_to_process:
         print(
-            "===================================================================="
-            "===================================================================="
+            "================================================================"
+            "================================================================"
         )
         data_sample = dataset[idx]
         inputs = data_sample["inputs"].to(device).unsqueeze(0)
+        gt_segments_feat = data_sample["gt_segments_feat"]
         metas = data_sample.get("metas", {})
 
-        # Manually extract GTs since test_mode=True bypasses them in pipeline
         video_name = metas.get("video_name", f"sample_{idx}")
-        video_info = None
-        for name, info, anno in dataset.data_list:
-            if name == video_name:
-                video_info = info
-                break
-
-        if video_info is not None:
-            # We must load GT manually here
-            video_anno = dataset.get_gt(video_info)
-            if video_anno:
-                gt_segments_feat = (
-                    video_anno["gt_segments_frame"] - dataset.offset_frames
-                ) / dataset.snippet_stride
-            else:
-                gt_segments_feat = []
-        else:
-            gt_segments_feat = []
-
         fps = metas.get("fps", "N/A")
         duration = metas.get("duration", "N/A")
         snippet_stride = metas.get("snippet_stride", "N/A")
@@ -260,8 +263,8 @@ def main():
         # 7. 计算 GT 和时间缩放
         print(f"Ground truth file: {cfg.evaluation.ground_truth_file}")
         print(
-            "===================================================================="
-            "===================================================================="
+            "================================================================"
+            "================================================================"
         )
 
         # 8. 绘图
