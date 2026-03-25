@@ -214,7 +214,10 @@ def main():
     indices_to_process = range(len(dataset)) if args.all else args.index
 
     for idx in indices_to_process:
-        print("================================================================================")
+        print(
+            "===================================================================="
+            "===================================================================="
+        )
         data_sample = dataset[idx]
         inputs = data_sample["inputs"].to(device).unsqueeze(0)
         masks = data_sample["masks"].to(device).unsqueeze(0)
@@ -245,8 +248,9 @@ def main():
         snippet_stride = metas.get("snippet_stride", "N/A")
         offset_frames = metas.get("offset_frames", "N/A")
         print(
-            f"[{idx}/{indices_to_process[-1]}] | video_name: {video_name} | fps: {fps} | duration: {duration} | "
-            f"snippet_stride: {snippet_stride} | offset_frames: {offset_frames}"
+            f"[{idx}/{indices_to_process[-1]}] | video_name: {video_name} | fps: {fps} | "
+            f"duration: {duration} | snippet_stride: {snippet_stride} | "
+            f"offset_frames: {offset_frames}"
         )
         # print(f"gt segments: {gt_segments_feat}")
         # 5. 提取特征
@@ -264,7 +268,10 @@ def main():
 
         # 7. 计算 GT 和时间缩放
         print(f"Ground truth file: {cfg.evaluation.ground_truth_file}")
-        print("================================================================================")
+        print(
+            "===================================================================="
+            "===================================================================="
+        )
 
         # 8. 绘图
         fig = plot_heatmap(
