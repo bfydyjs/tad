@@ -177,12 +177,12 @@ def plot_heatmap(
     ax1.set_ylabel("Time (s)")
 
     # GT rectangles on heatmap
-    print(f"Heatmap size (timesteps): {t}")
+    rectangles = []
     for i, (start, end) in enumerate(gt_segments):
         start = int(max(0, min(t, start)))
         end = int(max(0, min(t, end)))
         if end > start:
-            print(f"  GT #{i + 1}: Drawing rectangle at [{start}, {end}] (span={end - start})")
+            rectangles.append((start, end))
             ax1.add_patch(
                 Rectangle(
                     (start, start),
@@ -195,7 +195,7 @@ def plot_heatmap(
             )
         else:
             print(f"  GT #{i + 1}: SKIPPED (start={start}, end={end}, invalid span)")
-
+    print(f"Drawing rectangle at {rectangles}")
     # Timeline bar
     ax2.set_xlim(0, t)
     ax2.set_ylim(0, 1)
