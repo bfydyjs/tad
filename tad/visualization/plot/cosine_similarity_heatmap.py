@@ -54,6 +54,23 @@ def parse_args():
     return parser.parse_args()
 
 
+def _patch_config_for_gt(cfg):
+    """Forcefully enable GT loading for the validation dataset."""
+    print("Patching config to enable GT loading...")
+    cfg.dataset.val.test_mode = False
+    keys_to_add = ["gt_segments_feat", "gt_segments_s", "gt_segments_frame"]
+    for transform in cfg.dataset.val.pipeline:
+        if transform["type"] == "ConvertToTensor":
+            for k in keys_to_add:
+                if k not in transform["keys"]:
+                    transform["keys"].append(k)
+        if transform["type"] == "Collect":
+            for k in keys_to_add:
+                if k not in transform["keys"]:
+                    transform["keys"].append(k)
+    return cfg
+
+
 def _extract_features(args, model, inputs, masks):
     """Extract features based on the specified level."""
     if args.level == 0:
@@ -181,6 +198,7 @@ def main():
 
     # 1. 加载配置并打补丁
     cfg = Config.fromfile(args.config)
+    cfg = _patch_config_for_gt(cfg)
 
     # 2. 构建数据集
     dataset = build_dataset(cfg.dataset.val)
@@ -221,25 +239,9 @@ def main():
         data_sample = dataset[idx]
         inputs = data_sample["inputs"].to(device).unsqueeze(0)
         masks = data_sample["masks"].to(device).unsqueeze(0)
+        gt_segments_feat = data_sample["gt_segments_feat"]
         metas = data_sample.get("metas", {})
-
-        # Manually extract GTs since test_mode=True bypasses them in pipeline
         video_name = metas.get("video_name", f"sample_{idx}")
-        video_info = None
-        for name, info, anno in dataset.data_list:
-            if name == video_name:
-                video_info = info
-                break
-
-        gt_segments_feat = []
-        if video_info is not None:
-            # We must load GT manually here
-            video_anno = dataset.get_gt(video_info)
-            if video_anno and "gt_segments_frame" in video_anno:
-                gt_segments_feat = (
-                    video_anno["gt_segments_frame"] - dataset.offset_frames
-                ) / dataset.snippet_stride
-
         fps = metas.get("fps", "N/A")
         duration = metas.get("duration", "N/A")
         snippet_stride = metas.get("snippet_stride", "N/A")
