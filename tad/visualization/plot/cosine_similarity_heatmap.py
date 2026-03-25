@@ -59,17 +59,12 @@ def _extract_features(args, model, inputs, masks):
     if args.level == 0:
         print("Using RAW INPUT features (level=0).")
         return inputs[0]  # [C, T]
-
-    print(f"Extracting MODEL OUTPUT features for level {args.level}...")
     with torch.no_grad():
         feats, _ = model.extract_feat(inputs, masks)
     if isinstance(feats, (list, tuple)):
         level_idx = args.level - 1  # map 1..N -> 0..N-1
         feature_tensor = feats[level_idx]
-        print(
-            f"Model returned {len(feats)} feature levels. "
-            f"Selecting level {args.level} (index {level_idx})."
-        )
+        print(f"[{args.level}/{len(feats)}] (index {level_idx})")
     else:
         if args.level != 1:
             raise ValueError(
@@ -94,7 +89,6 @@ def plot_heatmap(
         font_size_main=7,
         line_width_axis=0.5,
     )
-    print("Plotting heatmap...")
     fig = plt.figure()
     gs = fig.add_gridspec(
         2, 2, width_ratios=[50, 1], height_ratios=[20, 1], wspace=0.02, hspace=0.05
@@ -220,7 +214,7 @@ def main():
     indices_to_process = range(len(dataset)) if args.all else args.index
 
     for idx in indices_to_process:
-        print(f"============ Processing sample index: {idx} ============")
+        print("================================================================================")
         data_sample = dataset[idx]
         inputs = data_sample["inputs"].to(device).unsqueeze(0)
         masks = data_sample["masks"].to(device).unsqueeze(0)
@@ -251,15 +245,14 @@ def main():
         snippet_stride = metas.get("snippet_stride", "N/A")
         offset_frames = metas.get("offset_frames", "N/A")
         print(
-            f"video_name: {video_name} | fps: {fps} | duration: {duration} | "
+            f"[{idx}/{indices_to_process[-1]}] | video_name: {video_name} | fps: {fps} | duration: {duration} | "
             f"snippet_stride: {snippet_stride} | offset_frames: {offset_frames}"
         )
-        print(f"gt segments: {gt_segments_feat}")
+        # print(f"gt segments: {gt_segments_feat}")
         # 5. 提取特征
         feature_tensor = _extract_features(args, model, inputs, masks)  # [C, T]
 
         # 6. 计算相似度矩阵 (直接在 GPU 上计算更高效)
-        print("Computing cosine similarity...")
         with torch.no_grad():
             # 沿通道维度 (dim=0) 归一化
             features_norm = torch.nn.functional.normalize(feature_tensor, p=2, dim=0)
@@ -271,7 +264,7 @@ def main():
 
         # 7. 计算 GT 和时间缩放
         print(f"Ground truth file: {cfg.evaluation.ground_truth_file}")
-        print("=====================================================\n")
+        print("================================================================================")
 
         # 8. 绘图
         fig = plot_heatmap(
