@@ -1,5 +1,6 @@
 from .backbones.backbone_wrapper import BackboneWrapper
 from .builder import build_detector
+from .detectors.actionformer import ActionFormer
 from .detectors.dyfadet import DyFADet
 from .heads.decoupled_iou_head import DecoupledIoUHead
 from .heads.dyn_head import TDynHead
@@ -18,6 +19,7 @@ from .utils.point_generator import PointGenerator
 # from .projections.mamba_proj import MambaProj
 
 __all__ = [
+    "ActionFormer",
     "BackboneWrapper",
     "DIOULoss",
     "DecoupledIoUHead",

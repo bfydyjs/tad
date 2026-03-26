@@ -80,8 +80,8 @@ def main():
         load_kwargs["weights_only"] = False
     checkpoint = torch.load(args.checkpoint, **load_kwargs)
 
-    if "state_dict" in checkpoint:
-        model.load_state_dict(checkpoint["state_dict"])
+    if "state_dict_ema" in checkpoint:
+        model.load_state_dict(checkpoint["state_dict_ema"])
     else:
         model.load_state_dict(checkpoint)
 

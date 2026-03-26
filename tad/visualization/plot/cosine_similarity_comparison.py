@@ -11,11 +11,11 @@ from tad.visualization.utils import save_figure, setup_paper_style
 
 # Format: [Level 0 (Raw), Level 1, Level 2, ..., Level N]
 MODEL_A_NAME = "ActionFormer"
-MODEL_A_DATA = [0.7027, 0.4786, 0.4723, 0.4839, 0.5170, 0.5823, 0.6913]
+MODEL_A_DATA = [0.5576, 0.5505, 0.5379, 0.5423, 0.5626, 0.6257, 0.7485]
 # ActionFormer: [0.7027, 0.5592, 0.4740, 0.4414, 0.4833, 0.5496, 0.6631]
 # iou_weight=0: [0.7027, 0.4786, 0.4723, 0.4839, 0.5170, 0.5823, 0.6913]
 MODEL_B_NAME = "Ours"
-MODEL_B_DATA = [0.7027, 0.4801, 0.4716, 0.4826, 0.5144, 0.5796, 0.6849]
+MODEL_B_DATA = [0.5576, 0.5569, 0.5473, 0.5524, 0.5761, 0.6468, 0.7691]
 
 
 def get_data():

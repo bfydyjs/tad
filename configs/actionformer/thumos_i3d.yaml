@@ -83,7 +83,6 @@ model:
     num_convs: 2
     cls_prior_prob: 0.01
     prior_generator:
-      type: PointGenerator
       strides: [1, 2, 4, 8, 16, 32]
       regression_range: [[0, 4], [4, 8], [8, 16], [16, 32], [32, 64], [64, 10000]]
     loss_normalizer: 100
@@ -140,4 +139,4 @@ workflow:
   val_eval_interval: 1
   val_start_epoch: 30
 
-work_dir: exps/thumos/i3d
+work_dir: exps/thumos/actionformer/i3d
