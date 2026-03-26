@@ -95,29 +95,10 @@ model:
       reg_loss:
         type: DIOULoss
 
-dataloader:
-  train:
-    batch_size: 8
-    num_workers: 1
-  val: &dataloader_val
-    batch_size: 8
-    num_workers: 1
-  test: *dataloader_val
-  clip_grad_norm: 1 # 
-
-optimizer:
-  lr: 5.0e-4
-  weight_decay: 0.025
-
 inference:
   load_raw_predictions: false
   save_raw_predictions: false
   save_features: false
-
-scheduler:
-  warmup_epoch: 7
-  max_epoch: 14
-  # eta_min: 5.0e-4
 
 post_processing:
   nms:
@@ -132,6 +113,25 @@ post_processing:
     path: data/hacs-1.1.1/classifiers/validation94.32.json
     topk: 3
   save_dict: false
+
+dataloader:
+  train:
+    batch_size: 8
+    num_workers: 1
+  val: &dataloader_val
+    batch_size: 8
+    num_workers: 1
+  test: *dataloader_val
+  clip_grad_norm: 1 # 
+
+optimizer:
+  lr: 5.0e-4
+  weight_decay: 0.025
+
+scheduler:
+  warmup_epoch: 7
+  max_epoch: 14
+  # eta_min: 5.0e-4
 
 workflow:
   logging_interval: 200

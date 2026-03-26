@@ -96,6 +96,24 @@ model:
       reg_loss:
         type: DIOULoss
 
+inference:
+  load_raw_predictions: false
+  save_raw_predictions: false
+  save_features: false
+
+post_processing:
+  nms:
+    use_soft_nms: true
+    sigma: 0.7
+    max_seg_num: 200
+    min_score: 0.001
+    multiclass: true
+  external_cls:
+    type: StandardClassifier
+    path: ./data/fineaction/classifiers/new_swinB_1x1x256_views2x3_max_label_avg_prob.json
+    topk: 2
+  save_dict: false
+
 dataloader:
   train:
     batch_size: 8
@@ -110,27 +128,9 @@ optimizer:
   lr: 5.0e-4
   weight_decay: 0.025  
 
-inference:
-  load_raw_predictions: false
-  save_raw_predictions: false
-  save_features: false
-
 scheduler:
   warmup_epoch: 8
   max_epoch: 20
-
-post_processing:
-  nms:
-    use_soft_nms: true
-    sigma: 0.7
-    max_seg_num: 200
-    min_score: 0.001
-    multiclass: true
-  external_cls:
-    type: StandardClassifier
-    path: ./data/fineaction/classifiers/new_swinB_1x1x256_views2x3_max_label_avg_prob.json
-    topk: 2
-  save_dict: false
 
 workflow:
   logging_interval: 200

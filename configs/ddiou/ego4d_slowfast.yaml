@@ -98,6 +98,20 @@ model:
       reg_loss:
         type: DIOULoss
 
+inference:
+  load_raw_predictions: false
+  save_raw_predictions: false
+  save_features: false
+
+post_processing:
+  nms:
+    use_soft_nms: true
+    sigma: 0.5
+    max_seg_num: 2000
+    min_score: 0.001
+    multiclass: true
+  save_dict: false
+
 dataloader:
   train:
     batch_size: 2
@@ -112,23 +126,9 @@ optimizer:
   lr: 1.0e-4
   weight_decay: 0.05
 
-inference:
-  load_raw_predictions: false
-  save_raw_predictions: false
-  save_features: false
-
 scheduler:
   warmup_epoch: 7
   max_epoch: 30
-
-post_processing:
-  nms:
-    use_soft_nms: true
-    sigma: 0.5
-    max_seg_num: 2000
-    min_score: 0.001
-    multiclass: true
-  save_dict: false
 
 workflow:
   logging_interval: 100
