@@ -32,10 +32,11 @@ class ActionFormer(Detector):
         self.max_seq_len = self.projection.max_seq_len
 
         max_div_factor = 1
-        for s, w in zip(rpn_head.prior_generator.strides, self.mha_win_size):
+        for s, w in zip(rpn_head.prior_generator.strides, self.mha_win_size, strict=True):
             stride = s * (w // 2) * 2 if w > 1 else s
             assert self.max_seq_len % stride == 0, (
-                f"max_seq_len {self.max_seq_len} must be divisible by fpn stride and window size {stride}"
+                f"max_seq_len {self.max_seq_len} must be divisible by "
+                f"fpn stride and window size {stride}"
             )
             if max_div_factor < stride:
                 max_div_factor = stride
@@ -55,11 +56,11 @@ class ActionFormer(Detector):
 
         padding_size = [0, max_len - feat_len]
         inputs = torch.nn.functional.pad(inputs, padding_size, value=0)
-        pad_masks = torch.zeros((inputs.shape[0], max_len), device=masks.device).bool()
+        pad_masks = torch.zeros((inputs.shape[0], max_len), dtype=torch.bool, device=masks.device)
         pad_masks[:, :feat_len] = masks
         return inputs, pad_masks
 
-    def forward_train(self, inputs, masks, metas, gt_segments, gt_labels, **kwargs):
+    def forward_train(self, inputs, masks, metas, gt_segments_feat, gt_labels, **kwargs):
         losses = dict()
         if self.with_backbone:
             x = self.backbone(inputs)
@@ -78,14 +79,14 @@ class ActionFormer(Detector):
         loc_losses = self.rpn_head.forward_train(
             x,
             masks,
-            gt_segments=gt_segments,
+            gt_segments=gt_segments_feat,
             gt_labels=gt_labels,
             **kwargs,
         )
         losses.update(loc_losses)
 
         # only key has loss will be record
-        losses["cost"] = sum(_value for _key, _value in losses.items())
+        losses["loss"] = sum(_value for _key, _value in losses.items())
         return losses
 
     def forward_test(self, inputs, masks, metas=None, infer_cfg=None, **kwargs):
@@ -116,9 +117,8 @@ class ActionFormer(Detector):
 
         # loop over all modules / params
         for mn, m in self.named_modules():
-            for pn, p in m.named_parameters():
-                fpn = "%s.%s" % (mn, pn) if mn else pn  # full param name
-
+            for pn, _ in m.named_parameters(recurse=False):
+                fpn = f"{mn}.{pn}" if mn else pn  # full param name
                 # exclude the backbone parameters
                 if fpn.startswith("backbone"):
                     continue
@@ -143,12 +143,12 @@ class ActionFormer(Detector):
         param_dict = {pn: p for pn, p in self.named_parameters() if not pn.startswith("backbone")}
         inter_params = decay & no_decay
         union_params = decay | no_decay
-        assert len(inter_params) == 0, "parameters %s made it into both decay/no_decay sets!" % (
-            str(inter_params),
+        assert len(inter_params) == 0, (
+            f"parameters {inter_params} made it into both decay/no_decay sets!"
         )
         assert len(param_dict.keys() - union_params) == 0, (
-            "parameters %s were not separated into either decay/no_decay set!"
-            % (str(param_dict.keys() - union_params),)
+            f"parameters {param_dict.keys() - union_params} "
+            "were not separated into either decay/no_decay set!"
         )
 
         # create the pytorch optimizer object

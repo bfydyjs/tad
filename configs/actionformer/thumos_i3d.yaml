@@ -139,4 +139,4 @@ workflow:
   val_eval_interval: 1
   val_start_epoch: 30
 
-work_dir: exps/thumos/actionformer/i3d
+work_dir: exps/thumos/actionformer_i3d
