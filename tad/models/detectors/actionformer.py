@@ -60,14 +60,12 @@ class ActionFormer(Detector):
         pad_masks[:, :feat_len] = masks
         return inputs, pad_masks
 
-    def forward_train(self, inputs, masks, metas, gt_segments_feat, gt_labels, **kwargs):
-        losses = dict()
+    def extract_feat(self, inputs, masks):
         if self.with_backbone:
             x = self.backbone(inputs)
         else:
             x = inputs
 
-        # pad the features and unsqueeze the mask for actionformer
         x, masks = self.pad_data(x, masks)
 
         if self.with_projection:
@@ -75,6 +73,11 @@ class ActionFormer(Detector):
 
         if self.with_neck:
             x, masks = self.neck(x, masks)
+        return x, masks
+
+    def forward_train(self, inputs, masks, metas, gt_segments_feat, gt_labels, **kwargs):
+        x, masks = self.extract_feat(inputs, masks)
+        losses = dict()
 
         loc_losses = self.rpn_head.forward_train(
             x,
@@ -90,18 +93,7 @@ class ActionFormer(Detector):
         return losses
 
     def forward_test(self, inputs, masks, metas=None, infer_cfg=None, **kwargs):
-        if self.with_backbone:
-            x = self.backbone(inputs)
-        else:
-            x = inputs
-
-        x, masks = self.pad_data(x, masks)
-
-        if self.with_projection:
-            x, masks = self.projection(x, masks)
-
-        if self.with_neck:
-            x, masks = self.neck(x, masks)
+        x, masks = self.extract_feat(inputs, masks)
 
         rpn_proposals, rpn_scores = self.rpn_head.forward_test(x, masks, **kwargs)
         predictions = rpn_proposals, rpn_scores
