@@ -23,7 +23,7 @@ Obtaining file:///hy-tmp/tad
   Checking if build backend supports build_editable ... done
 ERROR: Project file:///hy-tmp/tad uses a build backend that is missing the 'build_editable' hook, so it cannot be installed in editable mode. Consider using a build backend that supports PEP 660.
 
-解决方法：pip install --upgrade setuptools
+解决方法：pip install --upgrade setuptools 然后重新执行`pip install -e . --no-build-isolation`
 # Prepare the Annotation and Data
 
 # Usage
